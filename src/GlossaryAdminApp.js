@@ -33,20 +33,65 @@ const GlossaryAdminApp = () => {
     const termRefs = useRef({});
 
 
-    const debounce = (func, delay) => {
-        let timeoutId;
-        return (...args) => {
-            if (timeoutId) clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => func(...args), delay);
-        };
-    };
+
+
+    const isSavingRef = useRef(false);
+
+    const saveTerms = useCallback((isAutoSave = false) => {
+        if (!unsavedChanges || isSavingRef.current) return;
     
-    const debouncedAutoSave = useCallback(
-        debounce(() => {
+        isSavingRef.current = true;
+    
+        const termsToSave = terms.filter((term) => modifiedTerms.has(term.id));
+        const savePromises = termsToSave.map((term) =>
+            apiFetch({
+                path: '/wp-json/wp/v2/glossary',
+                method: 'POST',
+                data: { ...term, modified: new Date().toISOString() },
+                headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+            })
+        );
+    
+        Promise.all(savePromises)
+            .then(() => {
+                setModifiedTerms(new Set());
+                setUnsavedChanges(false);
+                if (!isAutoSave) {
+                    setMessage('Changes saved successfully!');
+                    setTimeout(() => setMessage(''), 3000);
+                }
+            })
+            .catch((error) => {
+                console.error('Error saving terms:', error);
+                setMessage('Error saving changes');
+                setTimeout(() => setMessage(''), 3000);
+            })
+            .finally(() => {
+                isSavingRef.current = false;
+            });
+    }, [terms, modifiedTerms, unsavedChanges]);
+
+
+ // Create a memoized debounce function
+ const debounce = useCallback((func, delay) => {
+    let timeoutId;
+    return (...args) => {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+        timeoutId = setTimeout(() => func(...args), delay);
+    };
+}, []);
+
+// Create a memoized debouncedAutoSave function
+const debouncedAutoSave = useCallback(
+    debounce(() => {
+        if (isAutoSaveEnabled && unsavedChanges) {
             saveTerms(true);
-        }, DEBOUNCE_DELAY),
-        [saveTerms]
-    );
+        }
+    }, DEBOUNCE_DELAY),
+    [isAutoSaveEnabled, unsavedChanges, saveTerms]
+);
     
 
 
@@ -103,13 +148,7 @@ useEffect(() => {
 
     }, []);
 
-    const handleAutoSave = useCallback(() => {
-        if (isAutoSaveEnabled && unsavedChanges) {
-            console.log('Triggering autosave'); // Log autosave trigger for confirmation
-            throttledSaveTerms();
-        }
-    }, [isAutoSaveEnabled, unsavedChanges, throttledSaveTerms]);
-    
+
 
     
 
@@ -343,19 +382,6 @@ useEffect(() => {
 
 
 
-    const throttle = (func, delay) => {
-        let timeoutId;
-        return (...args) => {
-            if (timeoutId) clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => func(...args), delay);
-        };
-    };
-
-    const throttledSaveTerms = useCallback(
-        throttle(() => saveTerms(true), DEBOUNCE_DELAY),
-        [saveTerms]
-    );
-
     const updateTerm = useCallback((termId, key, value) => {
         setTerms((prevTerms) =>
             prevTerms.map((term) =>
@@ -364,9 +390,25 @@ useEffect(() => {
         );
         setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
         setUnsavedChanges(true);
-        debouncedAutoSave(); // Call debounced autosave
-    }, [debouncedAutoSave]);
+    }, []);
     
+    
+    useEffect(() => {
+        if (isAutoSaveEnabled && unsavedChanges) {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+            debounceTimerRef.current = setTimeout(() => {
+                saveTerms(true);
+            }, DEBOUNCE_DELAY);
+        }
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, [terms, isAutoSaveEnabled, unsavedChanges, saveTerms]);
+
 
     useEffect(() => {
         if (focusedTermIdRef.current && focusedFieldRef.current) {
@@ -387,39 +429,10 @@ useEffect(() => {
             return new Set(modifiedTerms);
         });
         setUnsavedChanges(true);
-        handleAutoSave();
-    }, [handleAutoSave]);
-
-
-    const isSavingRef = useRef(false);
-
-    const saveTerms = (isAutoSave = false) => {
-        if (!unsavedChanges || isSavingRef.current) return;
-    
-        isSavingRef.current = true; // Block additional saves during a save operation
-    
-        const termsToSave = terms.filter((term) => modifiedTerms.has(term.id));
-        const savePromises = termsToSave.map((term) =>
-            apiFetch({
-                path: '/wp-json/wp/v2/glossary',
-                method: 'POST',
-                data: { ...term, modified: new Date().toISOString() },
-                headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-            })
-        );
-    
-        Promise.all(savePromises)
-            .then(() => {
-                setModifiedTerms(new Set());
-                setUnsavedChanges(false);
-            })
-            .catch((error) => {
-                console.error('Error saving terms:', error);
-            })
-            .finally(() => {
-                isSavingRef.current = false; // Allow new saves
-            });
-    };
+        if (isAutoSaveEnabled) {
+            debouncedAutoSave();
+        }
+    }, [isAutoSaveEnabled, debouncedAutoSave]);
 
     const onSave = useCallback(() => saveTerms(), [saveTerms]);
 
@@ -811,9 +824,8 @@ const [newTermData, setNewTermData] = useState({
         <Button
     isPrimary
     onClick={() => {
-        // Create new term data with a temporary ID
         const newTermData = {
-            id: Date.now(), // Temporary unique ID
+            id: Date.now(),
             title: newTermTitle || 'Untitled Term',
             content: newTermContent || '',
             relatedTerms: [],
@@ -823,20 +835,15 @@ const [newTermData, setNewTermData] = useState({
             modified: new Date().toISOString(),
             isOpen: false,
         };
-
-        // Add the new term to the terms state
+    
         setTerms((prevTerms) => [...prevTerms, newTermData]);
-
-        // Mark the new term for saving by adding its ID to modifiedTerms
         setModifiedTerms((prevModified) => new Set(prevModified).add(newTermData.id));
-        
-        // Flag unsaved changes to ensure auto-save is called
         setUnsavedChanges(true);
-
-        // Trigger auto-save directly to ensure new term is saved
-        handleAutoSave();
-
-        // Clear inputs and close modal
+    
+        if (isAutoSaveEnabled) {
+            debouncedAutoSave();
+        }
+    
         setNewTermTitle('');
         setNewTermContent('');
         setIsModalOpen(false);
