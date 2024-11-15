@@ -243,26 +243,33 @@ const TagsAndCategoriesFilter = ({
     handleCategoryChange,
 }) => {
     const [showAllTags, setShowAllTags] = useState(false);
+
+    // Local state for panel open/closed status
+    const [isTagsPanelOpen, setIsTagsPanelOpen] = useState(
+        () => JSON.parse(localStorage.getItem('isTagsPanelOpen')) || false
+    );
+    const [isCategoriesPanelOpen, setIsCategoriesPanelOpen] = useState(
+        () => JSON.parse(localStorage.getItem('isCategoriesPanelOpen')) || false
+    );
+
+    // Save state to localStorage when it changes
+    useEffect(() => {
+        localStorage.setItem('isTagsPanelOpen', JSON.stringify(isTagsPanelOpen));
+    }, [isTagsPanelOpen]);
+
+    useEffect(() => {
+        localStorage.setItem('isCategoriesPanelOpen', JSON.stringify(isCategoriesPanelOpen));
+    }, [isCategoriesPanelOpen]);
+
+    // Displayed tags based on "Show More"
     const displayedTags = useMemo(() => (showAllTags ? tags : tags.slice(0, 10)), [showAllTags, tags]);
-
-    const toggleTagsPanel = () => {
-        const newState = !isTagsPanelOpenRef.current;
-        isTagsPanelOpenRef.current = newState;
-        localStorage.setItem('isTagsPanelOpen', JSON.stringify(newState));
-    };
-
-    const toggleCategoriesPanel = () => {
-        const newState = !isCategoriesPanelOpenRef.current;
-        isCategoriesPanelOpenRef.current = newState;
-        localStorage.setItem('isCategoriesPanelOpen', JSON.stringify(newState));
-    };
 
     return (
         <>
             <PanelBody
                 title={<span><FontAwesomeIcon icon={faTags} /> {__('Tags', 'acemedia-glossary')}</span>}
-                initialOpen={true}
-                onToggle={toggleTagsPanel}
+                initialOpen={isTagsPanelOpen}
+                onToggle={() => setIsTagsPanelOpen((prev) => !prev)}
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     {[{ label: 'All Tags', value: 'all_tags' }, ...displayedTags].map((tag) => (
@@ -288,8 +295,8 @@ const TagsAndCategoriesFilter = ({
 
             <PanelBody
                 title={<span><FontAwesomeIcon icon={faTags} /> {__('Categories', 'acemedia-glossary')}</span>}
-                initialOpen={true}
-                onToggle={toggleCategoriesPanel}
+                initialOpen={isCategoriesPanelOpen}
+                onToggle={() => setIsCategoriesPanelOpen((prev) => !prev)}
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     {categories.map((category) => (
@@ -307,6 +314,7 @@ const TagsAndCategoriesFilter = ({
         </>
     );
 };
+
 
 
 
