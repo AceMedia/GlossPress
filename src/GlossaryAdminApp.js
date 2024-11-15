@@ -353,15 +353,38 @@ useEffect(() => {
             relatedTerms: [],
             categories: [],
             tags: [],
-            isOpen: true
+            isOpen: true, // Open the term immediately
         };
-        setTerms((prevTerms) => [...prevTerms.map(term => ({ ...term, isOpen: false })), newTerm]);
+    
+        setTerms((prevTerms) => {
+            const updatedTerms = [...prevTerms.map(term => ({ ...term, isOpen: false })), newTerm];
+            return updatedTerms;
+        });
+    
         setModifiedTerms((prevModified) => new Set(prevModified).add(newTerm.id));
         setUnsavedChanges(true);
     
-        // Save the term immediately
+        // Set focus to the new term
+        focusedTermIdRef.current = newTerm.id;
+        focusedFieldRef.current = 'title';
+    
+        // Auto-save the new term immediately
         saveTerms();
+    
+        // Scroll to the newly added term
+        setTimeout(() => {
+            if (termRefs.current[newTerm.id]) {
+                const element = termRefs.current[newTerm.id];
+                const yOffset = -78; // Offset from the top
+                const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+                window.scrollTo({
+                    top: y,
+                    behavior: 'smooth'
+                });
+            }
+        }, 0);
     };
+    
 
     const toggleTermOpen = useCallback((termId) => {
         setTerms(terms => 
@@ -385,7 +408,6 @@ useEffect(() => {
     }, []);
 
 
-
     const updateTerm = useCallback((termId, key, value) => {
         setTerms((prevTerms) =>
             prevTerms.map((term) =>
@@ -394,7 +416,26 @@ useEffect(() => {
         );
         setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
         setUnsavedChanges(true);
+        
+        // Preserve focus after updating
+        focusedTermIdRef.current = termId;
+        focusedFieldRef.current = key;
     }, []);
+    
+    useEffect(() => {
+        if (focusedTermIdRef.current && focusedFieldRef.current) {
+            const termId = focusedTermIdRef.current;
+            const field = focusedFieldRef.current;
+            
+            const selector = field === 'title' ? 'input[type="text"]' : 'textarea';
+            const element = document.querySelector(`[data-term-id="${termId}"] ${selector}`);
+            
+            if (element) {
+                element.focus();
+                element.selectionStart = element.value.length; // Move cursor to the end
+            }
+        }
+    }, [terms]); // Only focus when terms are updated
     
     
     useEffect(() => {
