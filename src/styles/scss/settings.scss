@@ -1021,3 +1021,12 @@ h3.group-title {
 		opacity: 0.25;
 	}
 }
+
+
+.related-options {
+	.scroller {
+		max-height: 200px;
+		overflow-y: auto;
+		overflow-x: none;
+	}
+}

@@ -181,30 +181,28 @@ const handleCategoryChange = (selectedCategory) => {
 
 const updateRelatedTerms = (termId, updatedRelatedTerms) => {
     setTerms((prevTerms) => {
-        const newTerms = prevTerms.map((term) => {
-            // Update the selected term with the new related terms
+        // Create a copy of the previous terms to modify
+        const termsCopy = [...prevTerms];
+
+        // Update the relationships for the target term (termId)
+        termsCopy.forEach((term) => {
             if (term.id === termId) {
-                return { ...term, relatedTerms: updatedRelatedTerms };
-            }
-
-            // If another term is in updatedRelatedTerms, ensure it has termId in its relatedTerms
-            if (updatedRelatedTerms.includes(term.id)) {
-                // Add termId to this term's relatedTerms if not already present
-                if (!term.relatedTerms.includes(termId)) {
-                    return { ...term, relatedTerms: [...term.relatedTerms, termId] };
-                }
+                term.relatedTerms = updatedRelatedTerms;
             } else {
-                // Remove termId from this term's relatedTerms if it's no longer in updatedRelatedTerms
-                return {
-                    ...term,
-                    relatedTerms: term.relatedTerms.filter((id) => id !== termId),
-                };
+                // Handle bidirectional updates for other terms
+                if (updatedRelatedTerms.includes(term.id)) {
+                    // If termId is in updatedRelatedTerms, ensure the reverse relationship exists
+                    if (!term.relatedTerms.includes(termId)) {
+                        term.relatedTerms = [...term.relatedTerms, termId];
+                    }
+                } else {
+                    // If termId is not in updatedRelatedTerms, remove the reverse relationship
+                    term.relatedTerms = term.relatedTerms.filter((id) => id !== termId);
+                }
             }
-
-            return term;
         });
 
-        return newTerms;
+        return termsCopy;
     });
 
     setUnsavedChanges(true);
@@ -767,9 +765,9 @@ const [newTermData, setNewTermData] = useState({
     placeholder={__('Enter term content...', 'acemedia-glossary')}
     data-term-id={term.id} // Add attribute for focusing
 />
-         <Flex style={{ gap: '1rem' }} justify="start" wrap>
+         <Flex className='related-options' style={{ gap: '1rem' }} justify="start">
     <FlexItem style={{ flex: '1 1 30%' }}>
-        <PanelBody title={__('Related Terms', 'acemedia-glossary')} initialOpen={true}>
+    <div className="scroller">
             {terms.filter(t => t.id !== term.id).map((option) => (
                 <CheckboxControl
                     key={option.id}
@@ -783,11 +781,11 @@ const [newTermData, setNewTermData] = useState({
                     }}
                 />
             ))}
-        </PanelBody>
+            </div>
     </FlexItem>
     
     <FlexItem style={{ flex: '1 1 30%' }}>
-        <PanelBody title={__('Categories', 'acemedia-glossary')} initialOpen={true}>
+    <div className="scroller">
             {categories.map((category) => (
                 <CheckboxControl
                     key={category.value}
@@ -801,11 +799,11 @@ const [newTermData, setNewTermData] = useState({
                     }}
                 />
             ))}
-        </PanelBody>
+            </div>
     </FlexItem>
     
     <FlexItem style={{ flex: '1 1 30%' }}>
-        <PanelBody title={__('Tags', 'acemedia-glossary')} initialOpen={true}>
+        <div className="scroller">
             {tags.map((tag) => (
                 <CheckboxControl
                     key={tag.value}
@@ -819,7 +817,7 @@ const [newTermData, setNewTermData] = useState({
                     }}
                 />
             ))}
-        </PanelBody>
+            </div>
     </FlexItem>
 </Flex>
 
