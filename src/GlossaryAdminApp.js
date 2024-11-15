@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from '@wordpress/element';
 import { Button,  
     __experimentalToggleGroupControl as ToggleGroupControl,
-    __experimentalToggleGroupControlOption as ToggleGroupControlOption, PanelRow, TextControl, TextareaControl, CheckboxControl, Card, CardHeader, CardBody, PanelBody, IconButton, Notice, Flex, FlexItem, Tooltip, SelectControl, FlexBlock, Modal } from '@wordpress/components';
+    __experimentalToggleGroupControlOption as ToggleGroupControlOption, ToggleControl, PanelRow, TextControl, TextareaControl, CheckboxControl, Card, CardHeader, CardBody, PanelBody, IconButton, Notice, Flex, FlexItem, Tooltip, SelectControl, FlexBlock, Modal } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { useSelect } from '@wordpress/data';
 import { store as coreDataStore } from '@wordpress/core-data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faSortAlphaDown, faAnchor, faTags } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faSortAlphaDown, faAnchor, faTags, faEdit } from '@fortawesome/free-solid-svg-icons';
 
 import SaveBar from './SaveBar/SaveBar';
 import './styles/scss/settings.scss';
@@ -32,8 +32,10 @@ const GlossaryAdminApp = () => {
     const isInitialLoad = useRef(true);
     const termRefs = useRef({});
 
+    const [quickEdit, setQuickEdit] = useState('false'); // Initialize quickEdit state
 
 
+    const [selectedTerms, setSelectedTerms] = useState([]);
 
     const isSavingRef = useRef(false);
 
@@ -238,53 +240,32 @@ const TagsAndCategoriesFilter = ({
     tagFilter,
     handleTagChange,
     categoryFilter,
-    handleCategoryChange
+    handleCategoryChange,
 }) => {
-    const displayedTags = useMemo(() => showAllTags ? tags : tags.slice(0, 10), [showAllTags, tags]);
-const displayedCategories = useMemo(() => categories, [categories]);
     const [showAllTags, setShowAllTags] = useState(false);
-    const isTagsPanelOpenRef = useRef(JSON.parse(localStorage.getItem('isTagsPanelOpen')) || false);
-const isCategoriesPanelOpenRef = useRef(JSON.parse(localStorage.getItem('isCategoriesPanelOpen')) || false);
+    const displayedTags = useMemo(() => (showAllTags ? tags : tags.slice(0, 10)), [showAllTags, tags]);
 
-
-
-useEffect(() => {
-    if (isInitialLoad.current) {
-        const tagsPanelState = JSON.parse(localStorage.getItem('isTagsPanelOpen'));
-        const categoriesPanelState = JSON.parse(localStorage.getItem('isCategoriesPanelOpen'));
-
-        isTagsPanelOpenRef.current = tagsPanelState !== null ? tagsPanelState : isTagsPanelOpenRef.current;
-        isCategoriesPanelOpenRef.current = categoriesPanelState !== null ? categoriesPanelState : isCategoriesPanelOpenRef.current;
-
-        // Set current state to false after the initial load
-        isInitialLoad.current = false;
-    }
-}, []);
     const toggleTagsPanel = () => {
         const newState = !isTagsPanelOpenRef.current;
         isTagsPanelOpenRef.current = newState;
         localStorage.setItem('isTagsPanelOpen', JSON.stringify(newState));
     };
-    
+
     const toggleCategoriesPanel = () => {
         const newState = !isCategoriesPanelOpenRef.current;
         isCategoriesPanelOpenRef.current = newState;
         localStorage.setItem('isCategoriesPanelOpen', JSON.stringify(newState));
     };
-    
 
     return (
         <>
             <PanelBody
-    title={<span><FontAwesomeIcon icon={faTags} /> {__('Tags', 'acemedia-glossary')}</span>}
-    initialOpen={isTagsPanelOpenRef.current}
-    onToggle={toggleTagsPanel}
->
+                title={<span><FontAwesomeIcon icon={faTags} /> {__('Tags', 'acemedia-glossary')}</span>}
+                initialOpen={true}
+                onToggle={toggleTagsPanel}
+            >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {[
-                        { label: 'All Tags', value: 'all_tags' },
-                        ...displayedTags.map(tag => ({ label: tag.label, value: tag.value }))
-                    ].map(tag => (
+                    {[{ label: 'All Tags', value: 'all_tags' }, ...displayedTags].map((tag) => (
                         <Button
                             key={tag.value}
                             isPressed={tagFilter.includes(tag.value)}
@@ -295,7 +276,10 @@ useEffect(() => {
                         </Button>
                     ))}
                     {tags.length > 10 && (
-                        <Button onClick={() => setShowAllTags(!showAllTags)} className="toggle-button">
+                        <Button
+                            onClick={() => setShowAllTags(!showAllTags)}
+                            className="toggle-button"
+                        >
                             {showAllTags ? __('Show Less') : __('Show More')}
                         </Button>
                     )}
@@ -303,12 +287,12 @@ useEffect(() => {
             </PanelBody>
 
             <PanelBody
-    title={<span><FontAwesomeIcon icon={faTags} /> {__('Categories', 'acemedia-glossary')}</span>}
-    initialOpen={isCategoriesPanelOpenRef.current}
-    onToggle={toggleCategoriesPanel}
->
+                title={<span><FontAwesomeIcon icon={faTags} /> {__('Categories', 'acemedia-glossary')}</span>}
+                initialOpen={true}
+                onToggle={toggleCategoriesPanel}
+            >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {categories.map(category => (
+                    {categories.map((category) => (
                         <Button
                             key={category.value}
                             isPressed={categoryFilter.includes(category.value)}
@@ -323,6 +307,7 @@ useEffect(() => {
         </>
     );
 };
+
 
 
 
@@ -597,6 +582,35 @@ const [newTermData, setNewTermData] = useState({
     tags: []
 });
 
+
+
+const deleteSelectedTerms = useCallback(() => {
+    if (!selectedTerms.length) {
+        setMessage(__('No terms selected for deletion.', 'acemedia-glossary'));
+        return;
+    }
+
+    const deletePromises = selectedTerms.map((termId) =>
+        apiFetch({
+            path: `/wp-json/wp/v2/glossary/${termId}`,
+            method: 'DELETE',
+            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+        })
+    );
+
+    Promise.all(deletePromises)
+        .then(() => {
+            setTerms((prevTerms) => prevTerms.filter((term) => !selectedTerms.includes(term.id)));
+            setSelectedTerms([]); // Clear selection
+            setMessage(__('Selected terms deleted successfully.', 'acemedia-glossary'));
+            setTimeout(() => setMessage(''), 3000);
+        })
+        .catch((error) => {
+            console.error('Error deleting selected terms:', error);
+            setMessage(__('Failed to delete selected terms. Please try again.', 'acemedia-glossary'));
+            setTimeout(() => setMessage(''), 3000);
+        });
+}, [selectedTerms, terms, setMessage, setTerms]);
     
 
     const renderAlphaIndex = useCallback(() => {
@@ -736,23 +750,64 @@ const [newTermData, setNewTermData] = useState({
 />
 
 
+
+
+
+<PanelBody 
+    className='bulk-panel'
+    title={
+        <span>
+            <FontAwesomeIcon icon={faEdit} /> Bulk Actions
+            <ToggleControl
+    checked={quickEdit === 'true'}
+    onChange={(isChecked) => {
+        setQuickEdit(isChecked ? 'true' : 'false');
+        if (!isChecked) setSelectedTerms([]); // Clear selected terms
+    }}
+    style={{ marginLeft: '10px' }}
+/>
+
+        </span>
+    }
+    initialOpen={false}
+    onToggle={(open) => setQuickEdit(open ? 'true' : 'off')} // Automatically enable "Quick Edit" when panel is opened
+>
+   
+</PanelBody>
+
                     </div>
                 </FlexItem>
                 <FlexBlock className="terms-list" style={{ flex: '1' }}>
-                    <div style={{ marginBottom: '15px' }} className={`currently-viewing ${sortOption === 'alphabetical' ? 'alpha' : ''}`}>
-                    <Tooltip text={`${visibleCount} of ${totalCount} terms visible`}>
-    <span className='pill'>
-        <FontAwesomeIcon icon={faTags} style={{ marginRight: '5px' }} />
-        {`${visibleCount} of ${totalCount}`}
-    </span>
-</Tooltip>
-                        <Tooltip text={`${loadTime}ms response time for the current view`}>
-                            <span className='pill'>
-                                <FontAwesomeIcon icon={faClock} style={{ marginRight: '5px' }} />
-                                {loadTime}ms
-                            </span>
-                        </Tooltip>
-                    </div>
+                <div style={{ marginBottom: '15px' }} className={`currently-viewing ${sortOption === 'alphabetical' ? 'alpha' : ''}`}>
+    {quickEdit === 'true' && (
+        <CheckboxControl
+            label={__('Select All', 'acemedia-glossary')}
+            checked={Object.keys(displayedTerms).every((group) =>
+                displayedTerms[group].every((term) => selectedTerms.includes(term.id))
+            )}
+            onChange={(isChecked) => {
+                const visibleTermIds = Object.keys(displayedTerms)
+                    .flatMap((group) => displayedTerms[group].map((term) => term.id));
+                setSelectedTerms(isChecked ? visibleTermIds : []);
+            }}
+        />
+    )}
+
+    <Tooltip text={`${visibleCount} of ${totalCount} terms visible`}>
+        <span className="pill">
+            <FontAwesomeIcon icon={faTags} style={{ marginRight: '5px' }} />
+            {`${visibleCount} of ${totalCount}`}
+        </span>
+    </Tooltip>
+    <Tooltip text={`${loadTime}ms response time for the current view`}>
+        <span className="pill">
+            <FontAwesomeIcon icon={faClock} style={{ marginRight: '5px' }} />
+            {loadTime}ms
+        </span>
+    </Tooltip>
+</div>
+
+
                     {Object.keys(displayedTerms).sort().map(group => (
                         <FlexBlock style={{ display: 'grid', gap: '1em', flex: 'initial' }} key={group} id={group}>
                             {sortOption === 'alphabetical' && <h3 className='group-title'>{group}</h3>}
@@ -763,17 +818,54 @@ const [newTermData, setNewTermData] = useState({
                                 data-term-id={term.id}
                                 ref={el => termRefs.current[term.id] = el} // Assign ref here
                             >
-                                    <CardHeader onClick={() => toggleTermOpen(term.id)} style={{ cursor: 'pointer' }}>
-                                        <h2>{term.title || __('New Term', 'acemedia-glossary')}</h2>
-                                        <div className='updated-times' style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}>
-                                            <Tooltip text={`Created at ${new Date(term.date).toLocaleDateString()}`}>
-                                                <p><strong>Created:</strong> {formatRelativeTime(term.date)}</p>
-                                            </Tooltip>
-                                            <Tooltip text={`Last edited at ${new Date(term.modified).toLocaleDateString()}`}>
-                                                <p><strong>Updated:</strong> {formatRelativeTime(term.modified)}</p>
-                                            </Tooltip>
-                                        </div>
-                                    </CardHeader>
+                                 <CardHeader
+    onClick={(event) => {
+        if (quickEdit === 'true') {
+            // Prevent toggling if clicking on the actual checkbox
+            if (event.target.type !== 'checkbox') {
+                setSelectedTerms((prev) => {
+                    if (prev.includes(term.id)) {
+                        return prev.filter((id) => id !== term.id);
+                    } else {
+                        return [...prev, term.id];
+                    }
+                });
+            }
+        } else {
+            toggleTermOpen(term.id); // Default behavior when not in Quick Edit mode
+        }
+    }}
+    style={{ cursor: 'pointer' }}
+>
+    {quickEdit === 'true' && (
+        <CheckboxControl
+            checked={selectedTerms.includes(term.id)}
+            onChange={(isChecked) => {
+                setSelectedTerms((prev) =>
+                    isChecked ? [...prev, term.id] : prev.filter((id) => id !== term.id)
+                );
+            }}
+            className="bulk-select-checkbox"
+        />
+    )}
+    <h2>{term.title || __('New Term', 'acemedia-glossary')}</h2>
+    <div
+        className="updated-times"
+        style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}
+    >
+        <Tooltip text={`Created at ${new Date(term.date).toLocaleDateString()}`}>
+            <p>
+                <strong>Created:</strong> {formatRelativeTime(term.date)}
+            </p>
+        </Tooltip>
+        <Tooltip text={`Last edited at ${new Date(term.modified).toLocaleDateString()}`}>
+            <p>
+                <strong>Updated:</strong> {formatRelativeTime(term.modified)}
+            </p>
+        </Tooltip>
+    </div>
+</CardHeader>
+
                                     {term.isOpen && (
                                         <CardBody>
                                             <TextControl
@@ -867,18 +959,34 @@ const [newTermData, setNewTermData] = useState({
                 </FlexBlock>
             </Flex>
             <SaveBar
-                onSave={onSave}
-                setUnsavedChanges={setUnsavedChanges}
-                unsavedChanges={unsavedChanges}
-                isAutoSaveEnabled={isAutoSaveEnabled}
-                setIsAutoSaveEnabled={setIsAutoSaveEnabled}
-                message={message}
-                buttonText={unsavedChanges ? 'Save Changes' : 'Saved'}
-            >
-                <Button variant="secondary" onClick={openModalForNewTerm}>
-    {__('Add New Term', 'acemedia-glossary')}
-</Button>
-            </SaveBar>
+    onSave={onSave}
+    setUnsavedChanges={setUnsavedChanges}
+    unsavedChanges={unsavedChanges}
+    isAutoSaveEnabled={isAutoSaveEnabled}
+    setIsAutoSaveEnabled={setIsAutoSaveEnabled}
+    message={message}
+    buttonText={unsavedChanges ? 'Save Changes' : 'Saved'}
+>
+    {quickEdit === 'true' ? (
+        <Button
+        isDestructive isPrimary 
+            onClick={() => {
+                const confirmDelete = window.confirm(
+                    __('Are you sure you want to delete the selected terms? This action cannot be undone.', 'acemedia-glossary')
+                );
+                if (confirmDelete) {
+                    deleteSelectedTerms();
+                }
+            }}
+        >
+            {__('Delete Terms', 'acemedia-glossary')}
+        </Button>
+    ) : (
+        <Button variant="secondary" onClick={openModalForNewTerm}>
+            {__('Add New Term', 'acemedia-glossary')}
+        </Button>
+    )}
+</SaveBar>
 
 
             {isModalOpen && (

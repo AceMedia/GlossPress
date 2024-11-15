@@ -952,6 +952,9 @@ h3.group-title {
 .currently-viewing.alpha {
   padding-left: 50px;
 }
+.currently-viewing .components-checkbox-control {
+  display: inline-block;
+}
 
 .sidebar {
   position: sticky;
