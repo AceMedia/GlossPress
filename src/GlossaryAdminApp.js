@@ -355,8 +355,12 @@ useEffect(() => {
             tags: [],
             isOpen: true
         };
-        setTerms([...terms.map(term => ({ ...term, isOpen: false })), newTerm]);
+        setTerms((prevTerms) => [...prevTerms.map(term => ({ ...term, isOpen: false })), newTerm]);
+        setModifiedTerms((prevModified) => new Set(prevModified).add(newTerm.id));
         setUnsavedChanges(true);
+    
+        // Save the term immediately
+        saveTerms();
     };
 
     const toggleTermOpen = useCallback((termId) => {
@@ -438,26 +442,32 @@ useEffect(() => {
 
     const displayedTerms = useMemo(() => {
         if (!terms.length) return {}; // Fallback for empty terms list
-        
+    
         let filteredTerms = terms;
-        
+    
         if (tagFilter.length > 0) {
             filteredTerms = filteredTerms.filter(term =>
                 term.tags.some(tag => tagFilter.includes(tag))
             );
         }
-        
+    
         if (categoryFilter.length > 0) {
             filteredTerms = filteredTerms.filter(term =>
                 term.categories.some(cat => categoryFilter.includes(cat))
             );
         }
-        
+    
         const sortedTerms = filteredTerms.sort((a, b) => {
-            if (sortOption === 'alphabetical') return a.title.localeCompare(b.title);
-            return new Date(a[sortOption]) - new Date(b[sortOption]);
+            if (sortOption === 'alphabetical') {
+                return a.title.localeCompare(b.title);
+            } else if (sortOption === 'created') {
+                return new Date(a.date) - new Date(b.date);
+            } else if (sortOption === 'updated') {
+                return new Date(a.modified) - new Date(b.modified);
+            }
+            return 0;
         });
-        
+    
         if (sortOption === 'alphabetical') {
             return sortedTerms.reduce((acc, term) => {
                 const firstLetter = term.title.charAt(0).toUpperCase();
@@ -466,9 +476,10 @@ useEffect(() => {
                 return acc;
             }, {});
         }
+    
         return { All: sortedTerms };
     }, [terms, sortOption, debouncedSearchQuery, tagFilter, categoryFilter]) || {}; // Ensure displayedTerms is an object
-    
+       
     // Calculate visible count with a fallback for empty displayedTerms
     const visibleCount = Object.keys(displayedTerms).reduce((count, key) => {
         return count + (displayedTerms[key]?.length || 0);
@@ -835,15 +846,15 @@ const [newTermData, setNewTermData] = useState({
             modified: new Date().toISOString(),
             isOpen: false,
         };
-    
+
         setTerms((prevTerms) => [...prevTerms, newTermData]);
         setModifiedTerms((prevModified) => new Set(prevModified).add(newTermData.id));
         setUnsavedChanges(true);
-    
-        if (isAutoSaveEnabled) {
-            debouncedAutoSave();
-        }
-    
+
+        // Save the new term immediately
+        saveTerms();
+
+        // Clear modal input fields and close the modal
         setNewTermTitle('');
         setNewTermContent('');
         setIsModalOpen(false);
