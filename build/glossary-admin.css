@@ -969,6 +969,14 @@ h3.group-title {
 }
 .sidebar h1 i {
   color: var(--wp-components-color-accent, var(--wp-admin-theme-color-darker-20, #3858e9));
+  background: linear-gradient(to right, var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9)), #fff, var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9)));
+  background-size: 200%;
+  background-clip: text;
+  animation-name: shine;
+  background-position: 50%;
+  animation-duration: 10s;
+  animation-iteration-count: infinite;
+  display: inline-block;
 }
 .sidebar h1 span {
   font-size: inherit !important;
@@ -979,6 +987,14 @@ h3.group-title {
   transform-origin: center center;
 }
 
+@keyframes shine {
+  0% {
+    background-position: 0%;
+  }
+  100% {
+    background-position: 100%;
+  }
+}
 .glossary-term-card .components-card__header {
   padding-left: 1em;
 }
@@ -1016,8 +1032,54 @@ h3.group-title {
   opacity: 0.25;
 }
 
+.related-options h3 {
+  font-size: 1em;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0px 0px 8px;
+}
 .related-options .scroller {
   max-height: 200px;
+  height: 200px;
   overflow-y: auto;
-  overflow-x: none;
+  overflow-x: hidden;
+  padding: 0.5em;
+  background: #e2e8f0;
+  box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 0.5em !important;
+  border: 1px solid rgb(203, 213, 225) !important;
+  position: relative;
+}
+.related-options .scroller * {
+  max-width: 100%;
+  overflow: hidden;
+}
+.related-options .scroller .components-checkbox-control {
+  border-radius: 0.25em;
+  background: #fff;
+  position: relative;
+  margin-bottom: 0.25em;
+  color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+}
+.related-options .scroller .components-checkbox-control:hover {
+  color: var(--wp-components-color-accent, var(--wp-admin-theme-color-darker-20, #3858e9));
+}
+.related-options .scroller .components-checkbox-control:last-child {
+  margin-bottom: 0px;
+}
+.related-options .scroller .components-checkbox-control > div {
+  position: relative;
+  padding: 0px;
+  margin: 0px;
+}
+.related-options .scroller .components-checkbox-control label {
+  width: 100%;
+  padding: 0.5em 0.5em 0.5em calc(22px + 0.5em);
+  margin: 0px;
+}
+.related-options .scroller .components-checkbox-control .components-checkbox-control__input-container {
+  position: absolute;
+  left: 0.5em;
+  top: 50%;
+  transform: translateY(-50%);
 }

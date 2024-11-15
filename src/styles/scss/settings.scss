@@ -966,7 +966,21 @@ h3.group-title {
 		margin-bottom: .25em !important;
 		i {
 			color: $dark-primary-color;
-		}
+			background: linear-gradient(
+			   to right,
+			   $primary-color,
+			   $white,
+			   $primary-color
+			);
+			background-size: 200%;
+			background-clip: text;
+			animation-name: shine;
+			background-position: 50%;
+			animation-duration: 10s;
+			animation-iteration-count: infinite;
+			display: inline-block;
+		 }
+		 
 		span {
 			font-size: inherit !important;
 			display: inline-block;
@@ -978,6 +992,16 @@ h3.group-title {
 	}
 }
 
+
+
+@keyframes shine {
+	0% {
+	   background-position: 0%;
+	}
+	100% {
+	   background-position: 100%;
+	}
+ }
 
 .glossary-term-card {
 	.components-card__header {
@@ -1024,9 +1048,55 @@ h3.group-title {
 
 
 .related-options {
+	h3 {
+		font-size: 1em;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0px 0px 8px;
+	}
 	.scroller {
 		max-height: 200px;
+		height: 200px;
 		overflow-y: auto;
-		overflow-x: none;
+		overflow-x: hidden;
+		padding: .5em;
+		background: $slate;
+		box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+		border-radius: 0.5em !important;
+		border: 1px solid rgb(203, 213, 225) !important;
+		position: relative;
+		* {
+			max-width: 100%;
+			overflow: hidden;
+		}
+		.components-checkbox-control {
+			border-radius: .25em;
+			background: $white;
+			position: relative;
+			margin-bottom: .25em;
+			color: $primary-color;
+			&:hover {
+				color: $dark-primary-color;
+			}
+			&:last-child {
+				margin-bottom: 0px;
+			}
+			> div {
+				position: relative;
+				padding: 0px;
+				margin: 0px;
+			}
+			label {
+				width: 100%;
+				padding: .5em .5em .5em calc(22px + .5em);
+				margin: 0px;
+			}
+			.components-checkbox-control__input-container {
+				position: absolute;
+				left: .5em;
+				top: 50%;
+				transform: translateY(-50%);
+			}
+		}
 	}
 }

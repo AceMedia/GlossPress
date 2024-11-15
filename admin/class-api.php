@@ -7,13 +7,28 @@ add_action('rest_api_init', function() {
         'permission_callback' => '__return_true'  // Public access for reading terms
     ));
 
-    // Register POST route for creating or updating terms
     register_rest_route('wp/v2', '/glossary', array(
         'methods' => 'POST',
         'callback' => 'save_glossary_term',
         'permission_callback' => function () {
             return current_user_can('manage_options');
         }
+    ));
+
+    register_rest_route('wp/v2', '/glossary/(?P<id>\d+)', array(
+        'methods' => 'DELETE',
+        'callback' => 'delete_glossary_term',
+        'permission_callback' => function () {
+            return current_user_can('manage_options');
+        },
+        'args' => array(
+            'id' => array(
+                'required' => true,
+                'validate_callback' => function ($param, $request, $key) {
+                    return is_numeric($param);
+                }
+            )
+        )
     ));
 });
 
@@ -93,4 +108,26 @@ function save_glossary_term($request) {
     delete_transient('acemedia_glossary_terms');
 
     return new WP_REST_Response(array('id' => $post_id), 201);
+}
+
+
+function delete_glossary_term($request) {
+    $term_id = intval($request['id']);
+
+    // Check if the term exists
+    $post = get_post($term_id);
+    if (!$post || $post->post_type !== 'acemedia_glossary') {
+        return new WP_Error('term_not_found', 'Term not found', array('status' => 404));
+    }
+
+    // Delete the term
+    $result = wp_delete_post($term_id, true); // True for force deletion
+    if (!$result) {
+        return new WP_Error('term_deletion_failed', 'Failed to delete the term', array('status' => 500));
+    }
+
+    // Clear the transient cache since the data has changed
+    delete_transient('acemedia_glossary_terms');
+
+    return new WP_REST_Response(null, 204); // No content response
 }

@@ -43,6 +43,8 @@ const GlossaryAdminApp = () => {
         isSavingRef.current = true;
     
         const termsToSave = terms.filter((term) => modifiedTerms.has(term.id));
+        const startTime = performance.now();
+    
         const savePromises = termsToSave.map((term) =>
             apiFetch({
                 path: '/wp-json/wp/v2/glossary',
@@ -54,10 +56,13 @@ const GlossaryAdminApp = () => {
     
         Promise.all(savePromises)
             .then(() => {
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+    
                 setModifiedTerms(new Set());
                 setUnsavedChanges(false);
                 if (!isAutoSave) {
-                    setMessage('Changes saved successfully!');
+                    setMessage(`Changes saved successfully! (${responseTime}ms)`);
                     setTimeout(() => setMessage(''), 3000);
                 }
             })
@@ -466,16 +471,37 @@ useEffect(() => {
     }, [terms]);
 
     const removeTerm = useCallback((termId) => {
-        setTerms(terms => terms.filter(term => term.id !== termId));
-        setModifiedTerms(modifiedTerms => {
-            modifiedTerms.delete(termId);
-            return new Set(modifiedTerms);
-        });
-        setUnsavedChanges(true);
-        if (isAutoSaveEnabled) {
-            debouncedAutoSave();
+        const termToDelete = terms.find((term) => term.id === termId);
+    
+        if (!termToDelete) {
+            setMessage(__('Term not found.', 'acemedia-glossary'));
+            return;
         }
-    }, [isAutoSaveEnabled, debouncedAutoSave]);
+    
+        const confirmDelete = window.confirm(
+            __('Are you sure you want to delete this term? This action cannot be undone.', 'acemedia-glossary')
+        );
+    
+        if (!confirmDelete) return;
+    
+        apiFetch({
+            path: `/wp-json/wp/v2/glossary/${termId}`,
+            method: 'DELETE',
+            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+        })
+            .then(() => {
+                setTerms((prevTerms) => prevTerms.filter((term) => term.id !== termId));
+                setMessage(__('Term deleted successfully.', 'acemedia-glossary'));
+                setTimeout(() => setMessage(''), 3000);
+            })
+            .catch((error) => {
+                console.error('Error deleting term:', error);
+                setMessage(__('Failed to delete the term. Please try again.', 'acemedia-glossary'));
+                setTimeout(() => setMessage(''), 3000);
+            });
+    }, [terms, setTerms, setMessage]);
+    
+    
 
     const onSave = useCallback(() => saveTerms(), [saveTerms]);
 
@@ -767,6 +793,7 @@ const [newTermData, setNewTermData] = useState({
 />
          <Flex className='related-options' style={{ gap: '1rem' }} justify="start">
     <FlexItem style={{ flex: '1 1 30%' }}>
+        <h3>Related Terms</h3>
     <div className="scroller">
             {terms.filter(t => t.id !== term.id).map((option) => (
                 <CheckboxControl
@@ -785,6 +812,7 @@ const [newTermData, setNewTermData] = useState({
     </FlexItem>
     
     <FlexItem style={{ flex: '1 1 30%' }}>
+    <h3>Related Categories</h3>
     <div className="scroller">
             {categories.map((category) => (
                 <CheckboxControl
@@ -803,6 +831,7 @@ const [newTermData, setNewTermData] = useState({
     </FlexItem>
     
     <FlexItem style={{ flex: '1 1 30%' }}>
+    <h3>Related Tags</h3>
         <div className="scroller">
             {tags.map((tag) => (
                 <CheckboxControl
@@ -822,12 +851,12 @@ const [newTermData, setNewTermData] = useState({
 </Flex>
 
                                             <PanelRow>
-                                                <IconButton
-                                                    icon="trash"
-                                                    label={__('Remove Term', 'acemedia-glossary')}
-                                                    onClick={() => removeTerm(term.id)}
-                                                    className="remove-term-btn"
-                                                />
+                                            <IconButton
+    icon="trash"
+    label={__('Remove Term', 'acemedia-glossary')}
+    onClick={() => removeTerm(term.id)}
+    className="remove-term-btn"
+/>
                                             </PanelRow>
                                         </CardBody>
                                     )}
@@ -886,12 +915,26 @@ const [newTermData, setNewTermData] = useState({
             isOpen: false,
         };
 
-        setTerms((prevTerms) => [...prevTerms, newTermData]);
-        setModifiedTerms((prevModified) => new Set(prevModified).add(newTermData.id));
-        setUnsavedChanges(true);
-
-        // Save the new term immediately
-        saveTerms();
+        // Make the API save call directly
+        apiFetch({
+            path: '/wp-json/wp/v2/glossary',
+            method: 'POST',
+            data: { ...newTermData },
+            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+        })
+            .then(() => {
+                // Update the state with the saved term
+                setTerms((prevTerms) => [...prevTerms, newTermData]);
+                setModifiedTerms((prevModified) => new Set(prevModified).add(newTermData.id));
+                setUnsavedChanges(false); // Clear unsaved changes for the modal term only
+                setMessage('Term added and saved successfully!');
+                setTimeout(() => setMessage(''), 3000);
+            })
+            .catch((error) => {
+                console.error('Error saving term:', error);
+                setMessage('Error saving new term');
+                setTimeout(() => setMessage(''), 3000);
+            });
 
         // Clear modal input fields and close the modal
         setNewTermTitle('');
