@@ -343,9 +343,9 @@ ul#adminmenu > li.current > a.current::after {
 .components-modal__frame .components-card__header:hover {
   cursor: pointer;
 }
-.components-card .components-base-control__field input,
+.components-card .components-base-control__field input[type=text],
 .components-card .components-base-control__field textarea,
-.components-modal__frame .components-base-control__field input,
+.components-modal__frame .components-base-control__field input[type=text],
 .components-modal__frame .components-base-control__field textarea {
   background-color: rgb(255, 255, 255);
   border-radius: 0.5em;
@@ -358,19 +358,19 @@ ul#adminmenu > li.current > a.current::after {
   width: 100%;
   line-height: 1;
 }
-.components-card .components-base-control__field input:disabled,
+.components-card .components-base-control__field input[type=text]:disabled,
 .components-card .components-base-control__field textarea:disabled,
-.components-modal__frame .components-base-control__field input:disabled,
+.components-modal__frame .components-base-control__field input[type=text]:disabled,
 .components-modal__frame .components-base-control__field textarea:disabled {
   background: rgb(248, 250, 252);
   color: rgb(209, 213, 219);
   pointer-events: none;
 }
-.components-card .components-base-control__field input:focus, .components-card .components-base-control__field input:active,
+.components-card .components-base-control__field input[type=text]:focus, .components-card .components-base-control__field input[type=text]:active,
 .components-card .components-base-control__field textarea:focus,
 .components-card .components-base-control__field textarea:active,
-.components-modal__frame .components-base-control__field input:focus,
-.components-modal__frame .components-base-control__field input:active,
+.components-modal__frame .components-base-control__field input[type=text]:focus,
+.components-modal__frame .components-base-control__field input[type=text]:active,
 .components-modal__frame .components-base-control__field textarea:focus,
 .components-modal__frame .components-base-control__field textarea:active {
   box-shadow: inset 0 0 0 0 #fff, inset 0 0 0 2px var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9)), 0 0 rgba(0, 0, 0, 0);
@@ -669,6 +669,7 @@ label {
   flex-grow: 1 !important;
   background-color: #e2e8f0;
   padding: 1.5em;
+  gap: 1em;
 }
 .main-panel > .components-flex-block > div:not(.currently-viewing) {
   border-radius: 0.5em;
@@ -924,4 +925,93 @@ label {
   padding: 0.5em 0.25em 0.5em 0.5em;
   margin-right: 0.5em !important;
   width: 20px;
+}
+
+h3.group-title {
+  position: sticky;
+  top: calc(26px + 1em); /* Adjust this if you want it to stick lower than the very top */
+  z-index: 999; /* Ensures h3 is on top if there’s overlapping content */
+  font-size: 1.5em;
+  padding: 0px !important;
+  margin: 0px !important;
+  display: inline-block;
+  line-height: 1;
+  pointer-events: none;
+  color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+}
+
+.currently-viewing {
+  position: sticky;
+  top: 32px;
+  z-index: 99;
+  padding: 1em 1.5em 2em;
+  margin: -1.5em -1.5em -1em !important;
+  background: linear-gradient(180deg, #e2e8f0 53%, transparent 100%);
+  transition: 0.25s linear all;
+}
+.currently-viewing.alpha {
+  padding-left: 50px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 32px;
+  z-index: 99;
+}
+.sidebar h1 {
+  font-weight: 900;
+  letter-spacing: -2px;
+  font-size: 3em;
+  color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+  text-align: center;
+  vertical-align: middle;
+  margin-bottom: 0.25em !important;
+}
+.sidebar h1 i {
+  color: var(--wp-components-color-accent, var(--wp-admin-theme-color-darker-20, #3858e9));
+}
+.sidebar h1 span {
+  font-size: inherit !important;
+  display: inline-block;
+  margin-right: 0.25em !important;
+  line-height: inherit !important;
+  transform: rotate(-15deg) translate(-50%, 0%);
+  transform-origin: center center;
+}
+
+.glossary-term-card .components-card__header {
+  padding-left: 1em;
+}
+
+.terms-list > div:nth-child(2) {
+  margin-top: -50px;
+}
+
+.alpha-index {
+  display: flex;
+  gap: 0.5em;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.alpha-index a, .alpha-index span {
+  display: inline-block;
+  padding: 0.5em;
+  line-height: 1;
+  background: #e2e8f0;
+  color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+  text-decoration: none;
+  font-weight: normal;
+  border-radius: 0.5em;
+  transition: 0.25s linear all;
+}
+.alpha-index a:hover, .alpha-index span:hover {
+  background: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+  color: #fff;
+}
+.alpha-index a {
+  color: var(--wp-components-color-accent, var(--wp-admin-theme-color-darker-20, #3858e9));
+  font-weight: bold;
+}
+.alpha-index span {
+  opacity: 0.25;
 }

@@ -270,7 +270,7 @@ ul#adminmenu > li.current > a.current::after {
 		}
 	}
 
-	.components-base-control__field input,
+	.components-base-control__field input[type="text"],
 	.components-base-control__field textarea {
 		background-color: rgba(255, 255, 255, 1);
 		border-radius: 0.5em;
@@ -637,7 +637,7 @@ label {
 	flex-grow: 1 !important;
 	background-color: $slate;
 	padding: 1.5em;
-
+	gap: 1em;
 	> div:not(.currently-viewing) {
 		border-radius: 0.5em;
 	}
@@ -920,5 +920,104 @@ label {
 		padding: .5em .25em .5em .5em;
 		margin-right: .5em !important;
 		width: 20px;
+	}
+}
+
+
+h3.group-title {
+	position: sticky;
+	top: calc(26px + 1em); /* Adjust this if you want it to stick lower than the very top */
+	z-index: 999; /* Ensures h3 is on top if there’s overlapping content */
+	font-size: 1.5em;
+	padding: 0px !important;
+	margin: 0px !important;
+	display: inline-block;
+	line-height: 1;
+	pointer-events: none;
+	color: $primary-color;
+}
+
+.currently-viewing {
+	position: sticky;
+	top: 32px;
+	z-index: 99;
+	padding: 1em 1.5em 2em;
+	margin: -1.5em -1.5em -1em !important;
+	background: linear-gradient(180deg, $slate 53%, transparent 100%); 
+	transition: .25s linear all;
+	&.alpha {
+		padding-left: 50px;
+	}
+}
+
+
+
+.sidebar {
+	position: sticky;
+	top: 32px;
+	z-index: 99;
+	h1{
+		font-weight: 900;
+		letter-spacing: -2px;
+		font-size: 3em;
+		color: $primary-color;
+		text-align: center;
+		vertical-align: middle;
+		margin-bottom: .25em !important;
+		i {
+			color: $dark-primary-color;
+		}
+		span {
+			font-size: inherit !important;
+			display: inline-block;
+			margin-right: .25em !important;
+			line-height: inherit !important;
+			transform: rotate(-15deg) translate(-50%, 0%);
+			transform-origin: center center;
+		}
+	}
+}
+
+
+.glossary-term-card {
+	.components-card__header {
+		padding-left: 1em;
+	}
+}
+
+
+.terms-list {
+	> div:nth-child(2) {
+		margin-top: -50px;
+	}
+}
+
+
+.alpha-index {
+	display: flex;
+	gap: .5em;
+	justify-content: space-between;
+    flex-wrap: wrap; 
+	a, span {
+		display: inline-block;
+		padding: 0.5em;
+		line-height: 1;
+		background: $slate;
+		color: $primary-color;
+		text-decoration: none;
+		font-weight: normal;
+		border-radius: 0.5em;
+		transition: .25s linear all;
+		&:hover {
+			background: $primary-color;
+			color: $white;
+		}
+	}
+	a {
+		color: $dark-primary-color;
+		font-weight: bold;
+	}
+	span {
+		opacity: 0.25;
 	}
 }

@@ -1,7 +1,13 @@
-import { useState, useEffect, useRef } from '@wordpress/element';
-import { Button, PanelRow, TextControl, TextareaControl, Card, CardHeader, PanelBody, IconButton, Notice, Flex, FlexItem, Tooltip, SelectControl } from '@wordpress/components';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from '@wordpress/element';
+import { Button,  
+    __experimentalToggleGroupControl as ToggleGroupControl,
+    __experimentalToggleGroupControlOption as ToggleGroupControlOption, PanelRow, TextControl, TextareaControl, CheckboxControl, Card, CardHeader, CardBody, PanelBody, IconButton, Notice, Flex, FlexItem, Tooltip, SelectControl, FlexBlock, Modal } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { useSelect } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faClock, faSortAlphaDown, faAnchor, faTags } from '@fortawesome/free-solid-svg-icons';
 
 import SaveBar from './SaveBar/SaveBar';
 import './styles/scss/settings.scss';
@@ -20,34 +26,60 @@ const GlossaryAdminApp = () => {
     const [loadTime, setLoadTime] = useState(null);
     const debounceTimerRef = useRef(null);
     const focusedTermIdRef = useRef(null);
+    const focusedFieldRef = useRef(null); 
     const [buttonText, setButtonText] = useState('Save Changes');
     const [searchQuery, setSearchQuery] = useState('');
-    const handleSearchChange = (value) => setSearchQuery(value);
+    const isInitialLoad = useRef(true);
+    const termRefs = useRef({});
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setTerms((prevTerms) => [...prevTerms]);
-        }, 1000);
+
+    const debounce = (func, delay) => {
+        let timeoutId;
+        return (...args) => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func(...args), delay);
+        };
+    };
     
-        return () => clearInterval(interval);
-    }, []);
+    const debouncedAutoSave = useCallback(
+        debounce(() => {
+            saveTerms(true);
+        }, DEBOUNCE_DELAY),
+        [saveTerms]
+    );
+    
 
+
+    const [newTermTitle, setNewTermTitle] = useState('');
+const [newTermContent, setNewTermContent] = useState('');
+
+
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+
+useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(handler);
+}, [searchQuery]);
+
+
+
+    
+    const handleSearchChange = useCallback((value) => setSearchQuery(value), []);
+
+    // Fetch glossary terms, categories, and tags once on component mount
     useEffect(() => {
         const startTime = performance.now();
 
-        // Fetch glossary terms
         apiFetch({ path: '/wp-json/wp/v2/glossary' })
             .then((data) => {
                 const endTime = performance.now();
-                setLoadTime((endTime - startTime));
+                setLoadTime(endTime - startTime);
                 setTerms(data.map(term => ({
                     ...term,
-                    date: term.date,
-                    modified: term.modified,
                     relatedTerms: term.relatedTerms || [],
-                    categories: term.categories || [], // Initialize categories
-                    tags: term.tags || [], // Initialize tags
-                    isOpen: false
+                    categories: term.categories || [],
+                    tags: term.tags || [],
+                    isOpen: false,
                 })));
             })
             .catch((error) => {
@@ -55,57 +87,222 @@ const GlossaryAdminApp = () => {
                 setLoadTime(null);
             });
 
-        // Fetch categories
         apiFetch({ path: '/wp-json/wp/v2/categories' })
             .then((data) => setCategories(data.map(cat => ({ label: cat.name, value: cat.id }))))
             .catch((error) => console.error('Error loading categories:', error));
-
-        // Fetch tags
-        apiFetch({ path: '/wp-json/wp/v2/tags' })
-            .then((data) => setTags(data.map(tag => ({ label: tag.name, value: tag.id }))))
+          
+          
+          
+            apiFetch({ path: '/wp-json/wp/v2/tags?per_page=-1' })
+            .then((data) => {
+                setTags(data.map(tag => ({ label: tag.name, value: tag.id })));
+                console.log("Tags loaded:", data); // Should log tags once on load
+            })
             .catch((error) => console.error('Error loading tags:', error));
+
+
     }, []);
 
-    const handleAutoSave = () => {
-        if (debounceTimerRef.current) {
-            clearTimeout(debounceTimerRef.current);
+    const handleAutoSave = useCallback(() => {
+        if (isAutoSaveEnabled && unsavedChanges) {
+            console.log('Triggering autosave'); // Log autosave trigger for confirmation
+            throttledSaveTerms();
         }
-        
-        if (isAutoSaveEnabled) {
-            debounceTimerRef.current = setTimeout(() => {
-                if (unsavedChanges) {
-                    saveTerms(true);
+    }, [isAutoSaveEnabled, unsavedChanges, throttledSaveTerms]);
+    
+
+    
+
+    const [tagFilter, setTagFilter] = useState([]);
+const [categoryFilter, setCategoryFilter] = useState([]);
+
+// Handler for tags filter
+const handleTagChange = (selectedTag) => {
+    setTagFilter(prev => {
+        if (selectedTag === 'all_tags') {
+            return []; // Reset to all tags
+        }
+        if (prev.includes(selectedTag)) {
+            return prev.filter(tag => tag !== selectedTag); // Remove tag if already selected
+        }
+        return [...prev, selectedTag]; // Add tag
+    });
+};
+
+// Handler for categories filter
+const handleCategoryChange = (selectedCategory) => {
+    setCategoryFilter(prev => {
+        if (prev.includes(selectedCategory)) {
+            return prev.filter(cat => cat !== selectedCategory); // Remove if already selected
+        }
+        return [...prev, selectedCategory]; // Add category
+    });
+};
+
+
+const updateRelatedTerms = (termId, updatedRelatedTerms) => {
+    setTerms((prevTerms) => {
+        const newTerms = prevTerms.map((term) => {
+            // Update the selected term with the new related terms
+            if (term.id === termId) {
+                return { ...term, relatedTerms: updatedRelatedTerms };
+            }
+
+            // If another term is in updatedRelatedTerms, ensure it has termId in its relatedTerms
+            if (updatedRelatedTerms.includes(term.id)) {
+                // Add termId to this term's relatedTerms if not already present
+                if (!term.relatedTerms.includes(termId)) {
+                    return { ...term, relatedTerms: [...term.relatedTerms, termId] };
                 }
-            }, DEBOUNCE_DELAY);
-        }
+            } else {
+                // Remove termId from this term's relatedTerms if it's no longer in updatedRelatedTerms
+                return {
+                    ...term,
+                    relatedTerms: term.relatedTerms.filter((id) => id !== termId),
+                };
+            }
+
+            return term;
+        });
+
+        return newTerms;
+    });
+
+    setUnsavedChanges(true);
+};
+
+
+const updateCategories = (termId, updatedCategories) => {
+    setTerms((prevTerms) =>
+        prevTerms.map((term) =>
+            term.id === termId ? { ...term, categories: updatedCategories } : term
+        )
+    );
+    setUnsavedChanges(true);
+};
+
+const updateTags = (termId, updatedTags) => {
+    setTerms((prevTerms) =>
+        prevTerms.map((term) =>
+            term.id === termId ? { ...term, tags: updatedTags } : term
+        )
+    );
+    setUnsavedChanges(true);
+};
+
+const TagsAndCategoriesFilter = ({
+    tags,
+    categories,
+    tagFilter,
+    handleTagChange,
+    categoryFilter,
+    handleCategoryChange
+}) => {
+    const displayedTags = useMemo(() => showAllTags ? tags : tags.slice(0, 10), [showAllTags, tags]);
+const displayedCategories = useMemo(() => categories, [categories]);
+    const [showAllTags, setShowAllTags] = useState(false);
+    const isTagsPanelOpenRef = useRef(JSON.parse(localStorage.getItem('isTagsPanelOpen')) || false);
+const isCategoriesPanelOpenRef = useRef(JSON.parse(localStorage.getItem('isCategoriesPanelOpen')) || false);
+
+
+
+useEffect(() => {
+    if (isInitialLoad.current) {
+        const tagsPanelState = JSON.parse(localStorage.getItem('isTagsPanelOpen'));
+        const categoriesPanelState = JSON.parse(localStorage.getItem('isCategoriesPanelOpen'));
+
+        isTagsPanelOpenRef.current = tagsPanelState !== null ? tagsPanelState : isTagsPanelOpenRef.current;
+        isCategoriesPanelOpenRef.current = categoriesPanelState !== null ? categoriesPanelState : isCategoriesPanelOpenRef.current;
+
+        // Set current state to false after the initial load
+        isInitialLoad.current = false;
+    }
+}, []);
+    const toggleTagsPanel = () => {
+        const newState = !isTagsPanelOpenRef.current;
+        isTagsPanelOpenRef.current = newState;
+        localStorage.setItem('isTagsPanelOpen', JSON.stringify(newState));
     };
+    
+    const toggleCategoriesPanel = () => {
+        const newState = !isCategoriesPanelOpenRef.current;
+        isCategoriesPanelOpenRef.current = newState;
+        localStorage.setItem('isCategoriesPanelOpen', JSON.stringify(newState));
+    };
+    
 
-    const formatRelativeTime = (timestamp) => {
+    return (
+        <>
+            <PanelBody
+    title={<span><FontAwesomeIcon icon={faTags} /> {__('Tags', 'acemedia-glossary')}</span>}
+    initialOpen={isTagsPanelOpenRef.current}
+    onToggle={toggleTagsPanel}
+>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    {[
+                        { label: 'All Tags', value: 'all_tags' },
+                        ...displayedTags.map(tag => ({ label: tag.label, value: tag.value }))
+                    ].map(tag => (
+                        <Button
+                            key={tag.value}
+                            isPressed={tagFilter.includes(tag.value)}
+                            onClick={() => handleTagChange(tag.value)}
+                            className="toggle-button"
+                        >
+                            {tag.label}
+                        </Button>
+                    ))}
+                    {tags.length > 10 && (
+                        <Button onClick={() => setShowAllTags(!showAllTags)} className="toggle-button">
+                            {showAllTags ? __('Show Less') : __('Show More')}
+                        </Button>
+                    )}
+                </div>
+            </PanelBody>
+
+            <PanelBody
+    title={<span><FontAwesomeIcon icon={faTags} /> {__('Categories', 'acemedia-glossary')}</span>}
+    initialOpen={isCategoriesPanelOpenRef.current}
+    onToggle={toggleCategoriesPanel}
+>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    {categories.map(category => (
+                        <Button
+                            key={category.value}
+                            isPressed={categoryFilter.includes(category.value)}
+                            onClick={() => handleCategoryChange(category.value)}
+                            className="toggle-button"
+                        >
+                            {category.label}
+                        </Button>
+                    ))}
+                </div>
+            </PanelBody>
+        </>
+    );
+};
+
+
+
+
+
+
+
+    const formatRelativeTime = useCallback((timestamp) => {
         if (!timestamp) return null;
-
         const time = new Date(timestamp);
         const now = new Date();
         const diffInSeconds = Math.floor((now - time) / 1000);
 
-        const intervals = {
-            year: 31536000,
-            month: 2592000,
-            week: 604800,
-            day: 86400,
-            hour: 3600,
-            minute: 60,
-            second: 1,
-        };
-
+        const intervals = { year: 31536000, month: 2592000, week: 604800, day: 86400, hour: 3600, minute: 60, second: 1 };
         for (const [key, seconds] of Object.entries(intervals)) {
             const interval = Math.floor(diffInSeconds / seconds);
             if (interval >= 1) {
                 return `${interval} ${key}${interval !== 1 ? 's' : ''} ago`;
             }
         }
-
         return 'Just now';
-    };
+    }, []);
 
     const addTerm = () => {
         const newTerm = {
@@ -121,225 +318,365 @@ const GlossaryAdminApp = () => {
         };
         setTerms([...terms.map(term => ({ ...term, isOpen: false })), newTerm]);
         setUnsavedChanges(true);
-        handleAutoSave();
     };
 
-    const toggleTermOpen = (termId) => {
-        setTerms(terms.map(term =>
-            term.id === termId
-                ? { ...term, isOpen: !term.isOpen }
-                : { ...term, isOpen: false }
-        ));
-    };
-
-    const updateTermTitle = (termId, title) => {
-        focusedTermIdRef.current = termId;
-        setTerms(terms.map(term => term.id === termId ? { ...term, title } : term));
-        setModifiedTerms(new Set(modifiedTerms).add(termId));
-        setUnsavedChanges(true);
-        handleAutoSave();
-    };
+    const toggleTermOpen = useCallback((termId) => {
+        setTerms(terms => 
+            terms.map(term => 
+                term.id === termId ? { ...term, isOpen: !term.isOpen } : { ...term, isOpen: false }
+            )
+        );
     
-    const updateTermContent = (termId, content) => {
-        setTerms(terms.map(term => term.id === termId ? { ...term, content } : term));
-        setModifiedTerms(new Set(modifiedTerms).add(termId));
-        setUnsavedChanges(true);
-        handleAutoSave();
+        // Scroll into view if the term is being opened
+        if (termRefs.current[termId]) {
+            const yOffset = -78; // Offset from the top
+            const element = termRefs.current[termId];
+            const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+        
+            window.scrollTo({
+                top: y,
+                behavior: 'smooth'
+            });
+        }
+        
+    }, []);
+
+
+
+    const throttle = (func, delay) => {
+        let timeoutId;
+        return (...args) => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func(...args), delay);
+        };
     };
 
-    const updateRelatedTerms = (termId, relatedTerms) => {
-        setTerms(terms.map(term => term.id === termId ? { ...term, relatedTerms } : term));
-        setModifiedTerms(new Set(modifiedTerms).add(termId));
-        setUnsavedChanges(true);
-        handleAutoSave();
-    };
+    const throttledSaveTerms = useCallback(
+        throttle(() => saveTerms(true), DEBOUNCE_DELAY),
+        [saveTerms]
+    );
 
-    const updateCategories = (termId, categories) => {
-        setTerms(terms.map(term => term.id === termId ? { ...term, categories } : term));
-        setModifiedTerms(new Set(modifiedTerms).add(termId));
+    const updateTerm = useCallback((termId, key, value) => {
+        setTerms((prevTerms) =>
+            prevTerms.map((term) =>
+                term.id === termId ? { ...term, [key]: value } : term
+            )
+        );
+        setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
         setUnsavedChanges(true);
-        handleAutoSave();
-    };
+        debouncedAutoSave(); // Call debounced autosave
+    }, [debouncedAutoSave]);
+    
 
-    const updateTags = (termId, tags) => {
-        setTerms(terms.map(term => term.id === termId ? { ...term, tags } : term));
-        setModifiedTerms(new Set(modifiedTerms).add(termId));
-        setUnsavedChanges(true);
-        handleAutoSave();
-    };
+    useEffect(() => {
+        if (focusedTermIdRef.current && focusedFieldRef.current) {
+            const selector = focusedFieldRef.current === 'title' ? 'input[type="text"]' : 'textarea';
+            const element = document.querySelector(`[data-term-id="${focusedTermIdRef.current}"] ${selector}`);
+            if (element) {
+                element.focus();
+            }
+            focusedTermIdRef.current = null; // Clear refs after focusing
+            focusedFieldRef.current = null;
+        }
+    }, [terms]);
 
-    const removeTerm = (termId) => {
-        setTerms(terms.filter(term => term.id !== termId));
-        setModifiedTerms(new Set(modifiedTerms).delete(termId));
+    const removeTerm = useCallback((termId) => {
+        setTerms(terms => terms.filter(term => term.id !== termId));
+        setModifiedTerms(modifiedTerms => {
+            modifiedTerms.delete(termId);
+            return new Set(modifiedTerms);
+        });
         setUnsavedChanges(true);
         handleAutoSave();
-    };
+    }, [handleAutoSave]);
+
+
+    const isSavingRef = useRef(false);
 
     const saveTerms = (isAutoSave = false) => {
-        if (!unsavedChanges) return;
-
-        if (!isAutoSave) {
-            setButtonText('Saving...');
-        }
+        if (!unsavedChanges || isSavingRef.current) return;
     
-        const startTime = performance.now();
+        isSavingRef.current = true; // Block additional saves during a save operation
     
-        const termsToSave = terms.filter(term => modifiedTerms.has(term.id));
-        const savePromises = termsToSave.map((term) => {
-            const updatedTerm = { ...term, modified: new Date().toISOString() };
-            return apiFetch({
+        const termsToSave = terms.filter((term) => modifiedTerms.has(term.id));
+        const savePromises = termsToSave.map((term) =>
+            apiFetch({
                 path: '/wp-json/wp/v2/glossary',
                 method: 'POST',
-                data: { 
-                    id: updatedTerm.id, 
-                    title: updatedTerm.title, 
-                    content: updatedTerm.content,
-                    relatedTerms: updatedTerm.relatedTerms,
-                    categories: updatedTerm.categories,
-                    tags: updatedTerm.tags
-                },
-                headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce }
-            }).then(() => updatedTerm);
-        });
+                data: { ...term, modified: new Date().toISOString() },
+                headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+            })
+        );
     
         Promise.all(savePromises)
-            .then(savedTerms => {
-                setTerms(terms.map(term => savedTerms.find(t => t.id === term.id) || term));
-                const endTime = performance.now();
-                const calculatedSaveTime = endTime - startTime;
-                setMessage(__('Terms saved successfully! Save time: ', 'acemedia-glossary') + calculatedSaveTime + ' ms');
+            .then(() => {
                 setModifiedTerms(new Set());
                 setUnsavedChanges(false);
-                setButtonText('Saved');
-                setTimeout(() => setButtonText('Save Changes'), 2000);
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error('Error saving terms:', error);
-                setButtonText('Save Failed');
-                setTimeout(() => setButtonText('Save Changes'), 2000);
+            })
+            .finally(() => {
+                isSavingRef.current = false; // Allow new saves
             });
     };
 
-    const onSave = () => saveTerms();
+    const onSave = useCallback(() => saveTerms(), [saveTerms]);
 
-    const getDisplayedTerms = () => {
-        const sortedTerms = [...terms].sort((a, b) => {
-            if (sortOption === 'alphabetical') {
-                return a.title.localeCompare(b.title);
-            } else if (sortOption === 'created') {
-                return new Date(a.date) - new Date(b.date);
-            } else if (sortOption === 'updated') {
-                return new Date(a.modified) - new Date(b.modified);
-            }
-            return 0;
+    const displayedTerms = useMemo(() => {
+        if (!terms.length) return {}; // Fallback for empty terms list
+        
+        let filteredTerms = terms;
+        
+        if (tagFilter.length > 0) {
+            filteredTerms = filteredTerms.filter(term =>
+                term.tags.some(tag => tagFilter.includes(tag))
+            );
+        }
+        
+        if (categoryFilter.length > 0) {
+            filteredTerms = filteredTerms.filter(term =>
+                term.categories.some(cat => categoryFilter.includes(cat))
+            );
+        }
+        
+        const sortedTerms = filteredTerms.sort((a, b) => {
+            if (sortOption === 'alphabetical') return a.title.localeCompare(b.title);
+            return new Date(a[sortOption]) - new Date(b[sortOption]);
         });
-
+        
         if (sortOption === 'alphabetical') {
             return sortedTerms.reduce((acc, term) => {
                 const firstLetter = term.title.charAt(0).toUpperCase();
-                if (!acc[firstLetter]) {
-                    acc[firstLetter] = [];
-                }
+                if (!acc[firstLetter]) acc[firstLetter] = [];
                 acc[firstLetter].push(term);
                 return acc;
             }, {});
         }
-
         return { All: sortedTerms };
+    }, [terms, sortOption, debouncedSearchQuery, tagFilter, categoryFilter]) || {}; // Ensure displayedTerms is an object
+    
+    // Calculate visible count with a fallback for empty displayedTerms
+    const visibleCount = Object.keys(displayedTerms).reduce((count, key) => {
+        return count + (displayedTerms[key]?.length || 0);
+    }, 0);
+    
+    const totalCount = terms.length;
+
+
+    const TermCard = ({ term, updateTerm, removeTerm }) => {
+        const titleRef = useRef();
+        const contentRef = useRef();
+    
+        return (
+            <>
+                <TextControl
+                    ref={titleRef}
+                    label={__('Term', 'acemedia-glossary')}
+                    value={term.title}
+                    onChange={(value) => {
+                        updateTerm(term.id, 'title', value);
+                        titleRef.current.focus();
+                    }}
+                    placeholder={__('Enter term title...', 'acemedia-glossary')}
+                />
+                <TextareaControl
+                    ref={contentRef}
+                    label={__('Content', 'acemedia-glossary')}
+                    value={term.content}
+                    onChange={(value) => {
+                        updateTerm(term.id, 'content', value);
+                        contentRef.current.focus();
+                    }}
+                    placeholder={__('Enter term content...', 'acemedia-glossary')}
+                />
+            </>
+        );
     };
+    
 
-    const displayedTerms = getDisplayedTerms();
 
-    const renderAlphaIndex = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+const [newTermData, setNewTermData] = useState({
+    id: Date.now(),
+    title: '',
+    content: '',
+    date: new Date().toISOString(),
+    modified: new Date().toISOString(),
+    relatedTerms: [],
+    categories: [],
+    tags: []
+});
+
+    
+
+    const renderAlphaIndex = useCallback(() => {
         if (sortOption === 'alphabetical') {
-            const letters = Object.keys(displayedTerms).sort();
             return (
-                <div className="alpha-index">
-                    {letters.map(letter => (
-                        <a key={letter} href={`#${letter}`}>{letter}</a>
-                    ))}
-                </div>
+                <PanelBody 
+                    title={
+                        <span>
+                            <FontAwesomeIcon icon={faAnchor} /> {__('Index', 'acemedia-glossary')}
+                        </span>
+                    } 
+                    initialOpen={true}
+                >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <div className="alpha-index">
+                            {'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').map(letter => (
+                                displayedTerms[letter] ? <a key={letter} href={`#${letter}`}>{letter}</a> : <span key={letter}>{letter}</span>
+                            ))}
+                        </div>
+                    </div>
+                </PanelBody>
             );
         }
         return null;
-    };
+    }, [displayedTerms, sortOption]);
 
-    useEffect(() => {
-        if (focusedTermIdRef.current) {
-            const element = document.querySelector(`[data-term-id="${focusedTermIdRef.current}"] input`);
-            if (element) {
-                element.focus();
+    const SearchComponent = memo(({ searchQuery, setSearchQuery }) => {
+        const inputRef = useRef(null);
+    
+        const handleFocus = useCallback(() => {
+            if (inputRef.current) {
+                inputRef.current.focus();
             }
-            focusedTermIdRef.current = null;
-        }
-    }, [terms]);
-
-    const SearchComponent = ({ searchQuery, handleSearchChange }) => {
+        }, []);
+    
+        useEffect(() => {
+            // Only focus the input if it's actively being typed in, not on initial load
+            if (searchQuery.length > 0) {
+                handleFocus();
+            }
+        }, [searchQuery, handleFocus]);
+    
         return (
             <div className='search-holder'>
-            <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Search..."
-                style={{ width: '100%', marginBottom: '0px' }}
-            />
-        <span className="dashicons dashicons-search" style={{ marginLeft: '5px' }}></span>
-        </div>
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    style={{ width: '100%', marginBottom: '0px' }}
+                    autoComplete="off"
+                    onFocus={handleFocus} // Ensures input regains focus if clicked
+                />
+                <span className="dashicons dashicons-search" style={{ marginLeft: '5px' }}></span>
+            </div>
         );
+    });
+    
+    const openModalForNewTerm = () => {
+        setIsModalOpen(true);
+        setNewTermData({
+            id: Date.now(), // Temporary ID for the new term
+            title: '',
+            content: '',
+            relatedTerms: [],
+            categories: [],
+            tags: [],
+            date: new Date().toISOString(),
+            modified: new Date().toISOString()
+        });
     };
-
-
+    
+    
     return (
-        <div className="glossary-admin-app">
-            <SaveBar
-                onSave={onSave}
-                setUnsavedChanges={setUnsavedChanges}
-                unsavedChanges={unsavedChanges}
-                isAutoSaveEnabled={isAutoSaveEnabled}
-                setIsAutoSaveEnabled={setIsAutoSaveEnabled}
-                message={message}
-                buttonText={unsavedChanges ? 'Save Changes' : 'Saved'}
-            >
-                <span>
-                    <Button variant="secondary" onClick={addTerm}>
-                        {__('Add New Term', 'acemedia-glossary')}
-                    </Button>
-                </span>
-            </SaveBar>
-            <Flex alignItems="flex-start">
-                <FlexItem alignItems="flex-start" className="sidebar" style={{ flex: '0 0 300px', paddingRight: '20px' }}>
-                    <h1>Glossary Settings</h1>
-                    <h2>{__('Manage Glossary Terms', 'acemedia-glossary')}</h2>
+        <>
+            <Flex alignItems="flex-start" className='main-panel'>
+                <FlexItem alignItems="flex-start" className="sidebar side-panel" style={{ flex: '0 0 300px', paddingRight: '20px' }}>
+                <h1>
+    <span className="dashicons dashicons-book-alt"></span>
+    <i>Gloss</i>Press
+</h1>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1em', position: 'sticky', top: 'calc(32px + 1em)' }}>
+                    <SearchComponent searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
 
-                    <SearchComponent 
-                searchQuery={searchQuery} 
-                handleSearchChange={handleSearchChange} 
+
+
+                    <PanelBody 
+    title={
+        <span>
+            <FontAwesomeIcon icon={faSortAlphaDown} /> {__('Sort by', 'acemedia-glossary')}
+        </span>
+    } 
+    initialOpen={true}
+>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        <ToggleGroupControl
+            label={__('Sort by', 'acemedia-glossary')}
+            value={sortOption}
+            onChange={setSortOption}
+            defaultValue="alphabetical"
+            isBlock
+            __nextHasNoMarginBottom
+        >
+            <ToggleGroupControlOption 
+                value="alphabetical" 
+                label={__('A-Z', 'acemedia-glossary')}
             />
+            <ToggleGroupControlOption 
+                value="created" 
+                label={__('Created', 'acemedia-glossary')}
+            />
+            <ToggleGroupControlOption 
+                value="updated" 
+                label={__('Updated', 'acemedia-glossary')}
+            />
+        </ToggleGroupControl>
+    </div>
+</PanelBody>
 
-                    <PanelRow>
-                        <select onChange={(e) => setSortOption(e.target.value)} value={sortOption}>
-                            <option value="alphabetical">{__('Alphabetical', 'acemedia-glossary')}</option>
-                            <option value="created">{__('Created', 'acemedia-glossary')}</option>
-                            <option value="updated">{__('Updated', 'acemedia-glossary')}</option>
-                        </select>
-                    </PanelRow>
-                    {renderAlphaIndex()}
+
+
+
+
+{renderAlphaIndex()}
+
+
+<TagsAndCategoriesFilter
+    tags={tags}
+    categories={categories}
+    tagFilter={tagFilter}
+    handleTagChange={handleTagChange}
+    categoryFilter={categoryFilter}
+    handleCategoryChange={handleCategoryChange}
+/>
+
+
+                    </div>
                 </FlexItem>
-                <FlexItem className="terms-list" style={{ flex: '1' }}>
-                    {__('Load time: ', 'acemedia-glossary') + loadTime + ' ms'}
+                <FlexBlock className="terms-list" style={{ flex: '1' }}>
+                    <div style={{ marginBottom: '15px' }} className={`currently-viewing ${sortOption === 'alphabetical' ? 'alpha' : ''}`}>
+                    <Tooltip text={`${visibleCount} of ${totalCount} terms visible`}>
+    <span className='pill'>
+        <FontAwesomeIcon icon={faTags} style={{ marginRight: '5px' }} />
+        {`${visibleCount} of ${totalCount}`}
+    </span>
+</Tooltip>
+                        <Tooltip text={`${loadTime}ms response time for the current view`}>
+                            <span className='pill'>
+                                <FontAwesomeIcon icon={faClock} style={{ marginRight: '5px' }} />
+                                {loadTime}ms
+                            </span>
+                        </Tooltip>
+                    </div>
                     {Object.keys(displayedTerms).sort().map(group => (
-                        <div key={group} id={group}>
-                            {sortOption === 'alphabetical' && <h3>{group}</h3>}
+                        <FlexBlock style={{ display: 'grid', gap: '1em', flex: 'initial' }} key={group} id={group}>
+                            {sortOption === 'alphabetical' && <h3 className='group-title'>{group}</h3>}
                             {displayedTerms[group].map((term) => (
-                                <Card key={term.id} className="glossary-term-card" data-term-id={term.id}>
-                                    <CardHeader
-                                        onClick={() => toggleTermOpen(term.id)}
-                                        style={{ cursor: 'pointer' }}
-                                    >
+                                <Card
+                                key={term.id}
+                                className="glossary-term-card"
+                                data-term-id={term.id}
+                                ref={el => termRefs.current[term.id] = el} // Assign ref here
+                            >
+                                    <CardHeader onClick={() => toggleTermOpen(term.id)} style={{ cursor: 'pointer' }}>
                                         <h2>{term.title || __('New Term', 'acemedia-glossary')}</h2>
-                                        <div style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }} className='updated-times'>
+                                        <div className='updated-times' style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}>
                                             <Tooltip text={`Created at ${new Date(term.date).toLocaleDateString()}`}>
                                                 <p><strong>Created:</strong> {formatRelativeTime(term.date)}</p>
                                             </Tooltip>
@@ -349,40 +686,78 @@ const GlossaryAdminApp = () => {
                                         </div>
                                     </CardHeader>
                                     {term.isOpen && (
-                                        <PanelBody>
+                                        <CardBody>
                                             <TextControl
-                                                label={__('Term', 'acemedia-glossary')}
-                                                value={term.title}
-                                                onChange={(value) => updateTermTitle(term.id, value)}
-                                                placeholder={__('Enter term title...', 'acemedia-glossary')}
-                                            />
-                                            <TextareaControl
-                                                label={__('Content', 'acemedia-glossary')}
-                                                value={term.content}
-                                                onChange={(value) => updateTermContent(term.id, value)}
-                                                placeholder={__('Enter term content...', 'acemedia-glossary')}
-                                            />
-                                            <SelectControl
-                                                multiple
-                                                label={__('Related Terms', 'acemedia-glossary')}
-                                                value={term.relatedTerms}
-                                                options={terms.filter(t => t.id !== term.id).map(t => ({ label: t.title, value: t.id }))}
-                                                onChange={(relatedTerms) => updateRelatedTerms(term.id, relatedTerms)}
-                                            />
-                                            <SelectControl
-                                                multiple
-                                                label={__('Categories', 'acemedia-glossary')}
-                                                value={term.categories}
-                                                options={categories}
-                                                onChange={(selectedCategories) => updateCategories(term.id, selectedCategories)}
-                                            />
-                                            <SelectControl
-                                                multiple
-                                                label={__('Tags', 'acemedia-glossary')}
-                                                value={term.tags}
-                                                options={tags}
-                                                onChange={(selectedTags) => updateTags(term.id, selectedTags)}
-                                            />
+    label={__('Term', 'acemedia-glossary')}
+    value={term.title}
+    onChange={(value) => updateTerm(term.id, 'title', value)}
+    placeholder={__('Enter term title...', 'acemedia-glossary')}
+    data-term-id={term.id} // Add attribute for focusing
+/>
+
+<TextareaControl
+    label={__('Content', 'acemedia-glossary')}
+    value={term.content}
+    onChange={(value) => updateTerm(term.id, 'content', value)}
+    placeholder={__('Enter term content...', 'acemedia-glossary')}
+    data-term-id={term.id} // Add attribute for focusing
+/>
+         <Flex style={{ gap: '1rem' }} justify="start" wrap>
+    <FlexItem style={{ flex: '1 1 30%' }}>
+        <PanelBody title={__('Related Terms', 'acemedia-glossary')} initialOpen={true}>
+            {terms.filter(t => t.id !== term.id).map((option) => (
+                <CheckboxControl
+                    key={option.id}
+                    label={option.title}
+                    checked={term.relatedTerms.includes(option.id)}
+                    onChange={(isChecked) => {
+                        const updatedRelatedTerms = isChecked
+                            ? [...term.relatedTerms, option.id]
+                            : term.relatedTerms.filter(id => id !== option.id);
+                        updateRelatedTerms(term.id, updatedRelatedTerms);
+                    }}
+                />
+            ))}
+        </PanelBody>
+    </FlexItem>
+    
+    <FlexItem style={{ flex: '1 1 30%' }}>
+        <PanelBody title={__('Categories', 'acemedia-glossary')} initialOpen={true}>
+            {categories.map((category) => (
+                <CheckboxControl
+                    key={category.value}
+                    label={category.label}
+                    checked={term.categories.includes(category.value)}
+                    onChange={(isChecked) => {
+                        const updatedCategories = isChecked
+                            ? [...term.categories, category.value]
+                            : term.categories.filter(id => id !== category.value);
+                        updateCategories(term.id, updatedCategories);
+                    }}
+                />
+            ))}
+        </PanelBody>
+    </FlexItem>
+    
+    <FlexItem style={{ flex: '1 1 30%' }}>
+        <PanelBody title={__('Tags', 'acemedia-glossary')} initialOpen={true}>
+            {tags.map((tag) => (
+                <CheckboxControl
+                    key={tag.value}
+                    label={tag.label}
+                    checked={term.tags.includes(tag.value)}
+                    onChange={(isChecked) => {
+                        const updatedTags = isChecked
+                            ? [...term.tags, tag.value]
+                            : term.tags.filter(id => id !== tag.value);
+                        updateTags(term.id, updatedTags);
+                    }}
+                />
+            ))}
+        </PanelBody>
+    </FlexItem>
+</Flex>
+
                                             <PanelRow>
                                                 <IconButton
                                                     icon="trash"
@@ -391,15 +766,92 @@ const GlossaryAdminApp = () => {
                                                     className="remove-term-btn"
                                                 />
                                             </PanelRow>
-                                        </PanelBody>
+                                        </CardBody>
                                     )}
                                 </Card>
                             ))}
-                        </div>
+                        </FlexBlock>
                     ))}
-                </FlexItem>
+                </FlexBlock>
             </Flex>
-        </div>
+            <SaveBar
+                onSave={onSave}
+                setUnsavedChanges={setUnsavedChanges}
+                unsavedChanges={unsavedChanges}
+                isAutoSaveEnabled={isAutoSaveEnabled}
+                setIsAutoSaveEnabled={setIsAutoSaveEnabled}
+                message={message}
+                buttonText={unsavedChanges ? 'Save Changes' : 'Saved'}
+            >
+                <Button variant="secondary" onClick={openModalForNewTerm}>
+    {__('Add New Term', 'acemedia-glossary')}
+</Button>
+            </SaveBar>
+
+
+            {isModalOpen && (
+    <Modal
+        title={__('Add New Term', 'acemedia-glossary')}
+        onRequestClose={() => setIsModalOpen(false)}
+        isDismissible={true}
+    >
+        <TextControl
+            label={__('Term', 'acemedia-glossary')}
+            value={newTermTitle}
+            onChange={(value) => setNewTermTitle(value)}
+            placeholder={__('Enter term title...', 'acemedia-glossary')}
+        />
+        <TextareaControl
+            label={__('Content', 'acemedia-glossary')}
+            value={newTermContent}
+            onChange={(value) => setNewTermContent(value)}
+            placeholder={__('Enter term content...', 'acemedia-glossary')}
+        />
+        
+        <Button
+    isPrimary
+    onClick={() => {
+        // Create new term data with a temporary ID
+        const newTermData = {
+            id: Date.now(), // Temporary unique ID
+            title: newTermTitle || 'Untitled Term',
+            content: newTermContent || '',
+            relatedTerms: [],
+            categories: [],
+            tags: [],
+            date: new Date().toISOString(),
+            modified: new Date().toISOString(),
+            isOpen: false,
+        };
+
+        // Add the new term to the terms state
+        setTerms((prevTerms) => [...prevTerms, newTermData]);
+
+        // Mark the new term for saving by adding its ID to modifiedTerms
+        setModifiedTerms((prevModified) => new Set(prevModified).add(newTermData.id));
+        
+        // Flag unsaved changes to ensure auto-save is called
+        setUnsavedChanges(true);
+
+        // Trigger auto-save directly to ensure new term is saved
+        handleAutoSave();
+
+        // Clear inputs and close modal
+        setNewTermTitle('');
+        setNewTermContent('');
+        setIsModalOpen(false);
+    }}
+>
+    {__('Add Term', 'acemedia-glossary')}
+</Button>
+
+        <Button isSecondary onClick={() => setIsModalOpen(false)}>
+            {__('Cancel', 'acemedia-glossary')}
+        </Button>
+    </Modal>
+)}
+
+        </>
     );
 };
 

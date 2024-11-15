@@ -26,12 +26,13 @@ class AceMediaGlossary_Admin {
         if ('acemedia_glossary_page_acemedia-glossary-settings' !== $hook) {
             return;
         }
+  
+
+        wp_enqueue_script('wp-element');    // Loads React and other utilities
+        wp_enqueue_script('wp-data');       // Loads wp.data
+        wp_enqueue_script('wp-core-data');  // Loads core data utilities
+        wp_enqueue_script('wp-components'); // Loads components
     
-        // Enqueue WordPress core admin styles for color schemes and other admin-specific styles
-        wp_enqueue_style('wp-admin'); 
-        
-        // Enqueue WordPress component styles for consistent styling
-        wp_enqueue_style('wp-components'); 
     
         // Enqueue the active admin color scheme
         global $_wp_admin_css_colors;
@@ -44,11 +45,10 @@ class AceMediaGlossary_Admin {
             );
         }
     
-        // Enqueue the React-based admin script
         wp_enqueue_script(
             'acemedia-glossary-admin',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-admin.js',
-            array('wp-element', 'wp-components', 'wp-api-fetch'), // WordPress dependencies for React
+            array('wp-element', 'wp-data', 'wp-core-data', 'wp-components', 'wp-api-fetch'),
             ACEMEDIA_GLOSSARY_VERSION,
             true
         );
@@ -64,9 +64,10 @@ class AceMediaGlossary_Admin {
     
         // Localize script to pass PHP data to JavaScript (e.g., REST API URL)
         wp_localize_script('acemedia-glossary-admin', 'AceMediaGlossaryAdmin', array(
-            'apiUrl' => esc_url_raw(rest_url('wp/v2')),
+            'apiUrl' => get_rest_url(),
             'nonce' => wp_create_nonce('wp_rest')
         ));
+        
     }
     
 
@@ -75,8 +76,6 @@ class AceMediaGlossary_Admin {
 
 function render_acemedia_glossary_settings_page() {
     ?>
-    <div class="wrap">
-        <div id="acemedia-glossary-admin-root"></div>
-    </div>
+        <div class="wrap"><div id="ace-settings-root"></div></div>
     <?php
 }

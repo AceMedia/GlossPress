@@ -8,6 +8,9 @@
 
 if (!defined('ABSPATH')) exit;
 
+
+
+
 class AceMediaGlossary {
     private static $instance = null;
 
