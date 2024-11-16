@@ -20,6 +20,9 @@ const GlossaryFrontend = () => {
                 title: term.title || __('Untitled', 'acemedia-glossary'),
                 content: term.content || '',
                 modified: term.modified || null,
+                relatedTerms: term.relatedTerms || [], // Include related terms
+                categories: term.categories || [],    // Include categories
+                tags: term.tags || [],                // Include tags
             }));
 
             setTerms(sanitizedData);
@@ -50,6 +53,18 @@ const GlossaryFrontend = () => {
         });
     }, [terms, sortOption]);
 
+    // Group terms alphabetically
+    const groupedTerms = useMemo(() => {
+        return sortedTerms.reduce((groups, term) => {
+            const firstLetter = term.title.charAt(0).toUpperCase();
+            if (!groups[firstLetter]) {
+                groups[firstLetter] = [];
+            }
+            groups[firstLetter].push(term);
+            return groups;
+        }, {});
+    }, [sortedTerms]);
+
     return (
         <div className="acemedia-glossary-frontend">
             {loading ? (
@@ -68,22 +83,91 @@ const GlossaryFrontend = () => {
                             }
                         />
                     </PanelBody>
-                    <ul className="glossary-list">
-                        {sortedTerms.map((term) => (
-                            <li key={term.id} className="glossary-item">
-                                <h3>{term.title}</h3>
-                                {term.content ? (
-                                    <div
-                                        dangerouslySetInnerHTML={{
-                                            __html: term.content,
-                                        }}
-                                    ></div>
-                                ) : (
-                                    <p>{__('No content available.', 'acemedia-glossary')}</p>
-                                )}
-                            </li>
+
+                    {/* A-Z Grouped Navigation */}
+                    <div className="glossary-index">
+                        <h2>{__('Glossary Index', 'acemedia-glossary')}</h2>
+                        <ul className="glossary-anchor-links">
+                            {Object.keys(groupedTerms).sort().map((letter) => (
+                                <li key={letter}>
+                                    <a href={`#group-${letter}`}>{letter}</a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* A-Z Grouped Terms */}
+                    <div className="glossary-terms">
+                        {Object.keys(groupedTerms).sort().map((letter) => (
+                            <div key={letter} id={`group-${letter}`} className="glossary-group">
+                                <h3>{letter}</h3>
+                                <ul>
+                                    {groupedTerms[letter].map((term) => (
+                                      <li key={term.id} className="glossary-item">
+                                      <h4 id={`term-${term.id}`}>{term.title}</h4>
+                                      {term.content ? (
+                                          <div
+                                              dangerouslySetInnerHTML={{
+                                                  __html: term.content,
+                                              }}
+                                          ></div>
+                                      ) : (
+                                          <p>{__('No content available.', 'acemedia-glossary')}</p>
+                                      )}
+                                  
+                                      {/* "See Also" Section */}
+                                      {term.relatedTerms.length > 0 && (
+                                          <div className="see-also">
+                                              <strong>{__('See Also:', 'acemedia-glossary')}</strong>
+                                              <ul>
+                                                  {term.relatedTerms.map((relatedId) => {
+                                                      const relatedTerm = terms.find((t) => t.id === relatedId);
+                                                      return relatedTerm ? (
+                                                          <li key={relatedId}>
+                                                              <a href={`#term-${relatedId}`}>{relatedTerm.title}</a>
+                                                          </li>
+                                                      ) : null;
+                                                  })}
+                                              </ul>
+                                          </div>
+                                      )}
+                                  
+                                      {/* Categories Section */}
+                                      {term.categories.length > 0 && (
+                                        console.log(term.categories),
+    <div className="categories">
+        <strong>{__('Categories:', 'acemedia-glossary')}</strong>
+        <ul>
+            {term.categories.map((category) => (
+                <li key={category.id}>
+                    <a href={`/category/${category.slug}`}>{category.title}</a>
+                </li>
+            ))}
+        </ul>
+    </div>
+)}
+
+{/* Tags Section */}
+{term.tags.length > 0 && (
+    <div className="tags">
+        <strong>{__('Tags:', 'acemedia-glossary')}</strong>
+        <ul>
+            {term.tags.map((tag) => (
+                <li key={tag.id}>
+                    <a href={`/tag/${tag.slug}`}>{tag.title}</a>
+                </li>
+            ))}
+        </ul>
+    </div>
+)}
+                                  </li>
+                                  
+                                   
+                                    ))}
+                                </ul>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </>
             ) : (
                 <p>{__('No glossary terms found.', 'acemedia-glossary')}</p>

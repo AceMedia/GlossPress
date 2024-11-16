@@ -68,6 +68,27 @@ function get_glossary_terms($request) {
 
     $response = array_map(function($term) {
         $related_terms = get_post_meta($term->ID, 'related_terms', true);
+
+        // Fetch full category data
+        $categories = wp_get_post_terms($term->ID, 'category', array('fields' => 'all'));
+        $categories_formatted = array_map(function($category) {
+            return [
+                'id' => $category->term_id,
+                'slug' => $category->slug,
+                'title' => $category->name,
+            ];
+        }, $categories);
+
+        // Fetch full tag data
+        $tags = wp_get_post_terms($term->ID, 'post_tag', array('fields' => 'all'));
+        $tags_formatted = array_map(function($tag) {
+            return [
+                'id' => $tag->term_id,
+                'slug' => $tag->slug,
+                'title' => $tag->name,
+            ];
+        }, $tags);
+
         return [
             'id' => $term->ID,
             'title' => get_the_title($term->ID),
@@ -75,8 +96,8 @@ function get_glossary_terms($request) {
             'date' => $term->post_date,
             'modified' => $term->post_modified,
             'relatedTerms' => $related_terms ? array_map('intval', $related_terms) : [],
-            'categories' => wp_get_post_terms($term->ID, 'category', array('fields' => 'ids')),
-            'tags' => wp_get_post_terms($term->ID, 'post_tag', array('fields' => 'ids'))
+            'categories' => $categories_formatted,
+            'tags' => $tags_formatted,
         ];
     }, $terms);
 
@@ -84,6 +105,8 @@ function get_glossary_terms($request) {
 
     return new WP_REST_Response($response, 200);
 }
+
+
 
 // Function to save a glossary term
 function save_glossary_term($request) {

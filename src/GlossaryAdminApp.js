@@ -44,7 +44,14 @@ const GlossaryAdminApp = () => {
     
         isSavingRef.current = true;
     
-        const termsToSave = terms.filter((term) => modifiedTerms.has(term.id));
+        const termsToSave = terms.filter((term) => modifiedTerms.has(term.id)).map((term) => ({
+            ...term,
+            categories: term.categories.map((cat) => cat.id), // Send only category IDs
+            tags: term.tags.map((tag) => tag.id), // Send only tag IDs
+            modified: new Date().toISOString(),
+        }));
+        
+    
         const startTime = performance.now();
     
         const savePromises = termsToSave.map((term) =>
@@ -121,7 +128,7 @@ useEffect(() => {
     // Fetch glossary terms, categories, and tags once on component mount
     useEffect(() => {
         const startTime = performance.now();
-
+    
         apiFetch({ path: '/wp-json/wp/v2/glossary' })
             .then((data) => {
                 const endTime = performance.now();
@@ -129,8 +136,16 @@ useEffect(() => {
                 setTerms(data.map(term => ({
                     ...term,
                     relatedTerms: term.relatedTerms || [],
-                    categories: term.categories || [],
-                    tags: term.tags || [],
+                    categories: term.categories.map(cat => ({
+                        id: cat.id,
+                        slug: cat.slug,
+                        title: cat.title,
+                    })) || [],
+                    tags: term.tags.map(tag => ({
+                        id: tag.id,
+                        slug: tag.slug,
+                        title: tag.title,
+                    })) || [],
                     isOpen: false,
                 })));
             })
@@ -138,22 +153,22 @@ useEffect(() => {
                 console.error('Error loading terms:', error);
                 setLoadTime(null);
             });
-
+    
         apiFetch({ path: '/wp-json/wp/v2/categories' })
-            .then((data) => setCategories(data.map(cat => ({ label: cat.name, value: cat.id }))))
+            .then((data) => setCategories(data.map(cat => ({
+                label: cat.name,
+                value: cat.id,
+            }))))
             .catch((error) => console.error('Error loading categories:', error));
-          
-          
-          
-            apiFetch({ path: '/wp-json/wp/v2/tags?per_page=-1' })
-            .then((data) => {
-                setTags(data.map(tag => ({ label: tag.name, value: tag.id })));
-                console.log("Tags loaded:", data); // Should log tags once on load
-            })
+    
+        apiFetch({ path: '/wp-json/wp/v2/tags?per_page=-1' })
+            .then((data) => setTags(data.map(tag => ({
+                label: tag.name,
+                value: tag.id,
+            }))))
             .catch((error) => console.error('Error loading tags:', error));
-
-
     }, []);
+    
 
 
 
@@ -232,25 +247,39 @@ const updateRelatedTerms = (termId, updatedRelatedTerms) => {
 const updateCategories = (termId, updatedCategories) => {
     setTerms((prevTerms) =>
         prevTerms.map((term) =>
-            term.id === termId ? { ...term, categories: updatedCategories } : term
+            term.id === termId
+                ? {
+                      ...term,
+                      categories: updatedCategories, // Full objects for local state
+                  }
+                : term
         )
     );
 
+    // Mark the term as modified
     setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
     setUnsavedChanges(true);
 };
+
 
 
 const updateTags = (termId, updatedTags) => {
     setTerms((prevTerms) =>
         prevTerms.map((term) =>
-            term.id === termId ? { ...term, tags: updatedTags } : term
+            term.id === termId
+                ? {
+                      ...term,
+                      tags: updatedTags, // Full objects for local state
+                  }
+                : term
         )
     );
 
+    // Mark the term as modified
     setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
     setUnsavedChanges(true);
 };
+
 
 
 const TagsAndCategoriesFilter = ({
@@ -1069,40 +1098,51 @@ const deleteSelectedTerms = useCallback(() => {
     <FlexItem style={{ flex: '1 1 30%' }}>
     <h3>Related Categories</h3>
     <div className="scroller">
-            {categories.map((category) => (
+        {categories
+            .filter((category) => category.value !== 1) // Exclude category with ID 1
+            .map((category) => (
                 <CheckboxControl
                     key={category.value}
                     label={category.label}
-                    checked={term.categories.includes(category.value)}
+                    checked={term.categories.some((cat) => cat.id === category.value)} // Check by id
                     onChange={(isChecked) => {
                         const updatedCategories = isChecked
-                            ? [...term.categories, category.value]
-                            : term.categories.filter(id => id !== category.value);
-                        updateCategories(term.id, updatedCategories);
+                            ? [
+                                  ...term.categories,
+                                  {
+                                      id: category.value,
+                                      slug: category.label.toLowerCase().replace(/\s+/g, '-'),
+                                      title: category.label,
+                                  },
+                              ]
+                            : term.categories.filter((cat) => cat.id !== category.value);
+                        updateCategories(term.id, updatedCategories); // Update with the full object
                     }}
                 />
             ))}
-            </div>
-    </FlexItem>
+    </div>
+</FlexItem>
+
     
-    <FlexItem style={{ flex: '1 1 30%' }}>
+<FlexItem style={{ flex: '1 1 30%' }}>
     <h3>Related Tags</h3>
-        <div className="scroller">
-            {tags.map((tag) => (
-                <CheckboxControl
-                    key={tag.value}
-                    label={tag.label}
-                    checked={term.tags.includes(tag.value)}
-                    onChange={(isChecked) => {
-                        const updatedTags = isChecked
-                            ? [...term.tags, tag.value]
-                            : term.tags.filter(id => id !== tag.value);
-                        updateTags(term.id, updatedTags);
-                    }}
-                />
-            ))}
-            </div>
-    </FlexItem>
+    <div className="scroller">
+        {tags.map((tag) => (
+            <CheckboxControl
+                key={tag.value}
+                label={tag.label}
+                checked={term.tags.some((t) => t.id === tag.value)} // Check by id
+                onChange={(isChecked) => {
+                    const updatedTags = isChecked
+                        ? [...term.tags, { id: tag.value, slug: tag.label.toLowerCase().replace(/\s+/g, '-'), title: tag.label }]
+                        : term.tags.filter((t) => t.id !== tag.value);
+                    updateTags(term.id, updatedTags); // Update with the full object
+                }}
+            />
+        ))}
+    </div>
+</FlexItem>
+
 </Flex>
 
                                             <PanelRow>
