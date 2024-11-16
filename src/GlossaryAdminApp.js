@@ -190,23 +190,36 @@ const updateRelatedTerms = (termId, updatedRelatedTerms) => {
     setTerms((prevTerms) => {
         // Create a copy of the previous terms to modify
         const termsCopy = [...prevTerms];
+        const modifiedIds = new Set(); // Track modified term IDs
 
         // Update the relationships for the target term (termId)
         termsCopy.forEach((term) => {
             if (term.id === termId) {
                 term.relatedTerms = updatedRelatedTerms;
+                modifiedIds.add(term.id); // Mark the target term as modified
             } else {
                 // Handle bidirectional updates for other terms
                 if (updatedRelatedTerms.includes(term.id)) {
                     // If termId is in updatedRelatedTerms, ensure the reverse relationship exists
                     if (!term.relatedTerms.includes(termId)) {
                         term.relatedTerms = [...term.relatedTerms, termId];
+                        modifiedIds.add(term.id); // Mark related term as modified
                     }
                 } else {
                     // If termId is not in updatedRelatedTerms, remove the reverse relationship
-                    term.relatedTerms = term.relatedTerms.filter((id) => id !== termId);
+                    if (term.relatedTerms.includes(termId)) {
+                        term.relatedTerms = term.relatedTerms.filter((id) => id !== termId);
+                        modifiedIds.add(term.id); // Mark related term as modified
+                    }
                 }
             }
+        });
+
+        // Update modified terms
+        setModifiedTerms((prevModified) => {
+            const updatedSet = new Set(prevModified);
+            modifiedIds.forEach((id) => updatedSet.add(id));
+            return updatedSet;
         });
 
         return termsCopy;
@@ -222,8 +235,11 @@ const updateCategories = (termId, updatedCategories) => {
             term.id === termId ? { ...term, categories: updatedCategories } : term
         )
     );
+
+    setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
     setUnsavedChanges(true);
 };
+
 
 const updateTags = (termId, updatedTags) => {
     setTerms((prevTerms) =>
@@ -231,8 +247,11 @@ const updateTags = (termId, updatedTags) => {
             term.id === termId ? { ...term, tags: updatedTags } : term
         )
     );
+
+    setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
     setUnsavedChanges(true);
 };
+
 
 const TagsAndCategoriesFilter = ({
     tags,
@@ -315,6 +334,130 @@ const TagsAndCategoriesFilter = ({
     );
 };
 
+
+
+const handleDownload = useCallback(() => {
+    // Trigger the PHP export function via an API call
+    fetch('/wp-json/wp/v2/glossary/export', {
+        method: 'GET',
+        headers: {
+            'X-WP-Nonce': AceMediaGlossaryAdmin.nonce, // Adjust if you have CSRF protection
+        },
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch glossary terms from server');
+            }
+            return response.blob();
+        })
+        .then((blob) => {
+            const url = URL.createObjectURL(blob);
+
+            // Create a temporary link to trigger the download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'glossary-terms.json';
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        })
+        .catch((error) => {
+            console.error('Error during download:', error);
+            alert('An error occurred while downloading the glossary terms.');
+        });
+}, []);
+
+
+
+useEffect(() => {
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+
+        if (file && file.type === 'application/json') {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const importedTerms = JSON.parse(event.target.result);
+
+                    if (!Array.isArray(importedTerms)) {
+                        throw new Error('Invalid JSON format. Expected an array of terms.');
+                    }
+
+                    const startTime = performance.now();
+
+                    // Send the imported terms to the server for processing
+                    apiFetch({
+                        path: '/wp-json/wp/v2/glossary/import',
+                        method: 'POST',
+                        data: importedTerms,
+                        headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+                    })
+                        .then((response) => {
+                            const endTime = performance.now();
+                            const responseTime = Math.round(endTime - startTime);
+
+                            const { new_terms = [], matched_terms = 0 } = response;
+
+                            const totalTerms = importedTerms.length; // Total terms from the imported JSON
+const newTerms = totalTerms - matched_terms; // Calculate new terms
+
+setMessage(
+    `${newTerms} terms imported successfully in ${responseTime}ms. ${matched_terms} terms already existed.`
+);
+
+                            // Fetch updated terms and calculate new load time
+                            const fetchStartTime = performance.now();
+                            apiFetch({ path: '/wp-json/wp/v2/glossary' })
+                                .then((updatedTerms) => {
+                                    const fetchEndTime = performance.now();
+                                    const newLoadTime = Math.round(fetchEndTime - fetchStartTime);
+
+                                    setLoadTime(newLoadTime); // Update the loadTime state
+                                    setTerms(updatedTerms); // Replace the terms with the latest data
+                                })
+                                .catch((error) => {
+                                    console.error('Error fetching updated terms:', error);
+                                    setMessage('Error refreshing terms. Please try again.');
+                                    setTimeout(() => setMessage(''), 5000);
+                                });
+                        })
+                        .catch((error) => {
+                            console.error('Error importing terms:', error);
+                            setMessage('Error importing terms. Please try again.');
+                        })
+                        .finally(() => {
+                            setTimeout(() => setMessage(''), 5000);
+                        });
+                } catch (error) {
+                    console.error('Invalid JSON file:', error);
+                    setMessage('Invalid JSON file. Please ensure the format is correct.');
+                    setTimeout(() => setMessage(''), 5000);
+                }
+            };
+            reader.readAsText(file);
+        } else {
+            setMessage('Please drop a valid JSON file.');
+            setTimeout(() => setMessage(''), 5000);
+        }
+    };
+
+    window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('drop', handleDrop);
+
+    return () => {
+        window.removeEventListener('dragover', handleDragOver);
+        window.removeEventListener('drop', handleDrop);
+    };
+}, [setTerms, setLoadTime]);
 
 
 
@@ -783,6 +926,18 @@ const deleteSelectedTerms = useCallback(() => {
    
 </PanelBody>
 
+
+
+<Tooltip text={unsavedChanges ? __('Save your changes before downloading.', 'acemedia-glossary') : ''}>
+    <Button
+        isPrimary
+        onClick={handleDownload}
+        disabled={unsavedChanges}
+        style={{ marginTop: '10px' }}
+    >
+        {__('Download JSON', 'acemedia-glossary')}
+    </Button>
+</Tooltip>
                     </div>
                 </FlexItem>
                 <FlexBlock className="terms-list" style={{ flex: '1' }}>
