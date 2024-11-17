@@ -1,31 +1,204 @@
-import React, { useState, useEffect, useMemo } from '@wordpress/element';
-import { Spinner, PanelBody, ToggleControl } from '@wordpress/components';
+import React, { useState, useEffect, useMemo, useRef } from '@wordpress/element';
+import { Spinner, TextControl, PanelBody, ToggleControl, Flex, FlexItem, Card, CardHeader, CardBody } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import apiFetch from '@wordpress/api-fetch';
 
-const GlossaryFrontend = () => {
+const GlossaryFrontend = ({ data }) => {
     const [terms, setTerms] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [sortOption, setSortOption] = useState('alphabetical');
+    const [sortOption, setSortOption] = useState(data.sort || 'alphabetical');
+    const [openCardId, setOpenCardId] = useState(null);
+    const termRefs = useRef({});
+    const [searchQuery, setSearchQuery] = useState(''); // State for search query
+ 
 
-    // Fetch terms from the WordPress REST API
+
+    useEffect(() => {
+        if (openCardId && termRefs.current[openCardId]) {
+            termRefs.current[openCardId].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [openCardId]);
+
+    const toggleCard = (id) => {
+        setOpenCardId((prevId) => (prevId === id ? null : id)); // Toggle the card
+    };
+    
+    const GlossaryItem = ({ term, isOpen, onToggle }) => {
+        const [relatedPosts, setRelatedPosts] = useState([]);
+        const [loadingRelatedPosts, setLoadingRelatedPosts] = useState(false);
+    
+        useEffect(() => {
+            const fetchRelatedPosts = async () => {
+                if (!isOpen) return;
+            
+                const categoryIds = term.categories.map((cat) => cat.id);
+                const tagIds = term.tags.map((tag) => tag.id);
+            
+                if (categoryIds.length === 0 && tagIds.length === 0) {
+                    setRelatedPosts([]);
+                    return;
+                }
+            
+                setLoadingRelatedPosts(true);
+            
+                try {
+                    const params = new URLSearchParams();
+                    if (categoryIds.length > 0) params.append('categories', categoryIds.join(','));
+                    if (tagIds.length > 0) params.append('tags', tagIds.join(','));
+                    params.append('per_page', 3);
+            
+                    const response = await fetch(`/wp-json/wp/v2/related-posts?${params.toString()}`);
+                    const posts = await response.json();
+                    setRelatedPosts(posts);
+                } catch (error) {
+                    console.error('Error fetching related posts:', error);
+                    setRelatedPosts([]);
+                } finally {
+                    setLoadingRelatedPosts(false);
+                }
+            };
+            
+            if (isOpen) {
+                fetchRelatedPosts();
+            }
+        }, [isOpen, term.categories, term.tags]);
+    
+        useEffect(() => {
+            const script = document.createElement('script');
+            script.type = 'application/ld+json';
+            script.textContent = JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "DefinedTerm",
+                "name": term.title,
+                "description": term.content
+                    ? term.content.replace(/<[^>]*>?/gm, '').slice(0, 150)
+                    : "No description available.",
+                "url": window.location.origin + `#term-${term.id}`,
+            });
+            document.head.appendChild(script);
+    
+            return () => {
+                document.head.removeChild(script);
+            };
+        }, [term]);
+    
+        return (
+            <Card
+                className="glossary-item-card"
+                key={term.id}
+                ref={(el) => (termRefs.current[term.id] = el)}
+            >
+                <CardHeader
+                    onClick={() => onToggle(term.id)}
+                    style={{ cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                    <h4 id={`term-${term.id}`}>{term.title}</h4>
+                </CardHeader>
+                {isOpen && (
+                    <CardBody>
+                        {term.content ? (
+                            <div dangerouslySetInnerHTML={{ __html: term.content }}></div>
+                        ) : (
+                            <p>{__('No content available.', 'acemedia-glossary')}</p>
+                        )}
+    
+                        {/* "See Also" Section */}
+                        {term.relatedTerms.length > 0 && (
+                            <div className="see-also">
+                                <strong>{__('See Also:', 'acemedia-glossary')}</strong>
+                                <ul>
+                                    {term.relatedTerms.map((relatedId) => (
+                                        <li key={relatedId}>
+                                            <a
+                                                href={`#term-${relatedId}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    onToggle(relatedId, true);
+                                                }}
+                                            >
+                                                {terms.find((t) => t.id === relatedId)?.title || __('Unknown Term', 'acemedia-glossary')}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+    
+                        {/* Categories Section */}
+                        {term.categories.length > 0 && (
+                            <div className="categories">
+                                <strong>{__('Categories:', 'acemedia-glossary')}</strong>
+                                <ul>
+                                    {term.categories.map((category) => (
+                                        <li key={category.id}>
+                                            <a href={`/category/${category.slug}`}>{category.title}</a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+    
+                        {/* Tags Section */}
+                        {term.tags.length > 0 && (
+                            <div className="tags">
+                                <strong>{__('Tags:', 'acemedia-glossary')}</strong>
+                                <ul>
+                                    {term.tags.map((tag) => (
+                                        <li key={tag.id}>
+                                            <a href={`/tag/${tag.slug}`}>{tag.title}</a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+    
+                        {/* Related Posts Section */}
+                        <div className="related-posts">
+    <strong>{__('Related Posts:', 'acemedia-glossary')}</strong>
+    {loadingRelatedPosts ? (
+        <p>{__('Loading...', 'acemedia-glossary')}</p>
+    ) : relatedPosts.length > 0 ? (
+        <ul>
+            {relatedPosts.map((post) => (
+                <li key={post.id}>
+                    <a href={post.link} target="_blank" rel="noopener noreferrer">
+                        {post.title}
+                    </a>
+                </li>
+            ))}
+        </ul>
+    ) : (
+        <p>{__('No related posts found.', 'acemedia-glossary')}</p>
+    )}
+</div>
+                    </CardBody>
+                )}
+            </Card>
+        );
+    };
+    
+    
+
     const fetchTerms = async () => {
         setLoading(true);
         try {
-            const data = await apiFetch({ path: '/wp-json/wp/v2/glossary?per_page=100' });
+            const response = await fetch(AceMediaGlossaryData.restUrl, {
+                headers: {
+                    'X-WP-Nonce': AceMediaGlossaryData.nonce,
+                },
+            });
+            const data = await response.json();
 
-            // Ensure proper structure and sanitize data
-            const sanitizedData = data.map((term) => ({
-                id: term.id || '',
-                title: term.title || __('Untitled', 'acemedia-glossary'),
-                content: term.content || '',
-                modified: term.modified || null,
-                relatedTerms: term.relatedTerms || [], // Include related terms
-                categories: term.categories || [],    // Include categories
-                tags: term.tags || [],                // Include tags
-            }));
-
-            setTerms(sanitizedData);
+            setTerms(
+                data.map((term) => ({
+                    id: term.id || '',
+                    title: term.title || __('Untitled', 'acemedia-glossary'),
+                    content: term.content || '',
+                    modified: term.modified || null,
+                    relatedTerms: term.relatedTerms || [],
+                    categories: term.categories || [],
+                    tags: term.tags || [],
+                }))
+            );
         } catch (error) {
             console.error('Error fetching glossary terms:', error);
         } finally {
@@ -34,36 +207,53 @@ const GlossaryFrontend = () => {
     };
 
     useEffect(() => {
-        fetchTerms();
-    }, []);
+        if (data.preloadedTerms) {
+            setTerms(data.preloadedTerms);
+            setLoading(false);
+        } else {
+            fetchTerms();
+        }
+    }, [data]);
 
-    // Memoize sorted terms based on the selected sort option
+
+    // Filter terms based on search query
+    const filteredTerms = useMemo(() => {
+        if (!searchQuery) return terms;
+        const lowercasedQuery = searchQuery.toLowerCase();
+        return terms.filter(
+            (term) =>
+                term.title.toLowerCase().includes(lowercasedQuery) ||
+                term.content.toLowerCase().includes(lowercasedQuery)
+        );
+    }, [terms, searchQuery]);
+
     const sortedTerms = useMemo(() => {
-        if (!terms.length) return [];
-
-        return [...terms].sort((a, b) => {
-            if (sortOption === 'alphabetical') {
-                return a.title.localeCompare(b.title);
-            } else if (sortOption === 'updated') {
-                const dateA = new Date(a.modified || 0);
-                const dateB = new Date(b.modified || 0);
-                return dateB - dateA;
-            }
+        return [...filteredTerms].sort((a, b) => {
+            if (sortOption === 'alphabetical') return a.title.localeCompare(b.title, undefined, { numeric: true });
+            if (sortOption === 'updated') return new Date(b.modified || 0) - new Date(a.modified || 0);
             return 0;
         });
-    }, [terms, sortOption]);
-
-    // Group terms alphabetically
+    }, [filteredTerms, sortOption]); // Use filteredTerms here
+    
     const groupedTerms = useMemo(() => {
         return sortedTerms.reduce((groups, term) => {
-            const firstLetter = term.title.charAt(0).toUpperCase();
-            if (!groups[firstLetter]) {
-                groups[firstLetter] = [];
-            }
-            groups[firstLetter].push(term);
+            const firstChar = term.title.charAt(0).toUpperCase();
+            const groupKey = /\d/.test(firstChar) ? '0-9' : firstChar;
+            if (!groups[groupKey]) groups[groupKey] = [];
+            groups[groupKey].push(term);
             return groups;
         }, {});
-    }, [sortedTerms]);
+    }, [sortedTerms]); // Use sortedTerms here
+    
+    const sortedGroupKeys = useMemo(() => {
+        const keys = Object.keys(groupedTerms);
+        return keys.sort((a, b) => {
+            if (a === '0-9') return -1;
+            if (b === '0-9') return 1;
+            return a.localeCompare(b);
+        });
+    }, [groupedTerms]); // Use groupedTerms here
+    
 
     return (
         <div className="acemedia-glossary-frontend">
@@ -74,97 +264,79 @@ const GlossaryFrontend = () => {
                 </div>
             ) : terms.length > 0 ? (
                 <>
-                    <PanelBody title={__('Glossary Options', 'acemedia-glossary')} initialOpen={true}>
-                        <ToggleControl
-                            label={__('Sort Alphabetically', 'acemedia-glossary')}
-                            checked={sortOption === 'alphabetical'}
-                            onChange={(isChecked) =>
-                                setSortOption(isChecked ? 'alphabetical' : 'updated')
-                            }
-                        />
-                    </PanelBody>
 
-                    {/* A-Z Grouped Navigation */}
-                    <div className="glossary-index">
-                        <h2>{__('Glossary Index', 'acemedia-glossary')}</h2>
-                        <ul className="glossary-anchor-links">
-                            {Object.keys(groupedTerms).sort().map((letter) => (
-                                <li key={letter}>
-                                    <a href={`#group-${letter}`}>{letter}</a>
-                                </li>
-                            ))}
-                        </ul>
+
+                    {/* Search Field */}
+                    <div className="glossary-search">
+                        <TextControl
+                            label={__('Search Terms', 'acemedia-glossary')}
+                            value={searchQuery}
+                            onChange={(value) => setSearchQuery(value)}
+                            placeholder={__('Type to search...', 'acemedia-glossary')}
+                        />
                     </div>
 
-                    {/* A-Z Grouped Terms */}
-                    <div className="glossary-terms">
-                        {Object.keys(groupedTerms).sort().map((letter) => (
-                            <div key={letter} id={`group-${letter}`} className="glossary-group">
-                                <h3>{letter}</h3>
-                                <ul>
-                                    {groupedTerms[letter].map((term) => (
-                                      <li key={term.id} className="glossary-item">
-                                      <h4 id={`term-${term.id}`}>{term.title}</h4>
-                                      {term.content ? (
-                                          <div
-                                              dangerouslySetInnerHTML={{
-                                                  __html: term.content,
-                                              }}
-                                          ></div>
-                                      ) : (
-                                          <p>{__('No content available.', 'acemedia-glossary')}</p>
-                                      )}
-                                  
-                                      {/* "See Also" Section */}
-                                      {term.relatedTerms.length > 0 && (
-                                          <div className="see-also">
-                                              <strong>{__('See Also:', 'acemedia-glossary')}</strong>
-                                              <ul>
-                                                  {term.relatedTerms.map((relatedId) => {
-                                                      const relatedTerm = terms.find((t) => t.id === relatedId);
-                                                      return relatedTerm ? (
-                                                          <li key={relatedId}>
-                                                              <a href={`#term-${relatedId}`}>{relatedTerm.title}</a>
-                                                          </li>
-                                                      ) : null;
-                                                  })}
-                                              </ul>
-                                          </div>
-                                      )}
-                                  
-                                      {/* Categories Section */}
-                                      {term.categories.length > 0 && (
-                                        console.log(term.categories),
-    <div className="categories">
-        <strong>{__('Categories:', 'acemedia-glossary')}</strong>
-        <ul>
-            {term.categories.map((category) => (
-                <li key={category.id}>
-                    <a href={`/category/${category.slug}`}>{category.title}</a>
-                </li>
-            ))}
-        </ul>
-    </div>
-)}
 
-{/* Tags Section */}
-{term.tags.length > 0 && (
-    <div className="tags">
-        <strong>{__('Tags:', 'acemedia-glossary')}</strong>
-        <ul>
-            {term.tags.map((tag) => (
-                <li key={tag.id}>
-                    <a href={`/tag/${tag.slug}`}>{tag.title}</a>
-                </li>
-            ))}
-        </ul>
-    </div>
-)}
-                                  </li>
-                                  
-                                   
-                                    ))}
-                                </ul>
+                    <div className="glossary-index">
+                        <Flex
+                            className="glossary-anchor-links"
+                            justify="start"
+                            align="flex-start"
+                            wrap
+                            gap={2}
+                        >
+                            {sortedGroupKeys.map((key) => (
+                                <FlexItem key={key} style={{ flex: '1 1 calc(20% - 10px)', maxWidth: '20%' }}>
+                                    <a
+                                        href={`#group-${key}`}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            toggleCard(groupedTerms[key][0]?.id, true);
+                                        }}
+                                        style={{
+                                            display: 'block',
+                                            padding: '0.5rem',
+                                            textAlign: 'center',
+                                            border: '1px solid #ddd',
+                                            borderRadius: '4px',
+                                            textDecoration: 'none',
+                                            color: '#333',
+                                        }}
+                                    >
+                                        {key}
+                                    </a>
+                                    <ul style={{ marginTop: '0.5rem', paddingLeft: '1rem' }}>
+                                        {groupedTerms[key].map((term) => (
+                                            <li key={`anchor-${term.id}`}>
+                                                <a
+                                                    href={`#term-${term.id}`}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        toggleCard(term.id, true);
+                                                    }}
+                                                >
+                                                    {term.title}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </FlexItem>
+                            ))}
+                        </Flex>
+                    </div>
+
+                    <div className="glossary-terms">
+                        {sortedGroupKeys.map((key) => (
+                            <div key={key} id={`group-${key}`}>
+                                <h3>{key}</h3>
+                                {groupedTerms[key].map((term) => (
+                                    <GlossaryItem
+                                        key={term.id}
+                                        term={term}
+                                        isOpen={openCardId === term.id}
+                                        onToggle={toggleCard}
+                                    />
+                                ))}
                             </div>
                         ))}
                     </div>

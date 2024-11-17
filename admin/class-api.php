@@ -387,3 +387,135 @@ function import_glossary_terms($request) {
         'matched_terms' => $matched_terms_count,
     ), 200);
 }
+
+
+
+add_action('save_post_acemedia_glossary', function ($post_id, $post, $update) {
+    // Clear transient when a glossary term is saved via the WordPress admin.
+    delete_transient('acemedia_glossary_terms');
+}, 10, 3);
+
+add_action('deleted_post', function ($post_id) {
+    $post = get_post($post_id);
+    if ($post && $post->post_type === 'acemedia_glossary') {
+        // Clear transient when a glossary term is deleted via the WordPress admin.
+        delete_transient('acemedia_glossary_terms');
+    }
+});
+
+
+
+
+// Register a new REST API endpoint to fetch related posts.
+add_action('rest_api_init', function () {
+    register_rest_route('wp/v2', '/related-posts', array(
+        'methods' => 'GET',
+        'callback' => 'get_related_posts',
+        'permission_callback' => '__return_true', // Public access
+        'args' => array(
+            'categories' => array(
+                'required' => false,
+                'type' => 'string', // Accept as a string (comma-separated)
+                'validate_callback' => function ($param) {
+                    return is_string($param);
+                }
+            ),
+            'tags' => array(
+                'required' => false,
+                'type' => 'string', // Accept as a string (comma-separated)
+                'validate_callback' => function ($param) {
+                    return is_string($param);
+                }
+            ),
+            'per_page' => array(
+                'required' => false,
+                'default' => 3,
+                'type' => 'integer',
+                'validate_callback' => function ($param) {
+                    return $param > 0;
+                }
+            ),
+        )
+    ));
+});
+
+function get_related_posts($request) {
+    // Parse categories and tags from the request.
+    $categories = $request->get_param('categories') ? explode(',', $request->get_param('categories')) : [];
+    $tags = $request->get_param('tags') ? explode(',', $request->get_param('tags')) : [];
+    $per_page = $request->get_param('per_page');
+
+    // Exclude category ID 1
+    $categories = array_filter($categories, function ($category_id) {
+        return intval($category_id) !== 1;
+    });
+
+    // Generate a unique cache key based on input parameters
+    $cache_key = 'related_posts_' . md5(serialize([
+        'categories' => $categories,
+        'tags' => $tags,
+        'per_page' => $per_page,
+    ]));
+
+    // Check if cached data exists
+    $cached_response = get_transient($cache_key);
+    if ($cached_response !== false) {
+        return new WP_REST_Response($cached_response, 200);
+    }
+
+    $query_args = array(
+        'post_type' => 'post',
+        'posts_per_page' => $per_page,
+        'post_status' => 'publish',
+        'tax_query' => array('relation' => 'OR'),
+    );
+
+    if (!empty($categories)) {
+        $query_args['tax_query'][] = array(
+            'taxonomy' => 'category',
+            'field' => 'term_id',
+            'terms' => $categories,
+        );
+    }
+
+    if (!empty($tags)) {
+        $query_args['tax_query'][] = array(
+            'taxonomy' => 'post_tag',
+            'field' => 'term_id',
+            'terms' => $tags,
+        );
+    }
+
+    $query = new WP_Query($query_args);
+    $posts = $query->posts;
+
+    $response = array_map(function ($post) {
+        return array(
+            'id' => $post->ID,
+            'title' => get_the_title($post),
+            'excerpt' => get_the_excerpt($post),
+            'link' => get_permalink($post),
+        );
+    }, $posts);
+
+    // Save the response to a transient
+    set_transient($cache_key, $response, HOUR_IN_SECONDS);
+
+    return new WP_REST_Response($response, 200);
+}
+
+
+
+function clear_related_posts_cache($post_id) {
+    // Only clear cache for published posts.
+    if (get_post_status($post_id) !== 'publish') {
+        return;
+    }
+
+    global $wpdb;
+
+    // Delete all related posts transients
+    $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_related_posts_%'");
+}
+add_action('save_post', 'clear_related_posts_cache');
+add_action('delete_post', 'clear_related_posts_cache');
