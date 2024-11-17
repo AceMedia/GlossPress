@@ -32,6 +32,10 @@ const GlossaryAdminApp = () => {
     const isInitialLoad = useRef(true);
     const termRefs = useRef({});
 
+
+
+    const [isDragging, setIsDragging] = useState(false);
+
     const [quickEdit, setQuickEdit] = useState('false'); // Initialize quickEdit state
 
 
@@ -64,25 +68,28 @@ const GlossaryAdminApp = () => {
         );
     
         Promise.all(savePromises)
-            .then(() => {
-                const endTime = performance.now();
-                const responseTime = Math.round(endTime - startTime);
-    
-                setModifiedTerms(new Set());
-                setUnsavedChanges(false);
-                if (!isAutoSave) {
-                    setMessage(`Changes saved successfully! (${responseTime}ms)`);
-                    setTimeout(() => setMessage(''), 3000);
-                }
-            })
-            .catch((error) => {
-                console.error('Error saving terms:', error);
-                setMessage('Error saving changes');
-                setTimeout(() => setMessage(''), 3000);
-            })
-            .finally(() => {
-                isSavingRef.current = false;
-            });
+    .then(() => {
+        const endTime = performance.now();
+        const responseTime = Math.round(endTime - startTime);
+
+        setModifiedTerms(new Set());
+        setUnsavedChanges(false);
+
+        const successMessage = isAutoSave 
+            ? `Auto-saved successfully! (${responseTime}ms)`
+            : `Changes saved successfully! (${responseTime}ms)`;
+
+        setMessage(successMessage); // Set message for SaveBar
+        setTimeout(() => setMessage(''), 3000); // Clear the message after 3 seconds
+    })
+    .catch((error) => {
+        console.error('Error saving terms:', error);
+        setMessage('Error saving changes');
+        setTimeout(() => setMessage(''), 3000); // Clear the error message
+    })
+    .finally(() => {
+        isSavingRef.current = false;
+    });
     }, [terms, modifiedTerms, unsavedChanges]);
 
 
@@ -405,70 +412,65 @@ useEffect(() => {
     const handleDragOver = (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copy';
+        setIsDragging(true); // Set dragging state to true
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false); // Reset dragging state when leaving
     };
 
     const handleDrop = (e) => {
         e.preventDefault();
+        setIsDragging(false); // Reset dragging state after drop
+    
         const file = e.dataTransfer.files[0];
-
+    
         if (file && file.type === 'application/json') {
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = async (event) => {
                 try {
                     const importedTerms = JSON.parse(event.target.result);
-
+    
                     if (!Array.isArray(importedTerms)) {
                         throw new Error('Invalid JSON format. Expected an array of terms.');
                     }
-
+    
+                    // Clear logs before starting the import process
+                    await clearLogs();
+    
                     const startTime = performance.now();
-
+    
                     // Send the imported terms to the server for processing
-                    apiFetch({
+                    await apiFetch({
                         path: '/wp-json/wp/v2/glossary/import',
                         method: 'POST',
                         data: importedTerms,
                         headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-                    })
-                        .then((response) => {
-                            const endTime = performance.now();
-                            const responseTime = Math.round(endTime - startTime);
-
-                            const { new_terms = [], matched_terms = 0 } = response;
-
-                            const totalTerms = importedTerms.length; // Total terms from the imported JSON
-const newTerms = totalTerms - matched_terms; // Calculate new terms
-
-setMessage(
-    `${newTerms} terms imported successfully in ${responseTime}ms. ${matched_terms} terms already existed.`
-);
-
-                            // Fetch updated terms and calculate new load time
-                            const fetchStartTime = performance.now();
-                            apiFetch({ path: '/wp-json/wp/v2/glossary' })
-                                .then((updatedTerms) => {
-                                    const fetchEndTime = performance.now();
-                                    const newLoadTime = Math.round(fetchEndTime - fetchStartTime);
-
-                                    setLoadTime(newLoadTime); // Update the loadTime state
-                                    setTerms(updatedTerms); // Replace the terms with the latest data
-                                })
-                                .catch((error) => {
-                                    console.error('Error fetching updated terms:', error);
-                                    setMessage('Error refreshing terms. Please try again.');
-                                    setTimeout(() => setMessage(''), 5000);
-                                });
-                        })
-                        .catch((error) => {
-                            console.error('Error importing terms:', error);
-                            setMessage('Error importing terms. Please try again.');
-                        })
-                        .finally(() => {
-                            setTimeout(() => setMessage(''), 5000);
-                        });
+                    });
+    
+                    const endTime = performance.now();
+                    const responseTime = Math.round(endTime - startTime);
+    
+                    setMessage(
+                        `Import completed successfully in ${responseTime}ms.`
+                    );
+    
+                    // Refresh logs after the import process
+                    await fetchLogs();
+    
+                    // Fetch updated terms and calculate new load time
+                    const fetchStartTime = performance.now();
+                    const updatedTerms = await apiFetch({ path: '/wp-json/wp/v2/glossary' });
+                    const fetchEndTime = performance.now();
+                    const newLoadTime = Math.round(fetchEndTime - fetchStartTime);
+    
+                    setLoadTime(newLoadTime); // Update the loadTime state
+                    setTerms(updatedTerms); // Replace the terms with the latest data
                 } catch (error) {
-                    console.error('Invalid JSON file:', error);
-                    setMessage('Invalid JSON file. Please ensure the format is correct.');
+                    console.error('Error importing terms:', error);
+                    setMessage('Error importing terms. Please try again.');
+                } finally {
                     setTimeout(() => setMessage(''), 5000);
                 }
             };
@@ -478,18 +480,18 @@ setMessage(
             setTimeout(() => setMessage(''), 5000);
         }
     };
+    
 
     window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('dragleave', handleDragLeave);
     window.addEventListener('drop', handleDrop);
 
     return () => {
         window.removeEventListener('dragover', handleDragOver);
+        window.removeEventListener('dragleave', handleDragLeave);
         window.removeEventListener('drop', handleDrop);
     };
 }, [setTerms, setLoadTime]);
-
-
-
 
 
 
@@ -863,10 +865,52 @@ const deleteSelectedTerms = useCallback(() => {
             modified: new Date().toISOString()
         });
     };
+
+
+    const fetchLogs = async () => {
+        try {
+            const response = await apiFetch({
+                path: '/wp-json/wp/v2/logs',
+                method: 'GET',
+                headers: {
+                    'X-WP-Nonce': AceMediaGlossaryAdmin.nonce, // Ensure the nonce is correctly set
+                },
+            });
+            setLogs(response);
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+        }
+    };
+    
+    
+    const clearLogs = async () => {
+        try {
+            await apiFetch({
+                path: '/wp-json/wp/v2/logs/clear',
+                method: 'POST',
+                headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+            });
+            setLogs('');
+        } catch (error) {
+            console.error('Error clearing logs:', error);
+        }
+    };
+
+    const [logs, setLogs] = useState('');
+
+useEffect(() => {
+    fetchLogs();
+}, []);
     
     
     return (
         <>
+        <div className={`admin-ui ${isDragging ? 'dragging' : ''}`}>
+            {isDragging && (
+                <div className="drag-overlay">
+                    <p>Drop your file anywhere to import!</p>
+                </div>
+            )}
             <Flex alignItems="flex-start" className='main-panel'>
                 <FlexItem alignItems="flex-start" className="sidebar side-panel" style={{ flex: '0 0 300px', paddingRight: '20px' }}>
                 <h1>
@@ -952,21 +996,40 @@ const deleteSelectedTerms = useCallback(() => {
     initialOpen={false}
     onToggle={(open) => setQuickEdit(open ? 'true' : 'off')} // Automatically enable "Quick Edit" when panel is opened
 >
-   
+
 </PanelBody>
 
+<Button
+    isSecondary
+    onClick={handleDownload}
+    disabled={unsavedChanges}
+    style={{ textAlign: 'center', display: 'block' }}
+>
+    <span className="dashicons dashicons-download" style={{ marginRight: '5px', verticalAlign: 'middle' }}></span>
+    {unsavedChanges
+        ? __('Save Changes to enable Download', 'acemedia-glossary')
+        : __('Download JSON Backup', 'acemedia-glossary')}
+</Button>
+
+{logs && logs.trim() && (
+    <PanelBody className="debugger" title={__('Debug Logs', 'acemedia-glossary')} initialOpen={false}>
+        <TextareaControl
+            label={__('Import Logs', 'acemedia-glossary')}
+            value={logs}
+            onChange={() => {}} // Make read-only
+            rows={10}
+            style={{ fontFamily: 'monospace' }}
+        />
+        <Button isSecondary onClick={fetchLogs} style={{ marginRight: '10px' }}>
+            {__('Refresh Logs', 'acemedia-glossary')}
+        </Button>
+        <Button isDestructive onClick={clearLogs}>
+            {__('Clear Logs', 'acemedia-glossary')}
+        </Button>
+    </PanelBody>
+)}
 
 
-<Tooltip text={unsavedChanges ? __('Save your changes before downloading.', 'acemedia-glossary') : ''}>
-    <Button
-        isPrimary
-        onClick={handleDownload}
-        disabled={unsavedChanges}
-        style={{ marginTop: '10px' }}
-    >
-        {__('Download JSON', 'acemedia-glossary')}
-    </Button>
-</Tooltip>
                     </div>
                 </FlexItem>
                 <FlexBlock className="terms-list" style={{ flex: '1' }}>
@@ -1161,6 +1224,11 @@ const deleteSelectedTerms = useCallback(() => {
                     ))}
                 </FlexBlock>
             </Flex>
+
+
+
+            </div>
+
             <SaveBar
     onSave={onSave}
     setUnsavedChanges={setUnsavedChanges}

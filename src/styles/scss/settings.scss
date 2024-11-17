@@ -38,7 +38,7 @@ table {
 		box-sizing: border-box;
 	}
 
-	> .main-panel {
+	 .main-panel {
 		padding: 0;
 		min-height: calc(100vh - 32px);
 		align-items: stretch;
@@ -910,6 +910,7 @@ label {
 	padding-left: 30px;
 	box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
 	border: 1px solid rgb(203, 213, 225) !important;
+	margin-right: 1em;
 	svg, .fa {
 		background: $primary-color;
 		position: absolute;
@@ -1101,5 +1102,70 @@ h3.group-title {
 				transform: translateY(-50%);
 			}
 		}
+	}
+}
+
+
+
+.admin-ui {
+
+    &.dragging {
+    }
+
+    .drag-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,355,255, 0.75); // Semi-transparent dark overlay
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        font-size: 1.5em;
+		z-index: 9999;
+		p {
+			position: absolute;
+			font-size: 2em;
+			font-weight: bold;
+			left: 50%;
+			text-align: center;
+			top: 50%;
+			border-radius: 1em;
+			transform: translate3d(-50%, -50%, 0);
+			color: $dark-primary-color;
+			padding: 2em;
+			border: 2px dashed $primary-color;
+		}
+    }
+}
+
+
+.debugger {
+	textarea {
+		width: 100%;
+		height: 200px;
+		font-size: 8px;
+		line-height: 1.2;
+		background: #111;
+		font-family: monospace;
+		color: #00ff00;
+		background: #000;
+		border: none;
+		padding: 1em;
+		resize: none;
+		overflow: auto;
+		white-space: pre;
+		word-wrap: normal;
+		border-radius: .5em;
+	}
+}
+
+
+button.wp-saving-button {
+	.dashicons {
+		margin-right: .5em;
 	}
 }

@@ -1,9 +1,10 @@
 import PropTypes from 'prop-types';
 import { useState, useEffect } from '@wordpress/element';
-import { Button, Flex, FlexItem, ToggleControl } from '@wordpress/components';
+import { Button, Flex, FlexItem, ToggleControl, Spinner } from '@wordpress/components';
 
 const SaveBar = ({ children, onSave, setUnsavedChanges, unsavedChanges, isAutoSaveEnabled, setIsAutoSaveEnabled, buttonText, message }) => {
-    const [isSuccess, setIsSuccess] = useState(false);
+    const [isSaving, setIsSaving] = useState(false); // State to track saving status
+    const [isSuccess, setIsSuccess] = useState(false); // State to track successful save
     const [elapsedTime, setElapsedTime] = useState(0);
     const [intervalId, setIntervalId] = useState(null);
 
@@ -49,14 +50,25 @@ const SaveBar = ({ children, onSave, setUnsavedChanges, unsavedChanges, isAutoSa
         }
     }, [message]);
 
-    const handleClick = () => {
-        onSave(false);
+    const handleClick = async () => {
+        setIsSaving(true); // Start saving animation
+        setIsSuccess(false); // Reset success state
+        await onSave(false); // Trigger save logic
+        setIsSaving(false); // Stop saving animation
+        setIsSuccess(true); // Indicate save was successful
+        setTimeout(() => setIsSuccess(false), 2000); // Reset success icon after 2 seconds
     };
 
     const formatElapsedTime = (seconds) => {
         if (seconds < 60) return `${seconds} seconds ago`;
         if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
         return `${Math.floor(seconds / 3600)} hours ago`;
+    };
+
+    const getIconClass = () => {
+        if (isSaving) return 'dashicons-update';
+        if (isSuccess) return 'dashicons-yes';
+        return 'dashicons-book-alt';
     };
 
     return (
@@ -80,15 +92,18 @@ const SaveBar = ({ children, onSave, setUnsavedChanges, unsavedChanges, isAutoSa
                                 }}
                             />
                         </div>
-                        <Button
-                            variant="primary"
-                            onClick={handleClick}
-                            className={`wp-saving-button ${unsavedChanges ? 'enabled' : ''} ${isSuccess ? 'saved' : ''}`}
-                            aria-label={buttonText}
-                            disabled={!unsavedChanges || isAutoSaveEnabled}
-                        >
-                            <span className="dashicons dashicons-update"></span> {buttonText}
-                        </Button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            {isSaving && <Spinner />} {/* Render Spinner when saving */}
+                            <Button
+                                variant="primary"
+                                onClick={handleClick}
+                                className={`wp-saving-button ${unsavedChanges ? 'enabled' : ''} ${isSuccess ? 'saved' : ''}`}
+                                aria-label={isSaving ? 'Saving.....' : buttonText}
+                                disabled={!unsavedChanges || isAutoSaveEnabled || isSaving} // Disable button while saving
+                            >
+                                <span className={`dashicons ${getIconClass()}`}></span> {isSaving ? 'Saving.....' : buttonText}
+                            </Button>
+                        </div>
                     </Flex>
                 </FlexItem>
             </Flex>
