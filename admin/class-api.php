@@ -363,21 +363,58 @@ function import_glossary_terms($request) {
     }
 
     // Handle bidirectional relationships
+    // THIS NEEDS MORE WORK TO AUTOCORRECT RELATED TERMS IF MISMATCHED IN JSON
+    // Ensure all terms have bidirectional relationships
     foreach ($data as $term) {
-        if (!isset($term['relatedTerms'])) continue;
-
+        if (!isset($term['relatedTerms'])) {
+            continue;
+        }
+    
+        // Get current term ID
         $current_term_id = $existing_terms_lookup[sanitize_title($term['title'])];
+        $current_related_ids = get_post_meta($current_term_id, 'related_terms', true) ?: [];
+    
+        // Log current term details
+        error_log("Processing Term: " . $term['title'] . " (ID: $current_term_id)");
+    
         foreach ($term['relatedTerms'] as $related_slug) {
-            if (isset($existing_terms_lookup[$related_slug])) {
-                $related_term_id = $existing_terms_lookup[$related_slug];
-                $existing_related = get_post_meta($related_term_id, 'related_terms', true) ?: [];
-                if (!in_array($current_term_id, $existing_related)) {
-                    $existing_related[] = $current_term_id;
-                    update_post_meta($related_term_id, 'related_terms', $existing_related);
+            // Sanitize the slug to ensure proper matching
+            $sanitized_slug = sanitize_title($related_slug); // Lowercase, replace spaces with dashes, etc.
+    
+            if (isset($existing_terms_lookup[$sanitized_slug])) {
+                $related_term_id = $existing_terms_lookup[$sanitized_slug];
+    
+                // Fetch and update the related term's related_terms
+                $related_term_related_ids = get_post_meta($related_term_id, 'related_terms', true) ?: [];
+    
+                // Log related term details
+                error_log(" - Related Term: " . $sanitized_slug . " (ID: $related_term_id)");
+    
+                // Ensure the current term is in the related term's list
+                if (!in_array($current_term_id, $related_term_related_ids)) {
+                    $related_term_related_ids[] = $current_term_id;
+                    update_post_meta($related_term_id, 'related_terms', array_unique($related_term_related_ids));
+                    error_log("   > Added $current_term_id to related_terms of $related_term_id");
                 }
+    
+                // Ensure the related term is in the current term's list
+                if (!in_array($related_term_id, $current_related_ids)) {
+                    $current_related_ids[] = $related_term_id;
+                    error_log("   > Added $related_term_id to related_terms of $current_term_id");
+                }
+            } else {
+                // Log missing related slug
+                error_log(" - Warning: Related slug '$related_slug' (sanitized as '$sanitized_slug') not found in existing_terms_lookup");
             }
         }
+    
+        // Save updated relationships for the current term
+        update_post_meta($current_term_id, 'related_terms', array_unique($current_related_ids));
+        error_log("Updated related_terms for $current_term_id: " . implode(', ', $current_related_ids));
     }
+    
+    
+    
 
     delete_transient('acemedia_glossary_terms');
 
