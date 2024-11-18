@@ -4,7 +4,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = {
     entry: {
         'glossary-admin': './src/index.js',
-        'glossary-frontend': './src/glossary-frontend.js'
+        'glossary-frontend': './src/glossary-frontend.js',
+        'glossary-tooltips': './src/GlossaryTooltips.js'
     },
     output: {
         path: path.resolve(__dirname, 'build'),
