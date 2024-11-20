@@ -41,6 +41,7 @@ class AceMediaGlossary_Shortcode {
                 'restUrl' => esc_url(rest_url('wp/v2/glossary')),
                 'nonce'   => wp_create_nonce('wp_rest'),
                 'sort'    => esc_attr($atts['sort']),
+                'autoHighlight' => get_option('auto_highlight', 'false') === 'true',
             )
         );
 
@@ -157,6 +158,13 @@ class AceMediaGlossary_Shortcode {
 
 
 function highlight_glossary_terms($content) {
+    // Check if auto_highlight is enabled
+    $auto_highlight_enabled = get_option('auto_highlight', 'false') === 'true';
+
+    if (!$auto_highlight_enabled) {
+        return $content; // Skip processing if auto_highlight is disabled
+    }
+
     // Fetch glossary terms (assuming they are a custom post type 'glossary')
     $glossary_posts = get_posts([
         'post_type' => 'acemedia_glossary',
@@ -199,8 +207,8 @@ function highlight_glossary_terms($content) {
         return $matches[0];
     }, $content);
 
-    // Enqueue the tooltip script and styles if matches were found
-    if (preg_match($regex, $content)) {
+     // Enqueue the tooltip script and styles if matches were found
+     if (preg_match($regex, $content)) {
         add_action('wp_enqueue_scripts', function () {
 
             wp_enqueue_style(
@@ -234,3 +242,48 @@ function highlight_glossary_terms($content) {
 
 // Hook into the_content filter
 add_filter('the_content', 'highlight_glossary_terms');
+
+
+function acemedia_register_glossary_block() {
+    wp_register_script(
+        'acemedia-glossary-block',
+        ACEMEDIA_GLOSSARY_URL . 'build/glossary-block.js',
+        array('wp-blocks', 'wp-editor', 'wp-element', 'wp-components', 'wp-i18n'),
+        ACEMEDIA_GLOSSARY_VERSION,
+        true
+    );
+
+    wp_register_style(
+        'acemedia-glossary-block-editor',
+        ACEMEDIA_GLOSSARY_URL . 'build/glossary-block-editor.css',
+        array('wp-edit-blocks'),
+        ACEMEDIA_GLOSSARY_VERSION
+    );
+
+    wp_register_style(
+        'acemedia-glossary-block-frontend',
+        ACEMEDIA_GLOSSARY_URL . 'build/glossary-block-frontend.css',
+        array(),
+        ACEMEDIA_GLOSSARY_VERSION
+    );
+
+    register_block_type('acemedia/glossary', array(
+        'editor_script'   => 'acemedia-glossary-block',
+        'editor_style'    => 'acemedia-glossary-block-editor',
+        'style'           => 'acemedia-glossary-block-frontend',
+        'render_callback' => 'acemedia_render_glossary_block',
+        'attributes'      => array(
+            'sort' => array(
+                'type' => 'string',
+                'default' => 'alphabetical',
+            ),
+        ),
+    ));
+}
+add_action('init', 'acemedia_register_glossary_block');
+
+
+function acemedia_render_glossary_block($attributes) {
+    $shortcode_instance = new AceMediaGlossary_Shortcode();
+    return $shortcode_instance->renderShortcode($attributes);
+}
