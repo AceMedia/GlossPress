@@ -7,7 +7,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { useSelect } from '@wordpress/data';
 import { store as coreDataStore } from '@wordpress/core-data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faSortAlphaDown, faAnchor, faTags, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faSortAlphaDown, faAnchor, faTags, faEdit, faHighlighter, faEye, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 
 
 
@@ -40,6 +40,29 @@ const GlossaryAdminApp = () => {
 
 
     const [selectedTerms, setSelectedTerms] = useState([]);
+
+
+    const [autoHighlight, setAutoHighlight] = useState(false);
+
+// Fetch the initial value from wp_option on component mount
+useEffect(() => {
+    apiFetch({ path: '/wp-json/wp/v2/options/auto_highlight' }) // Updated to match registered route
+        .then((data) => {
+            setAutoHighlight(data.value === true); // Convert response value to boolean
+        })
+        .catch((error) => console.error('Error fetching auto_highlight option:', error));
+}, []);
+
+const saveAutoHighlightOption = (isEnabled) => {
+    apiFetch({
+        path: '/wp-json/wp/v2/options/auto_highlight', // Updated to match registered route
+        method: 'POST',
+        data: { value: isEnabled ? 'true' : 'false' }, // Send as string 'true' or 'false'
+        headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+    })
+        .then(() => console.log('Auto Highlight option updated successfully'))
+        .catch((error) => console.error('Error saving auto_highlight option:', error));
+};
 
 
 
@@ -562,28 +585,78 @@ useEffect(() => {
             }
         }, 0);
     };
+
+    const smoothScrollTo = (targetY, duration = 1000) => {
+        const startY = window.scrollY;
+        const distance = targetY - startY;
+        const startTime = performance.now();
+    
+        const easeInOutQuad = (t) =>
+            t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // Ease-in-out formula
+    
+        const step = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1); // Clamp progress to 1
+    
+            const easedProgress = easeInOutQuad(progress); // Apply easing
+            window.scrollTo(0, startY + distance * easedProgress);
+    
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            }
+        };
+    
+        requestAnimationFrame(step);
+    };
     
 
     const toggleTermOpen = useCallback((termId) => {
-        setTerms(terms => 
-            terms.map(term => 
-                term.id === termId ? { ...term, isOpen: !term.isOpen } : { ...term, isOpen: false }
-            )
+        const isCurrentlyOpen = terms.find((term) => term.id === termId)?.isOpen;
+    
+        if (isCurrentlyOpen) {
+            // If the panel is open, close it
+            setTerms((terms) =>
+                terms.map((term) =>
+                    term.id === termId ? { ...term, isOpen: false } : term
+                )
+            );
+            return;
+        }
+    
+        // First, close all panels
+        setTerms((terms) =>
+            terms.map((term) => ({ ...term, isOpen: false }))
         );
     
-        // Scroll into view if the term is being opened
-        if (termRefs.current[termId]) {
-            const yOffset = -78; // Offset from the top
-            const element = termRefs.current[termId];
-            const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
-        
-            window.scrollTo({
-                top: y,
-                behavior: 'smooth'
-            });
-        }
-        
-    }, []);
+        // Wait for the DOM update to ensure panels are closed before scrolling
+        setTimeout(() => {
+            if (termRefs.current[termId]) {
+                const yOffset = -56; // Adjust offset as needed
+                const element = termRefs.current[termId];
+                const y = element.offsetTop + yOffset;
+    
+                // Scroll to the target position
+                window.scrollTo({
+                    top: y,
+                    behavior: 'smooth',
+                });
+    
+                // After scrolling, open the target panel
+                setTimeout(() => {
+                    setTerms((terms) =>
+                        terms.map((term) =>
+                            term.id === termId ? { ...term, isOpen: true } : term
+                        )
+                    );
+                }, 10); // Adjust delay to match smooth scrolling duration
+            }
+        }, 0); // Ensure this executes after the state update
+    }, [terms]);
+    
+    
+    
+    
+    
 
 
     const updateTerm = useCallback((termId, key, value) => {
@@ -816,7 +889,7 @@ const deleteSelectedTerms = useCallback(() => {
                 >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                         <div className="alpha-index">
-                            {'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').map(letter => (
+                            {'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
                                 displayedTerms[letter] ? <a key={letter} href={`#${letter}`}>{letter}</a> : <span key={letter}>{letter}</span>
                             ))}
                         </div>
@@ -985,27 +1058,40 @@ useEffect(() => {
 
 
 
-<PanelBody 
-    className='bulk-panel'
-    title={
-        <span>
-            <FontAwesomeIcon icon={faEdit} /> Bulk Actions
-            <ToggleControl
-    checked={quickEdit === 'true'}
-    onChange={(isChecked) => {
-        setQuickEdit(isChecked ? 'true' : 'false');
-        if (!isChecked) setSelectedTerms([]); // Clear selected terms
-    }}
-    style={{ marginLeft: '10px' }}
-/>
 
+<PanelBody
+    className="auto-highlight-panel"
+    title={
+        <span
+            onClick={(e) => {
+                e.preventDefault(); // Prevent default click behavior
+                setAutoHighlight(!autoHighlight); // Toggle the state
+                saveAutoHighlightOption(!autoHighlight); // Save the new state
+            }}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+        >
+            <FontAwesomeIcon icon={faHighlighter} />
+            <span style={{ marginLeft: '10px' }}>Auto Highlight</span>
+            <ToggleControl
+                checked={autoHighlight}
+                onChange={(isChecked) => {
+                    setAutoHighlight(isChecked);
+                    saveAutoHighlightOption(isChecked);
+                }}
+                style={{ marginLeft: 'auto' }} // Push toggle to the right
+            />
         </span>
     }
     initialOpen={false}
-    onToggle={(open) => setQuickEdit(open ? 'true' : 'off')} // Automatically enable "Quick Edit" when panel is opened
+    onToggle={() => {
+        const newState = !autoHighlight;
+        setAutoHighlight(newState); // Update state
+        saveAutoHighlightOption(newState); // Save to wp_option
+    }}
 >
-
 </PanelBody>
+
+
 
 <Button
     isSecondary
@@ -1042,8 +1128,32 @@ useEffect(() => {
                 </FlexItem>
                 <FlexBlock className="terms-list" style={{ flex: '1' }}>
                 <div style={{ marginBottom: '15px' }} className={`currently-viewing ${sortOption === 'alphabetical' ? 'alpha' : ''}`}>
+    
+
+    <Tooltip text={`${visibleCount} of ${totalCount} terms visible`}>
+        <span className="pill">
+            <FontAwesomeIcon icon={faEye} style={{ marginRight: '5px' }} />
+            {`${visibleCount} of ${totalCount}`}
+        </span>
+    </Tooltip>
+    <Tooltip text={`${loadTime}ms response time for the current view`}>
+        <span className="pill">
+            <FontAwesomeIcon icon={faClock} style={{ marginRight: '5px' }} />
+            {loadTime}ms
+        </span>
+    </Tooltip>
+
+
+
+
+    <Flex className="bulk-actions" style={{ alignItems: 'center', gap: '10px' }}>
+
     {quickEdit === 'true' && (
-        <CheckboxControl
+
+        
+    <Flex className="bulk-actions-select" style={{ alignItems: 'center', gap: '10px' }}>
+    <FontAwesomeIcon icon={faCheckDouble} />
+        <ToggleControl
             label={__('Select All', 'acemedia-glossary')}
             checked={Object.keys(displayedTerms).every((group) =>
                 displayedTerms[group].every((term) => selectedTerms.includes(term.id))
@@ -1054,20 +1164,25 @@ useEffect(() => {
                 setSelectedTerms(isChecked ? visibleTermIds : []);
             }}
         />
+</Flex>
     )}
 
-    <Tooltip text={`${visibleCount} of ${totalCount} terms visible`}>
-        <span className="pill">
-            <FontAwesomeIcon icon={faTags} style={{ marginRight: '5px' }} />
-            {`${visibleCount} of ${totalCount}`}
-        </span>
-    </Tooltip>
-    <Tooltip text={`${loadTime}ms response time for the current view`}>
-        <span className="pill">
-            <FontAwesomeIcon icon={faClock} style={{ marginRight: '5px' }} />
-            {loadTime}ms
-        </span>
-    </Tooltip>
+
+    <Flex className="bulk-actions-toggle" style={{ alignItems: 'center', gap: '10px' }}>
+    <FontAwesomeIcon icon={faEdit} />
+    <ToggleControl
+    label="Bulk Edit"
+        checked={quickEdit === 'true'}
+        onChange={(isChecked) => {
+            setQuickEdit(isChecked ? 'true' : 'false');
+            if (!isChecked) setSelectedTerms([]); // Clear selected terms
+        }}
+    />
+</Flex>
+</Flex>
+
+
+
 </div>
 
 
@@ -1075,11 +1190,11 @@ useEffect(() => {
                         <FlexBlock style={{ display: 'grid', gap: '1em', flex: 'initial' }} key={group} id={group}>
                             {sortOption === 'alphabetical' && <h3 className='group-title'>{group}</h3>}
                             {displayedTerms[group].map((term) => (
-                                <Card
-                                key={term.id}
-                                className="glossary-term-card"
-                                data-term-id={term.id}
-                                ref={el => termRefs.current[term.id] = el} // Assign ref here
+                            <Card
+                            key={term.id}
+                            className={`glossary-term-card ${quickEdit === 'true' ? 'editing' : ''}`}
+                            data-term-id={term.id}
+                            ref={el => termRefs.current[term.id] = el} // Assign ref here
                             >
                                  <CardHeader
     onClick={(event) => {
@@ -1100,18 +1215,16 @@ useEffect(() => {
     }}
     style={{ cursor: 'pointer' }}
 >
-    {quickEdit === 'true' && (
-        <CheckboxControl
-            checked={selectedTerms.includes(term.id)}
-            onChange={(isChecked) => {
-                setSelectedTerms((prev) =>
-                    isChecked ? [...prev, term.id] : prev.filter((id) => id !== term.id)
-                );
-            }}
-            className="bulk-select-checkbox"
-        />
-    )}
-    <h2>{decodeHTMLEntities(term.title)|| __('New Term', 'acemedia-glossary')}</h2>
+    <ToggleControl
+        checked={selectedTerms.includes(term.id)}
+        onChange={(isChecked) => {
+            setSelectedTerms((prev) =>
+                isChecked ? [...prev, term.id] : prev.filter((id) => id !== term.id)
+            );
+        }}
+        className="bulk-select-toggle"
+    />
+    <h2>{decodeHTMLEntities(term.title) || __('New Term', 'acemedia-glossary')}</h2>
     <div
         className="updated-times"
         style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}
