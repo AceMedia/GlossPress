@@ -5,7 +5,8 @@ module.exports = {
     entry: {
         'glossary-admin': './src/index.js',
         'glossary-frontend': './src/glossary-frontend.js',
-        'glossary-tooltips': './src/GlossaryTooltips.js'
+        'glossary-tooltips': './src/GlossaryTooltips.js',
+        'glossary-block': './src/glossary-block.js'
     },
     output: {
         path: path.resolve(__dirname, 'build'),
