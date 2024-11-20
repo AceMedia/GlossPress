@@ -34,6 +34,21 @@ add_action('rest_api_init', function() {
         )
     ));
 
+    register_rest_route('wp/v2/options', '/auto_highlight', array(
+        array(
+            'methods' => 'GET',
+            'callback' => 'get_auto_highlight_option',
+            'permission_callback' => '__return_true', // Public access
+        ),
+        array(
+            'methods' => 'POST',
+            'callback' => 'update_auto_highlight_option',
+            'permission_callback' => function () {
+                return current_user_can('manage_options'); // Restrict updates to admins
+            }
+        )
+    ));
+
     // Export glossary terms
     register_rest_route('wp/v2', '/glossary/export', array(
         'methods' => 'GET',
@@ -595,3 +610,17 @@ add_action('rest_api_init', function () {
         }
     ));
 });
+
+
+function get_auto_highlight_option() {
+    $option_value = get_option('auto_highlight', 'false'); // Default to 'false'
+    return new WP_REST_Response(array('value' => $option_value === 'true'), 200); // Return as boolean
+}
+
+
+// Function to update the Auto Highlight option
+function update_auto_highlight_option(WP_REST_Request $request) {
+    $value = $request->get_param('value') === 'true' ? 'true' : 'false'; // Sanitize input
+    update_option('auto_highlight', $value); // Update option
+    return new WP_REST_Response(array('success' => true, 'value' => $value === 'true'), 200); // Respond with success
+}
