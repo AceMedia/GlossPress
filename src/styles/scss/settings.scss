@@ -770,7 +770,7 @@ label {
 }
 
 
-.bulk-panel {
+.bulk-panel, .auto-highlight-panel {
 
 	h2 {
 
@@ -900,6 +900,11 @@ label {
 
 .pill {
 	background: $white;
+	flex-shrink: 0; // Prevent shrinking
+	margin-right: 1em;
+	white-space: nowrap; // Prevent text wrapping
+	display: inline-flex;
+	align-items: center;
 	display: inline-block;
 	font-size: .8em;
 	font-weight: bold;
@@ -946,14 +951,62 @@ h3.group-title {
 	margin: -1.5em -1.5em -1em !important;
 	background: linear-gradient(180deg, $slate 53%, transparent 100%); 
 	transition: .25s linear all;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 	&.alpha {
 		padding-left: 50px;
 	}
 	.components-checkbox-control {
 		display: inline-block;
 	}
-}
 
+    .bulk-actions {
+		flex-grow: 0; /* Prevent it from growing */
+		flex-shrink: 0; /* Prevent it from shrinking */
+		width: auto; /* Let it size itself automatically */
+		margin-left: auto; 
+		flex-wrap: nowrap;
+	}
+	.bulk-actions-toggle, .bulk-actions-select {
+		position: relative;
+		opacity: .25;
+		transition: all .25s linear;
+		display: flex;
+		align-items: center;
+		gap: 5px; /* Ensure label/icon are spaced properly */
+		flex-wrap: nowrap; /* Prevent wrapping */
+		white-space: nowrap; /* Prevent label from wrapping */
+		&:hover {
+			opacity: 1;
+		}
+		.components-form-toggle {
+			position: absolute;
+			left: .5em;
+			top: 50%;
+			transform: translateY(-50%);
+		}
+		svg {
+			position: absolute;
+			left: calc(37px + 1em);
+			top: 50%;
+			transform: translateY(-50%)scale(1.3);
+			pointer-events: none;
+			color: $primary-color;
+		}
+		label {
+			padding: .5em 1em .5em 70px;
+			background: $white;
+			border-radius: 100px;
+			color: $primary-color;
+		}
+		* {
+			padding: 0px;
+			margin: 0px;
+		}
+    }
+
+}
 
 
 .sidebar {
@@ -1168,4 +1221,54 @@ button.wp-saving-button {
 	.dashicons {
 		margin-right: .5em;
 	}
+}
+
+
+
+
+
+.components-card__header.components-card-header {
+	.bulk-select-toggle {
+		position: absolute;
+		height: 100%;
+		left: -50px;
+		top: 0px;
+		background: $slate;
+		padding: 0px;
+		width: 50px;
+		transition: .25s linear all;
+		> div {
+			text-align: center;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate3d(-50%, -50%, 0);
+			label {
+				display: none;
+			}
+			* {
+				padding: 0px;
+				margin: 0px;
+			}
+		}
+	}
+}
+
+.components-card h2 {
+	transition: .25s linear all;
+}
+
+.components-card.editing {
+	.components-card__header.components-card-header {
+		.bulk-select-toggle {
+			left: 0px;
+		}
+	}
+	h2 {
+		transform: translateX(50px);
+	}
+}
+
+.currently-viewing .bulk-actions-select {
+	opacity: 1;
 }

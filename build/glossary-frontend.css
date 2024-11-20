@@ -2,29 +2,40 @@
   !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/styles/scss/frontend.scss ***!
   \************************************************************************************************************************/
 #acemedia-glossary-root {
-  padding: 1rem;
+  padding: var(--wp--preset--spacing--30);
+}
+#acemedia-glossary-root * {
+  color: var(--wp--preset--color--contrast);
 }
 #acemedia-glossary-root .acemedia-glossary-frontend {
   max-width: 1200px;
   margin: 0 auto;
+  font-family: var(--wp--preset--font-family--manrope);
 }
 #acemedia-glossary-root .glossary-search {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--wp--preset--spacing--40);
 }
 #acemedia-glossary-root .glossary-search input {
   width: 100%;
-  padding: 1rem;
-  border: 1px solid;
-  border-radius: 4px;
+  padding: var(--wp--preset--spacing--30);
+  font-size: var(--wp--preset--font-size--medium);
+  border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+  border-radius: 0.25em;
+  background: linear-gradient(to top, color-mix(in srgb, var(--wp--preset--color--base), white 5%) 70%, color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%);
+  box-shadow: inset 0px 0px 3px rgba(0, 0, 0, 0.25);
+}
+#acemedia-glossary-root .glossary-search input:focus {
+  outline: none;
+  border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 80%);
 }
 #acemedia-glossary-root .glossary-search label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--wp--preset--spacing--20);
 }
 #acemedia-glossary-root .glossary-index {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--wp--preset--spacing--20);
 }
 #acemedia-glossary-root .glossary-index .glossary-anchor-links {
   display: flex;
@@ -33,23 +44,25 @@
 }
 #acemedia-glossary-root .glossary-index .glossary-anchor-links a {
   display: block;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid;
-  border-radius: 4px;
+  padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
+  border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 50%);
+  border-radius: 0.25em;
   text-align: center;
   text-decoration: none;
-  transition: background-color 0.2s ease;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wp--preset--color--base), white 5%) 0%, color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 #acemedia-glossary-root .glossary-index .glossary-anchor-links a:hover {
-  background-color: transparent;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wp--preset--color--base), white 10%) 0%, color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%);
+  border-color: color-mix(in srgb, var(--wp--preset--color--base), black 60%);
 }
 #acemedia-glossary-root .glossary-index .glossary-anchor-links ul {
   list-style: none;
-  padding: 0px;
-  margin: 0px;
+  padding: 0;
+  margin: 0;
 }
 #acemedia-glossary-root .glossary-index .glossary-anchor-links ul li {
-  margin: 0px 0px 0.5em;
+  margin: 0 0 var(--wp--preset--spacing--20);
 }
 #acemedia-glossary-root .glossary-index .glossary-anchor-links ul li:last-child {
   margin-bottom: 0;
@@ -57,68 +70,173 @@
 #acemedia-glossary-root .glossary-index .glossary-anchor-links ul li a {
   text-decoration: none;
   transition: color 0.2s ease;
+  color: var(--wp--preset--color--contrast) !important;
+  font-size: 0.8em;
 }
 #acemedia-glossary-root .glossary-index .glossary-anchor-links ul li a:hover {
-  color: inherit;
+  color: var(--wp--preset--color--accent-3) !important;
 }
 #acemedia-glossary-root .glossary-terms {
-  margin-top: 2rem;
+  margin-top: var(--wp--preset--spacing--50);
 }
 #acemedia-glossary-root .glossary-terms h3 {
-  margin: 1rem 0;
-  border-bottom: 1px solid;
-  padding-bottom: 0.5rem;
+  margin-top: var(--wp--preset--spacing--50);
+  text-align: center;
+  display: block;
+  overflow: hidden;
+  padding: 0px;
+  margin-bottom: var(--wp--preset--spacing--30);
+}
+#acemedia-glossary-root .glossary-terms h3:after {
+  content: "";
+  display: inline-block;
+  width: 20%;
+  margin-left: var(--wp--preset--spacing--20);
+  height: 1px;
+  background: var(--wp--preset--color--contrast);
+  vertical-align: super;
+  opacity: 0.5;
+}
+#acemedia-glossary-root .glossary-terms h3::before {
+  content: "";
+  display: inline-block;
+  width: 20%;
+  margin-right: var(--wp--preset--spacing--20);
+  height: 1px;
+  background: var(--wp--preset--color--contrast);
+  vertical-align: super;
+  opacity: 0.5;
 }
 #acemedia-glossary-root .glossary-terms .glossary-item-card {
-  border: 1px solid;
-  border-radius: 6px;
-  padding: 0px;
-  margin-bottom: 1rem;
-  box-shadow: none;
-  transition: box-shadow 0.2s ease;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wp--preset--color--base), white 5%) 0%, color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%);
+  border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 50%);
+  border-radius: 0.25em;
+  margin-bottom: var(--wp--preset--spacing--30);
+  box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.15), inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 #acemedia-glossary-root .glossary-terms .glossary-item-card:hover {
-  box-shadow: none;
+  box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.25), inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%);
+  border-color: color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wp--preset--color--base), white 10%) 0%, color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%);
+}
+#acemedia-glossary-root .glossary-terms .glossary-item-card .components-card-header {
+  padding: var(--wp--preset--spacing--30);
+  text-shadow: 0px 1px 0px var(--wp--preset--color--base);
+}
+#acemedia-glossary-root .glossary-terms .glossary-item-card .components-card-body {
+  padding: var(--wp--preset--spacing--30);
+  text-shadow: 0px 1px 0px var(--wp--preset--color--base);
 }
 #acemedia-glossary-root .glossary-terms .glossary-item-card h4 {
   cursor: pointer;
   margin: 0;
   transition: color 0.2s ease;
-  padding: 0.5em;
-  font-size: 1em;
+  padding: 0px;
+  font-size: var(--wp--preset--font-size--large);
   font-weight: bold;
 }
 #acemedia-glossary-root .glossary-terms .glossary-item-card h4:hover {
-  color: inherit;
+  color: var(--wp--preset--color--vivid-red);
 }
-#acemedia-glossary-root .glossary-terms .glossary-item-card .see-also, #acemedia-glossary-root .glossary-terms .glossary-item-card .categories-tags, #acemedia-glossary-root .glossary-terms .glossary-item-card .related-posts {
-  margin-top: 1em;
-  font-size: 0.6em;
+#acemedia-glossary-root .glossary-terms .glossary-item-card > div {
+  font-size: var(--wp--preset--font-size--medium);
 }
-#acemedia-glossary-root .glossary-terms .glossary-item-card .see-also strong, #acemedia-glossary-root .glossary-terms .glossary-item-card .categories-tags strong, #acemedia-glossary-root .glossary-terms .glossary-item-card .related-posts strong {
+#acemedia-glossary-root .glossary-terms .glossary-item-card > div p {
+  margin: 0 0 var(--wp--preset--spacing--30);
+}
+#acemedia-glossary-root .glossary-terms .glossary-item-card .see-also,
+#acemedia-glossary-root .glossary-terms .glossary-item-card .categories-tags,
+#acemedia-glossary-root .glossary-terms .glossary-item-card .related-posts {
+  margin-top: var(--wp--preset--spacing--20);
+  font-size: var(--wp--preset--font-size--small);
+}
+#acemedia-glossary-root .glossary-terms .glossary-item-card .see-also strong,
+#acemedia-glossary-root .glossary-terms .glossary-item-card .categories-tags strong,
+#acemedia-glossary-root .glossary-terms .glossary-item-card .related-posts strong {
   font-weight: bold;
 }
 
 .glossary-anchor-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 1em;
+}
+.glossary-anchor-links a {
+  box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.15), inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%);
+}
+.glossary-anchor-links a:hover {
+  box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.25), inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%);
+}
+.glossary-anchor-links > .components-flex-item {
+  flex: 1 1 calc(25% - var(--wp--preset--spacing--30));
+  max-width: calc(25% - var(--wp--preset--spacing--30));
+  box-sizing: border-box;
+}
+.glossary-anchor-links > .components-flex-item .glossary-anchor-link {
+  font-weight: bold;
+  color: var(--wp--preset--color--accent-3) !important;
+  padding: var(--wp--preset--spacing--20) 0px !important;
+  line-height: 1;
+}
+.glossary-anchor-links > .components-flex-item .glossary-term-link {
+  padding: 0.5em 1em !important;
+  font-weight: bold;
+  text-align: left !important;
+  padding: var(--wp--preset--spacing--20);
 }
 
 .glossary-item {
   flex: 1 1 calc(25% - 1em); /* Default: 25% width */
-  box-sizing: border-box; /* Include padding/borders in width */
+  box-sizing: border-box;
+}
+.glossary-item:hover {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wp--preset--color--base), white 10%) 0%, color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%);
+  border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+  box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.25), inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%);
+}
+
+.glossary-alphanumeric-index {
+  margin-bottom: var(--wp--preset--spacing--40);
+}
+.glossary-alphanumeric-index > div {
+  gap: 2px;
+  text-align: center;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+}
+.glossary-alphanumeric-index a, .glossary-alphanumeric-index span {
+  display: inline-block;
+  border-radius: 0.25em;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wp--preset--color--base), white 5%) 0%, color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%);
+  text-decoration: none;
+  text-shadow: 0px 1px 0px var(--wp--preset--color--base);
+  font-size: 0.6em;
+}
+.glossary-alphanumeric-index a:hover, .glossary-alphanumeric-index span:hover {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wp--preset--color--base), white 10%) 0%, color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%);
+  border-color: color-mix(in srgb, var(--wp--preset--color--base), black 80%);
+}
+.glossary-alphanumeric-index span {
+  opacity: 0;
+  padding: 0px;
+  width: 5px;
+}
+.glossary-alphanumeric-index a {
+  font-weight: bold;
 }
 
 @media (max-width: 1024px) {
-  /* Tablet view: 50% width */
   .glossary-item {
-    flex: 1 1 calc(50% - 1em);
+    flex: 1 1 calc(50% - var(--wp--preset--spacing--20));
+    max-width: calc(50% - var(--wp--preset--spacing--20));
   }
 }
 @media (max-width: 768px) {
-  /* Mobile view: 100% width */
   .glossary-item {
-    flex: 1 1 calc(100% - 1em);
+    flex: 1 1 calc(100% - var(--wp--preset--spacing--20));
+    max-width: calc(100% - var(--wp--preset--spacing--20));
   }
 }
