@@ -93,6 +93,7 @@ const GlossaryFrontend = ({ data }) => {
                 className="glossary-item-card"
                 key={term.id}
                 ref={(el) => (termRefs.current[term.id] = el)}
+                style={{ backgroundColor: 'none' }} 
             >
                 <CardHeader
                     onClick={() => onToggle(term.id)}
@@ -102,11 +103,15 @@ const GlossaryFrontend = ({ data }) => {
                 </CardHeader>
                 {isOpen && (
                     <CardBody>
-                        {term.content ? (
-                            <div dangerouslySetInnerHTML={{ __html: term.content }}></div>
-                        ) : (
-                            <p>{__('No content available.', 'acemedia-glossary')}</p>
-                        )}
+                    {term.content ? (
+                        <div>
+                            {term.content.split('\n').map((line, index) => (
+                                <p key={index}>{line.trim()}</p>
+                            ))}
+                        </div>
+                    ) : (
+                        <p>{__('No content available.', 'acemedia-glossary')}</p>
+                    )}
     
                         {/* "See Also" Section */}
                         {term.relatedTerms.length > 0 && (
@@ -290,21 +295,26 @@ const GlossaryFrontend = ({ data }) => {
     const groupedTerms = useMemo(() => {
         return sortedTerms.reduce((groups, term) => {
             const firstChar = term.title.charAt(0).toUpperCase();
-            const groupKey = /\d/.test(firstChar) ? '0-9' : firstChar;
-            if (!groups[groupKey]) groups[groupKey] = [];
-            groups[groupKey].push(term);
+            if (!groups[firstChar]) groups[firstChar] = [];
+            groups[firstChar].push(term);
             return groups;
         }, {});
-    }, [sortedTerms]); // Use sortedTerms here
+    }, [sortedTerms]);
+    
     
     const sortedGroupKeys = useMemo(() => {
         const keys = Object.keys(groupedTerms);
         return keys.sort((a, b) => {
-            if (a === '0-9') return -1;
-            if (b === '0-9') return 1;
-            return a.localeCompare(b);
+            const isANumber = /^\d$/.test(a);
+            const isBNumber = /^\d$/.test(b);
+    
+            if (isANumber && !isBNumber) return -1; // Numbers before letters
+            if (!isANumber && isBNumber) return 1;  // Letters after numbers
+    
+            return a.localeCompare(b, undefined, { numeric: true });
         });
-    }, [groupedTerms]); // Use groupedTerms here
+    }, [groupedTerms]);
+    
     
 
     return (
@@ -329,6 +339,33 @@ const GlossaryFrontend = ({ data }) => {
                     </div>
 
 
+                    <div className="glossary-alphanumeric-index">
+    <Flex className="alphanumeric-links" justify="start" align="center" wrap gap="0.5em">
+        {'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((char) => (
+            <FlexItem key={char}>
+                {groupedTerms[char] ? (
+                    <a
+                        href={`#group-${char}`}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            const group = groupedTerms[char];
+                            if (group && group[0]) {
+                                toggleCard(group[0].id, true);
+                            }
+                        }}
+                        className="alphanumeric-link"
+                    >
+                        {char}
+                    </a>
+                ) : (
+                    <span className="alphanumeric-link disabled">{char}</span>
+                )}
+            </FlexItem>
+        ))}
+    </Flex>
+</div>
+
+
                     <div className="glossary-index">
                     <Flex
     className="glossary-anchor-links"
@@ -340,7 +377,6 @@ const GlossaryFrontend = ({ data }) => {
     {sortedGroupKeys.map((key) => (
         <FlexItem
             key={key}
-            className="glossary-item"
         >
                 <Flex direction="row" align="flex-start" gap={2}>
                     {/* First link with 20% width */}
