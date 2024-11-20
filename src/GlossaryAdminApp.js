@@ -1153,7 +1153,7 @@ useEffect(() => {
             {terms.filter(t => t.id !== term.id).map((option) => (
                 <CheckboxControl
                     key={option.id}
-                    label={option.title}
+                    label={decodeHTMLEntities(option.title)}
                     checked={term.relatedTerms.includes(option.id)}
                     onChange={(isChecked) => {
                         const updatedRelatedTerms = isChecked
