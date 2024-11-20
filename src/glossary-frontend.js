@@ -1,6 +1,7 @@
 import React from 'react';
 import { render } from '@wordpress/element';
 import GlossaryFrontend from './GlossaryFrontend';
+import './styles/scss/frontend.scss';
 
 document.addEventListener('DOMContentLoaded', () => {
     const root = document.getElementById('acemedia-glossary-root');

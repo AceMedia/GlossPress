@@ -9,6 +9,8 @@ import { store as coreDataStore } from '@wordpress/core-data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faSortAlphaDown, faAnchor, faTags, faEdit } from '@fortawesome/free-solid-svg-icons';
 
+
+
 import SaveBar from './SaveBar/SaveBar';
 import './styles/scss/settings.scss';
 
@@ -32,14 +34,20 @@ const GlossaryAdminApp = () => {
     const isInitialLoad = useRef(true);
     const termRefs = useRef({});
 
-
-
     const [isDragging, setIsDragging] = useState(false);
 
     const [quickEdit, setQuickEdit] = useState('false'); // Initialize quickEdit state
 
 
     const [selectedTerms, setSelectedTerms] = useState([]);
+
+
+
+    const decodeHTMLEntities = (str) => {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = str;
+        return textarea.value;
+    };
 
     const isSavingRef = useRef(false);
 
@@ -702,7 +710,7 @@ useEffect(() => {
     
         if (sortOption === 'alphabetical') {
             return sortedTerms.reduce((acc, term) => {
-                const firstLetter = term.title.charAt(0).toUpperCase();
+                const firstLetter = decodeHTMLEntities(term.title).charAt(0).toUpperCase();
                 if (!acc[firstLetter]) acc[firstLetter] = [];
                 acc[firstLetter].push(term);
                 return acc;
@@ -729,7 +737,7 @@ useEffect(() => {
                 <TextControl
                     ref={titleRef}
                     label={__('Term', 'acemedia-glossary')}
-                    value={term.title}
+                    value={decodeHTMLEntities(term.title)}
                     onChange={(value) => {
                         updateTerm(term.id, 'title', value);
                         titleRef.current.focus();
@@ -1103,7 +1111,7 @@ useEffect(() => {
             className="bulk-select-checkbox"
         />
     )}
-    <h2>{term.title || __('New Term', 'acemedia-glossary')}</h2>
+    <h2>{decodeHTMLEntities(term.title)|| __('New Term', 'acemedia-glossary')}</h2>
     <div
         className="updated-times"
         style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}
@@ -1125,7 +1133,7 @@ useEffect(() => {
                                         <CardBody>
                                             <TextControl
     label={__('Term', 'acemedia-glossary')}
-    value={term.title}
+    value={decodeHTMLEntities(term.title)}
     onChange={(value) => updateTerm(term.id, 'title', value)}
     placeholder={__('Enter term title...', 'acemedia-glossary')}
     data-term-id={term.id} // Add attribute for focusing
