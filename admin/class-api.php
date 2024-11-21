@@ -661,3 +661,40 @@ function save_custom_css(WP_REST_Request $request) {
         return new WP_Error('invalid_data', 'CSS must be a string.', array('status' => 400));
     }
 }
+
+
+
+add_action('rest_api_init', function () {
+    // Bulk delete glossary terms
+    register_rest_route('wp/v2', '/glossary/bulk-delete', array(
+        'methods' => 'POST',
+        'callback' => 'bulk_delete_glossary_terms',
+        'permission_callback' => function () {
+            return current_user_can('manage_options'); // Restrict to admins
+        }
+    ));
+});
+
+function bulk_delete_glossary_terms(WP_REST_Request $request) {
+    $ids = $request->get_param('ids');
+
+    if (!is_array($ids) || empty($ids)) {
+        return new WP_Error('invalid_request', 'Invalid or missing IDs.', array('status' => 400));
+    }
+
+    $deleted_ids = [];
+    foreach ($ids as $id) {
+        $term = get_post(intval($id));
+        if ($term && $term->post_type === 'acemedia_glossary') {
+            $result = wp_delete_post($id, true);
+            if ($result) {
+                $deleted_ids[] = $id;
+            }
+        }
+    }
+
+    // Clear transient cache
+    delete_transient('acemedia_glossary_terms');
+
+    return new WP_REST_Response($deleted_ids, 200);
+}

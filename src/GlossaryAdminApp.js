@@ -884,35 +884,46 @@ const [newTermData, setNewTermData] = useState({
     tags: []
 });
 
-
-
-const deleteSelectedTerms = useCallback(() => {
+const deleteSelectedTerms = async () => {
     if (!selectedTerms.length) {
         setMessage(__('No terms selected for deletion.', 'acemedia-glossary'));
         return;
     }
 
-    const deletePromises = selectedTerms.map((termId) =>
-        apiFetch({
-            path: `/wp-json/wp/v2/glossary/${termId}`,
-            method: 'DELETE',
-            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-        })
+    const confirmDelete = window.confirm(
+        __('Are you sure you want to delete the selected terms? This action cannot be undone.', 'acemedia-glossary')
     );
 
-    Promise.all(deletePromises)
-        .then(() => {
-            setTerms((prevTerms) => prevTerms.filter((term) => !selectedTerms.includes(term.id)));
-            setSelectedTerms([]); // Clear selection
-            setMessage(__('Selected terms deleted successfully.', 'acemedia-glossary'));
-            setTimeout(() => setMessage(''), 3000);
-        })
-        .catch((error) => {
-            console.error('Error deleting selected terms:', error);
-            setMessage(__('Failed to delete selected terms. Please try again.', 'acemedia-glossary'));
-            setTimeout(() => setMessage(''), 3000);
+    if (!confirmDelete) return;
+
+    try {
+        const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/bulk-delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
+            },
+            body: JSON.stringify({ ids: selectedTerms }),
         });
-}, [selectedTerms, terms, setMessage, setTerms]);
+
+        if (!response.ok) {
+            throw new Error(__('Failed to delete selected terms.', 'acemedia-glossary'));
+        }
+
+        // Update terms after successful deletion
+        const deletedIds = await response.json();
+        setTerms((prevTerms) => prevTerms.filter((term) => !deletedIds.includes(term.id)));
+        setSelectedTerms([]); // Clear selection
+        setMessage(__('Selected terms deleted successfully.', 'acemedia-glossary'));
+    } catch (error) {
+        console.error('Error deleting selected terms:', error);
+        setMessage(__('Failed to delete selected terms. Please try again.', 'acemedia-glossary'));
+    } finally {
+        setTimeout(() => setMessage(''), 3000);
+    }
+};
+
+
     
 
     const renderAlphaIndex = useCallback(() => {
@@ -1423,12 +1434,7 @@ useEffect(() => {
         <Button
         isDestructive isPrimary 
             onClick={() => {
-                const confirmDelete = window.confirm(
-                    __('Are you sure you want to delete the selected terms? This action cannot be undone.', 'acemedia-glossary')
-                );
-                if (confirmDelete) {
                     deleteSelectedTerms();
-                }
             }}
         >
             {__('Delete Terms', 'acemedia-glossary')}
