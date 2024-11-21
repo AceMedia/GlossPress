@@ -8,13 +8,14 @@ class AceMediaGlossary_Admin {
     }
 
     public function addAdminMenu() {
-        add_submenu_page(
-            'edit.php?post_type=acemedia_glossary',
-            'Glossary Settings',     // Page title
-            'Glossary Settings',     // Menu title
-            'manage_options',        // Capability
-            'acemedia-glossary-settings', // Menu slug
-            'render_acemedia_glossary_settings_page' // Callback function
+        add_menu_page(
+            'Glossary',                          // Page title
+            'Glossary',                          // Menu title
+            'manage_options',                    // Capability
+            'acemedia-glossary-settings',        // Menu slug
+            'render_acemedia_glossary_settings_page', // Callback function
+            'dashicons-book-alt',                // Icon
+            20                                   // Position
         );
     }
 
@@ -23,7 +24,7 @@ class AceMediaGlossary_Admin {
 
     public function enqueueAssets($hook) {
         // Only enqueue scripts on the glossary settings page
-        if ('acemedia_glossary_page_acemedia-glossary-settings' !== $hook) {
+        if ('toplevel_page_acemedia-glossary-settings' !== $hook) {
             return;
         }
   
