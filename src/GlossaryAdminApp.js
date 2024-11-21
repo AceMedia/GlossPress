@@ -512,7 +512,7 @@ useEffect(() => {
                     const startTime = performance.now();
     
                     // Send the imported terms to the server for processing
-                    await apiFetch({
+                    const response = await apiFetch({
                         path: '/wp-json/wp/v2/glossary/import',
                         method: 'POST',
                         data: importedTerms,
@@ -522,8 +522,15 @@ useEffect(() => {
                     const endTime = performance.now();
                     const responseTime = Math.round(endTime - startTime);
     
+                    // Extract the response data
+                    const { new_terms = [], matched_terms = 0 } = response;
+    
+                    // Calculate new terms and total terms
+                    const totalTerms = importedTerms.length;
+                    const newTerms = totalTerms - matched_terms;
+    
                     setMessage(
-                        `Import completed successfully in ${responseTime}ms.`
+                        `${newTerms} terms imported successfully in ${responseTime}ms. ${matched_terms} terms already existed.`
                     );
     
                     // Refresh logs after the import process
@@ -550,6 +557,7 @@ useEffect(() => {
             setTimeout(() => setMessage(''), 5000);
         }
     };
+    
     
 
     window.addEventListener('dragover', handleDragOver);
