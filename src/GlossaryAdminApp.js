@@ -24,6 +24,7 @@ const GlossaryAdminApp = () => {
     const [tags, setTags] = useState([]);
     const [message, setMessage] = useState('');
     const [sortOption, setSortOption] = useState('alphabetical');
+    const [isSaving, setIsSaving] = useState(false);
     const [unsavedChanges, setUnsavedChanges] = useState(false);
     const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
     const [loadTime, setLoadTime] = useState(null);
@@ -81,7 +82,7 @@ const saveAutoHighlightOption = (isEnabled) => {
     const saveTerms = useCallback((isAutoSave = false) => {
         if (!unsavedChanges || isSavingRef.current) return;
     
-        isSavingRef.current = true;
+        setIsSaving(true);
     
         const termsToSave = terms.filter((term) => modifiedTerms.has(term.id)).map((term) => ({
             ...term,
@@ -123,7 +124,7 @@ const saveAutoHighlightOption = (isEnabled) => {
         setTimeout(() => setMessage(''), 3000); // Clear the error message
     })
     .finally(() => {
-        isSavingRef.current = false;
+        setIsSaving(false);
     });
     }, [terms, modifiedTerms, unsavedChanges]);
 
@@ -506,6 +507,8 @@ useEffect(() => {
                         throw new Error('Invalid JSON format. Expected an array of terms.');
                     }
     
+                    setIsSaving(true);
+    
                     // Clear logs before starting the import process
                     await clearLogs();
     
@@ -548,6 +551,7 @@ useEffect(() => {
                     console.error('Error importing terms:', error);
                     setMessage('Error importing terms. Please try again.');
                 } finally {
+                    setIsSaving(false);
                     setTimeout(() => setMessage(''), 5000);
                 }
             };
@@ -557,6 +561,7 @@ useEffect(() => {
             setTimeout(() => setMessage(''), 5000);
         }
     };
+    
     
     
 
@@ -765,7 +770,7 @@ useEffect(() => {
         }
     }, [terms]);
 
-    const removeTerm = useCallback((termId) => {
+    const removeTerm = useCallback(async (termId) => {
         const termToDelete = terms.find((term) => term.id === termId);
     
         if (!termToDelete) {
@@ -779,22 +784,34 @@ useEffect(() => {
     
         if (!confirmDelete) return;
     
-        apiFetch({
-            path: `/wp-json/wp/v2/glossary/${termId}`,
-            method: 'DELETE',
-            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-        })
-            .then(() => {
-                setTerms((prevTerms) => prevTerms.filter((term) => term.id !== termId));
-                setMessage(__('Term deleted successfully.', 'acemedia-glossary'));
-                setTimeout(() => setMessage(''), 3000);
-            })
-            .catch((error) => {
-                console.error('Error deleting term:', error);
-                setMessage(__('Failed to delete the term. Please try again.', 'acemedia-glossary'));
-                setTimeout(() => setMessage(''), 3000);
+        setIsSaving(true);
+    
+        try {
+            const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/bulk-delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
+                },
+                body: JSON.stringify({ ids: [termId] }), // Send single term ID in array
             });
-    }, [terms, setTerms, setMessage]);
+    
+            if (!response.ok) {
+                throw new Error(__('Failed to delete the term.', 'acemedia-glossary'));
+            }
+    
+            const deletedIds = await response.json(); // API should return deleted IDs
+            setTerms((prevTerms) => prevTerms.filter((term) => !deletedIds.includes(term.id)));
+            setMessage(__('Term deleted successfully.', 'acemedia-glossary'));
+        } catch (error) {
+            console.error('Error deleting term:', error);
+            setMessage(__('Failed to delete the term. Please try again.', 'acemedia-glossary'));
+        } finally {
+            setIsSaving(false);
+            setTimeout(() => setMessage(''), 3000);
+        }
+    }, [terms, setTerms, setMessage, setIsSaving]);
+    
     
     
 
@@ -898,6 +915,9 @@ const deleteSelectedTerms = async () => {
         return;
     }
 
+
+    setIsSaving(true);
+
     const confirmDelete = window.confirm(
         __('Are you sure you want to delete the selected terms? This action cannot be undone.', 'acemedia-glossary')
     );
@@ -927,6 +947,8 @@ const deleteSelectedTerms = async () => {
         console.error('Error deleting selected terms:', error);
         setMessage(__('Failed to delete selected terms. Please try again.', 'acemedia-glossary'));
     } finally {
+
+        setIsSaving(false);
         setTimeout(() => setMessage(''), 3000);
     }
 };
@@ -1436,6 +1458,8 @@ useEffect(() => {
     isAutoSaveEnabled={isAutoSaveEnabled}
     setIsAutoSaveEnabled={setIsAutoSaveEnabled}
     message={message}
+    isSaving={isSaving}
+    setIsSaving={setIsSaving} 
     buttonText={unsavedChanges ? 'Save Changes' : 'Saved'}
 >
     {quickEdit === 'true' ? (

@@ -2,8 +2,7 @@ import PropTypes from 'prop-types';
 import { useState, useEffect } from '@wordpress/element';
 import { Button, Flex, FlexItem, ToggleControl, Spinner } from '@wordpress/components';
 
-const SaveBar = ({ children, onSave, setUnsavedChanges, unsavedChanges, isAutoSaveEnabled, setIsAutoSaveEnabled, buttonText, message }) => {
-    const [isSaving, setIsSaving] = useState(false); // State to track saving status
+const SaveBar = ({ children, onSave, setUnsavedChanges, unsavedChanges, isAutoSaveEnabled, setIsAutoSaveEnabled, buttonText, message, isSaving, setIsSaving }) => {
     const [isSuccess, setIsSuccess] = useState(false); // State to track successful save
     const [elapsedTime, setElapsedTime] = useState(0);
     const [intervalId, setIntervalId] = useState(null);
@@ -119,6 +118,8 @@ SaveBar.propTypes = {
     isAutoSaveEnabled: PropTypes.bool.isRequired,
     setIsAutoSaveEnabled: PropTypes.func.isRequired,
     message: PropTypes.string, // Updated to accept message as a prop
+    isSaving: PropTypes.bool.isRequired, 
+    setIsSaving: PropTypes.func.isRequired, 
 };
 
 export default SaveBar;
