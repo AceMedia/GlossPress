@@ -31,6 +31,7 @@
     "@wordpress/api-fetch": "^7.11.0",
     "@wordpress/components": "^28.11.0",
     "@wordpress/core-data": "^7.11.0",
-    "@wordpress/data": "^10.11.0"
+    "@wordpress/data": "^10.11.0",
+    "@wordpress/element": "^6.12.0"
   }
 }
