@@ -81,7 +81,6 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
     .acemedia-glossary-frontend {
       max-width: 1200px;
       margin: 0 auto;
-      font-family: $font-family-manrope;
     }
   
     .glossary-search {
@@ -300,7 +299,7 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
         align-content: center;
         justify-content: center;
     }
-    a, span {
+    a {
         display: inline-block;
         border-radius: .25em;
         padding: 8px 10px;
@@ -316,6 +315,7 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
     }
     span {
         opacity: 0;
+        display: inline-block;
         padding: 0px;
         width: 5px;
     }
