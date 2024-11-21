@@ -1272,3 +1272,10 @@ button.wp-saving-button {
 .currently-viewing .bulk-actions-select {
 	opacity: 1;
 }
+
+
+#wpbody-content {
+	.notice {
+		display: none !important;
+	}
+}

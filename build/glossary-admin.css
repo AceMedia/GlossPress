@@ -1224,3 +1224,7 @@ button.wp-saving-button .dashicons {
 .currently-viewing .bulk-actions-select {
   opacity: 1;
 }
+
+#wpbody-content .notice {
+  display: none !important;
+}
