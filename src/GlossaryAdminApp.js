@@ -1135,7 +1135,7 @@ useEffect(() => {
     isSecondary={!customCss} // Set secondary otherwise
     onClick={() => setIsCssModalOpen(true)}
     style={{
-         textAlign: 'center', marginTop: '1em', display: 'block'
+         textAlign: 'center', display: 'block'
     }}
 >
     <FontAwesomeIcon 
@@ -1518,6 +1518,7 @@ useEffect(() => {
         title={__('Edit Custom CSS', 'acemedia-glossary')}
         onRequestClose={() => setIsCssModalOpen(false)}
         isDismissible={true}
+        size='large'
     >
         <TextareaControl
             label={__('Custom CSS', 'acemedia-glossary')}
