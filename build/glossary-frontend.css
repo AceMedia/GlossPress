@@ -10,7 +10,6 @@
 #acemedia-glossary-root .acemedia-glossary-frontend {
   max-width: 1200px;
   margin: 0 auto;
-  font-family: var(--wp--preset--font-family--manrope);
 }
 #acemedia-glossary-root .glossary-search {
   margin-bottom: var(--wp--preset--spacing--40);
@@ -205,7 +204,7 @@
   align-content: center;
   justify-content: center;
 }
-.glossary-alphanumeric-index a, .glossary-alphanumeric-index span {
+.glossary-alphanumeric-index a {
   display: inline-block;
   border-radius: 0.25em;
   padding: 8px 10px;
@@ -215,12 +214,13 @@
   text-shadow: 0px 1px 0px var(--wp--preset--color--base);
   font-size: 0.6em;
 }
-.glossary-alphanumeric-index a:hover, .glossary-alphanumeric-index span:hover {
+.glossary-alphanumeric-index a:hover {
   background: linear-gradient(to bottom, color-mix(in srgb, var(--wp--preset--color--base), white 10%) 0%, color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%);
   border-color: color-mix(in srgb, var(--wp--preset--color--base), black 80%);
 }
 .glossary-alphanumeric-index span {
   opacity: 0;
+  display: inline-block;
   padding: 0px;
   width: 5px;
 }
