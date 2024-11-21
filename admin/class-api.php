@@ -66,6 +66,26 @@ add_action('rest_api_init', function() {
             return current_user_can('manage_options'); // Restrict access to admins
         }
     ));
+
+
+    register_rest_route('wp/v2', '/get-custom-css', array(
+        'methods' => 'GET',
+        'callback' => 'get_custom_css',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts'); // Allow only editors and above
+        }
+    ));
+
+    // Save Custom CSS
+    register_rest_route('wp/v2', '/save-custom-css', array(
+        'methods' => 'POST',
+        'callback' => 'save_custom_css',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts'); // Allow only editors and above
+        }
+    ));
+
+
 });
 
 // Function to fetch glossary terms
@@ -623,4 +643,21 @@ function update_auto_highlight_option(WP_REST_Request $request) {
     $value = $request->get_param('value') === 'true' ? 'true' : 'false'; // Sanitize input
     update_option('auto_highlight', $value); // Update option
     return new WP_REST_Response(array('success' => true, 'value' => $value === 'true'), 200); // Respond with success
+}
+
+
+
+function get_custom_css() {
+    $custom_css = get_option('acemedia_custom_css', ''); // Default to an empty string
+    return new WP_REST_Response(array('css' => $custom_css), 200);
+}
+
+function save_custom_css(WP_REST_Request $request) {
+    $css = $request->get_param('css'); // Get the CSS data from the request
+    if (is_string($css)) {
+        update_option('acemedia_custom_css', wp_strip_all_tags($css)); // Save sanitized CSS
+        return new WP_REST_Response(array('success' => true), 200);
+    } else {
+        return new WP_Error('invalid_data', 'CSS must be a string.', array('status' => 400));
+    }
 }

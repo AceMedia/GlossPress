@@ -9,6 +9,7 @@ import { store as coreDataStore } from '@wordpress/core-data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faSortAlphaDown, faAnchor, faTags, faEdit, faHighlighter, faEye, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 
+import { faCss } from '@fortawesome/free-brands-svg-icons';
 
 
 import SaveBar from './SaveBar/SaveBar';
@@ -33,6 +34,9 @@ const GlossaryAdminApp = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const isInitialLoad = useRef(true);
     const termRefs = useRef({});
+
+    const [isCssModalOpen, setIsCssModalOpen] = useState(false); // State for the CSS modal
+const [customCss, setCustomCss] = useState(''); // State for custom CSS
 
     const [isDragging, setIsDragging] = useState(false);
 
@@ -399,6 +403,41 @@ const TagsAndCategoriesFilter = ({
             </PanelBody>
         </>
     );
+};
+
+
+useEffect(() => {
+    apiFetch({
+        path: '/wp-json/wp/v2/get-custom-css',
+        headers: {
+            'X-WP-Nonce': AceMediaGlossaryAdmin.nonce, // Add nonce for validation
+        },
+    })
+        .then((data) => {
+            if (data && data.css) {
+                setCustomCss(data.css); // Set the retrieved CSS
+            }
+        })
+        .catch((error) => {
+            console.error('Error fetching custom CSS:', error);
+        });
+}, []);
+
+
+const saveCss = () => {
+    apiFetch({
+        path: '/wp-json/wp/v2/save-custom-css',
+        method: 'POST',
+        data: { css: customCss },
+        headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+    })
+        .then(() => {
+            setMessage(__('Custom CSS saved successfully!', 'acemedia-glossary'));
+        })
+        .catch((error) => {
+            console.error('Error saving custom CSS:', error);
+            setMessage(__('Failed to save custom CSS.', 'acemedia-glossary'));
+        });
 };
 
 
@@ -1091,6 +1130,27 @@ useEffect(() => {
 >
 </PanelBody>
 
+<Button
+    isPrimary={!!customCss} // Set primary if custom CSS exists
+    isSecondary={!customCss} // Set secondary otherwise
+    onClick={() => setIsCssModalOpen(true)}
+    style={{
+         textAlign: 'center', marginTop: '1em', display: 'block'
+    }}
+>
+    <FontAwesomeIcon 
+        icon={faCss} 
+        style={{ 
+            verticalAlign: 'middle', 
+            fontSize: '1.5em', 
+            marginRight: '5px',
+            color: customCss ? 'white' : 'inherit' // Set color to white if custom CSS exists
+        }} 
+    />
+    {customCss
+        ? __('Edit Custom CSS', 'acemedia-glossary')
+        : __('Add Custom CSS', 'acemedia-glossary')}
+</Button>
 
 
 <Button
@@ -1099,7 +1159,7 @@ useEffect(() => {
     disabled={unsavedChanges}
     style={{ textAlign: 'center', display: 'block' }}
 >
-    <span className="dashicons dashicons-download" style={{ marginRight: '5px', verticalAlign: 'middle' }}></span>
+    <span className="dashicons dashicons-download" style={{ marginRight: '5px', verticalAlign: 'middle', fontSize: '1.5em' }}></span>
     {unsavedChanges
         ? __('Save Changes to enable Download', 'acemedia-glossary')
         : __('Download JSON Backup', 'acemedia-glossary')}
@@ -1450,6 +1510,47 @@ useEffect(() => {
         </Button>
     </Modal>
 )}
+
+
+
+{isCssModalOpen && (
+    <Modal
+        title={__('Edit Custom CSS', 'acemedia-glossary')}
+        onRequestClose={() => setIsCssModalOpen(false)}
+        isDismissible={true}
+    >
+        <TextareaControl
+            label={__('Custom CSS', 'acemedia-glossary')}
+            value={customCss}
+            onChange={(value) => setCustomCss(value)}
+            rows={15}
+            style={{
+                fontFamily: 'monospace',
+                fontSize: '14px',
+                width: '100%',
+                height: '300px',
+            }}
+            placeholder={__('Write your custom CSS here...', 'acemedia-glossary')}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1em' }}>
+        <Button
+    isPrimary
+    onClick={() => {
+        saveCss(); // Reuse the saveCss function
+        setIsCssModalOpen(false); // Close the modal after saving
+    }}
+>
+    {__('Save Custom CSS', 'acemedia-glossary')}
+</Button>
+
+            <Button isSecondary onClick={() => setIsCssModalOpen(false)}>
+                {__('Cancel', 'acemedia-glossary')}
+            </Button>
+        </div>
+    </Modal>
+)}
+
+
 
         </>
     );

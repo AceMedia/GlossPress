@@ -34,6 +34,14 @@ class AceMediaGlossary_Shortcode {
             ACEMEDIA_GLOSSARY_VERSION
         );
 
+
+
+    // Check if there is custom CSS saved and add it
+    $custom_css = get_option('acemedia_custom_css', '');
+    if (!empty($custom_css)) {
+        wp_add_inline_style('acemedia-glossary-frontend', $custom_css);
+    }
+
         wp_localize_script(
             'acemedia-glossary-frontend',
             'AceMediaGlossaryData',
