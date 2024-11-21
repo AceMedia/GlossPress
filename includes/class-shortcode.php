@@ -260,12 +260,7 @@ function acemedia_register_glossary_block() {
         ACEMEDIA_GLOSSARY_VERSION
     );
 
-    wp_register_style(
-        'acemedia-glossary-block-frontend',
-        ACEMEDIA_GLOSSARY_URL . 'build/glossary-block-frontend.css',
-        array(),
-        ACEMEDIA_GLOSSARY_VERSION
-    );
+  
 
     register_block_type('acemedia/glossary', array(
         'editor_script'   => 'acemedia-glossary-block',
