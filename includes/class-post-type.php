@@ -6,7 +6,6 @@ class AceMediaGlossary_PostType {
     public function __construct() {
         add_action('init', array($this, 'registerPostType'));
     }
-
     public function registerPostType() {
         register_post_type('acemedia_glossary', array(
             'labels' => array(
@@ -19,6 +18,8 @@ class AceMediaGlossary_PostType {
             ),
             'public' => true,
             'show_in_rest' => true,
+            'show_ui' => true,        // Keeps the post type accessible in the admin
+            'show_in_menu' => false, // Hides it from the admin menu
             'supports' => array('title', 'editor', 'custom-fields'),
             'menu_icon' => 'dashicons-book-alt',
             'has_archive' => true,
@@ -26,6 +27,7 @@ class AceMediaGlossary_PostType {
             'taxonomies' => array('category', 'post_tag'),  // Enable categories and tags
         ));
     }
+    
 
 }
 
