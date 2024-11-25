@@ -822,20 +822,17 @@ useEffect(() => {
     
         let filteredTerms = terms;
 
-        console.log(filteredTerms);
     
         if (tagFilter.length > 0) {
             filteredTerms = filteredTerms.filter(term =>
                 term.tags.some(tag => tagFilter.includes(tag.id)) // Compare tag.id to tagFilter
             );
-            console.log(filteredTerms);
         }
     
         if (categoryFilter.length > 0) {
             filteredTerms = filteredTerms.filter(term =>
                 term.categories.some(cat => categoryFilter.includes(cat.id)) // Compare cat.id to categoryFilter
             );
-            console.log(filteredTerms);
         }
     
         const sortedTerms = filteredTerms.sort((a, b) => {
