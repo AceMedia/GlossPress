@@ -11,9 +11,13 @@ import { faClock, faSortAlphaDown, faAnchor, faTags, faEdit, faHighlighter, faEy
 
 import { faCss } from '@fortawesome/free-brands-svg-icons';
 
-
+import TagsAndCategoriesFilter from './SideBar/TagsAndCategoriesFilter';
+import SearchComponent from './SideBar/SearchComponent';
 import SaveBar from './SaveBar/SaveBar';
 import './styles/scss/settings.scss';
+
+
+import { debounce, decodeHTMLEntities, fetchFromAPI } from './utils';
 
 const DEBOUNCE_DELAY = 2000;
 
@@ -71,11 +75,6 @@ const saveAutoHighlightOption = (isEnabled) => {
 
 
 
-    const decodeHTMLEntities = (str) => {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = str;
-        return textarea.value;
-    };
 
     const isSavingRef = useRef(false);
 
@@ -129,16 +128,6 @@ const saveAutoHighlightOption = (isEnabled) => {
     }, [terms, modifiedTerms, unsavedChanges]);
 
 
- // Create a memoized debounce function
- const debounce = useCallback((func, delay) => {
-    let timeoutId;
-    return (...args) => {
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-        }
-        timeoutId = setTimeout(() => func(...args), delay);
-    };
-}, []);
 
 // Create a memoized debouncedAutoSave function
 const debouncedAutoSave = useCallback(
@@ -324,87 +313,6 @@ const updateTags = (termId, updatedTags) => {
 };
 
 
-
-const TagsAndCategoriesFilter = ({
-    tags,
-    categories,
-    tagFilter,
-    handleTagChange,
-    categoryFilter,
-    handleCategoryChange,
-}) => {
-    const [showAllTags, setShowAllTags] = useState(false);
-
-    // Local state for panel open/closed status
-    const [isTagsPanelOpen, setIsTagsPanelOpen] = useState(
-        () => JSON.parse(localStorage.getItem('isTagsPanelOpen')) || false
-    );
-    const [isCategoriesPanelOpen, setIsCategoriesPanelOpen] = useState(
-        () => JSON.parse(localStorage.getItem('isCategoriesPanelOpen')) || false
-    );
-
-    // Save state to localStorage when it changes
-    useEffect(() => {
-        localStorage.setItem('isTagsPanelOpen', JSON.stringify(isTagsPanelOpen));
-    }, [isTagsPanelOpen]);
-
-    useEffect(() => {
-        localStorage.setItem('isCategoriesPanelOpen', JSON.stringify(isCategoriesPanelOpen));
-    }, [isCategoriesPanelOpen]);
-
-    // Displayed tags based on "Show More"
-    const displayedTags = useMemo(() => (showAllTags ? tags : tags.slice(0, 10)), [showAllTags, tags]);
-
-    return (
-        <>
-            <PanelBody
-                title={<span><FontAwesomeIcon icon={faTags} /> {__('Tags', 'acemedia-glossary')}</span>}
-                initialOpen={isTagsPanelOpen}
-                onToggle={() => setIsTagsPanelOpen((prev) => !prev)}
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {[{ label: 'All Tags', value: 'all_tags' }, ...displayedTags].map((tag) => (
-                        <Button
-                            key={tag.value}
-                            isPressed={tagFilter.includes(tag.value)}
-                            onClick={() => handleTagChange(tag.value)}
-                            className="toggle-button"
-                        >
-                            {tag.label}
-                        </Button>
-                    ))}
-                    {tags.length > 10 && (
-                        <Button
-                            onClick={() => setShowAllTags(!showAllTags)}
-                            className="toggle-button"
-                        >
-                            {showAllTags ? __('Show Less') : __('Show More')}
-                        </Button>
-                    )}
-                </div>
-            </PanelBody>
-
-            <PanelBody
-                title={<span><FontAwesomeIcon icon={faTags} /> {__('Categories', 'acemedia-glossary')}</span>}
-                initialOpen={isCategoriesPanelOpen}
-                onToggle={() => setIsCategoriesPanelOpen((prev) => !prev)}
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {categories.map((category) => (
-                        <Button
-                            key={category.value}
-                            isPressed={categoryFilter.includes(category.value)}
-                            onClick={() => handleCategoryChange(category.value)}
-                            className="toggle-button"
-                        >
-                            {category.label}
-                        </Button>
-                    ))}
-                </div>
-            </PanelBody>
-        </>
-    );
-};
 
 
 useEffect(() => {
@@ -821,20 +729,29 @@ useEffect(() => {
         if (!terms.length) return {}; // Fallback for empty terms list
     
         let filteredTerms = terms;
-
     
+        // Apply search query filtering
+        if (debouncedSearchQuery) {
+            filteredTerms = filteredTerms.filter((term) =>
+                term.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                term.content.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+            );
+        }
+    
+        // Apply tag and category filtering
         if (tagFilter.length > 0) {
-            filteredTerms = filteredTerms.filter(term =>
-                term.tags.some(tag => tagFilter.includes(tag.id)) // Compare tag.id to tagFilter
+            filteredTerms = filteredTerms.filter((term) =>
+                term.tags.some((tag) => tagFilter.includes(tag.id)) // Compare tag.id to tagFilter
             );
         }
     
         if (categoryFilter.length > 0) {
-            filteredTerms = filteredTerms.filter(term =>
-                term.categories.some(cat => categoryFilter.includes(cat.id)) // Compare cat.id to categoryFilter
+            filteredTerms = filteredTerms.filter((term) =>
+                term.categories.some((cat) => categoryFilter.includes(cat.id)) // Compare cat.id to categoryFilter
             );
         }
     
+        // Apply sorting
         const sortedTerms = filteredTerms.sort((a, b) => {
             if (sortOption === 'alphabetical') {
                 return a.title.localeCompare(b.title);
@@ -846,6 +763,7 @@ useEffect(() => {
             return 0;
         });
     
+        // Group alphabetically if required
         if (sortOption === 'alphabetical') {
             return sortedTerms.reduce((acc, term) => {
                 const firstLetter = decodeHTMLEntities(term.title).charAt(0).toUpperCase();
@@ -856,8 +774,8 @@ useEffect(() => {
         }
     
         return { All: sortedTerms };
-    }, [terms, sortOption, debouncedSearchQuery, tagFilter, categoryFilter]) || {}; // Ensure displayedTerms is an object
-       
+    }, [terms, sortOption, debouncedSearchQuery, tagFilter, categoryFilter]);
+           
     // Calculate visible count with a fallback for empty displayedTerms
     const visibleCount = Object.keys(displayedTerms).reduce((count, key) => {
         return count + (displayedTerms[key]?.length || 0);
@@ -981,38 +899,7 @@ const deleteSelectedTerms = async () => {
         return null;
     }, [displayedTerms, sortOption]);
 
-    const SearchComponent = memo(({ searchQuery, setSearchQuery }) => {
-        const inputRef = useRef(null);
     
-        const handleFocus = useCallback(() => {
-            if (inputRef.current) {
-                inputRef.current.focus();
-            }
-        }, []);
-    
-        useEffect(() => {
-            // Only focus the input if it's actively being typed in, not on initial load
-            if (searchQuery.length > 0) {
-                handleFocus();
-            }
-        }, [searchQuery, handleFocus]);
-    
-        return (
-            <div className='search-holder'>
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search..."
-                    style={{ width: '100%', marginBottom: '0px' }}
-                    autoComplete="off"
-                    onFocus={handleFocus} // Ensures input regains focus if clicked
-                />
-                <span className="dashicons dashicons-search" style={{ marginLeft: '5px' }}></span>
-            </div>
-        );
-    });
     
     const openModalForNewTerm = () => {
         setIsModalOpen(true);
@@ -1134,6 +1021,7 @@ useEffect(() => {
     categoryFilter={categoryFilter}
     handleCategoryChange={handleCategoryChange}
 />
+
 
 
 
