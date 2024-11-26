@@ -1,1 +1,6 @@
-p span.highlight{border-bottom:1px dashed}
+/*!************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js!./src/styles/scss/tooltips.scss ***!
+  \************************************************************************************************************************/
+p span.highlight {
+  border-bottom: 1px dashed;
+}
