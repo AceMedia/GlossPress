@@ -196,3 +196,97 @@ export const formatRelativeTime = (timestamp) => {
     }
     return 'Just now';
 };
+
+
+
+export const setupDragAndDrop = ({
+    onFileDrop,
+    setIsDragging,
+    setMessage,
+    clearLogs,
+    setIsSaving,
+    fetchLogs,
+    setLoadTime,
+    setTerms,
+    setLogs, // Include setLogs here
+}) => {
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = async (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        const file = e.dataTransfer.files[0];
+
+        if (file && file.type === 'application/json') {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const importedTerms = JSON.parse(event.target.result);
+
+                    if (!Array.isArray(importedTerms)) {
+                        throw new Error('Invalid JSON format. Expected an array of terms.');
+                    }
+
+                    setIsSaving(true);
+                    await clearLogs();
+
+                    const startTime = performance.now();
+
+                    const response = await onFileDrop(importedTerms);
+
+                    const endTime = performance.now();
+                    const responseTime = Math.round(endTime - startTime);
+
+                    const { new_terms = [], matched_terms = 0 } = response;
+
+                    const totalTerms = importedTerms.length;
+                    const newTerms = totalTerms - matched_terms;
+
+                    setMessage(
+                        `${newTerms} terms imported successfully in ${responseTime}ms. ${matched_terms} terms already existed.`
+                    );
+
+                    await fetchLogs(setLogs); // Ensure fetchLogs correctly uses setLogs
+
+                    const fetchStartTime = performance.now();
+                    const updatedTerms = await fetchFromAPI('/wp-json/wp/v2/glossary');
+                    const fetchEndTime = performance.now();
+                    const newLoadTime = Math.round(fetchEndTime - fetchStartTime);
+
+                    setLoadTime(newLoadTime);
+                    setTerms(updatedTerms);
+                } catch (error) {
+                    console.error('Error importing terms:', error);
+                    setMessage('Error importing terms. Please try again.');
+                } finally {
+                    setIsSaving(false);
+                    setTimeout(() => setMessage(''), 5000);
+                }
+            };
+            reader.readAsText(file);
+        } else {
+            setMessage('Please drop a valid JSON file.');
+            setTimeout(() => setMessage(''), 5000);
+        }
+    };
+
+    window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('dragleave', handleDragLeave);
+    window.addEventListener('drop', handleDrop);
+
+    return () => {
+        window.removeEventListener('dragover', handleDragOver);
+        window.removeEventListener('dragleave', handleDragLeave);
+        window.removeEventListener('drop', handleDrop);
+    };
+};

@@ -20,6 +20,8 @@ import {
     fetchLogs, 
     clearLogs, 
     saveCss, 
+    fetchFromAPI,
+    setupDragAndDrop
 } from './utils';
 
 import Modals from './Modals';
@@ -61,7 +63,7 @@ const GlossaryAdminApp = () => {
 
     // Fetch the initial value from wp_option on component mount
     useEffect(() => {
-        apiFetch({ path: '/wp-json/wp/v2/options/auto_highlight' }) // Updated to match registered route
+        fetchFromAPI('/wp-json/wp/v2/options/auto_highlight' ) // Updated to match registered route
             .then((data) => {
                 setAutoHighlight(data.value === true); // Convert response value to boolean
             })
@@ -130,18 +132,6 @@ const GlossaryAdminApp = () => {
 
 
 
-    // Create a memoized debouncedAutoSave function
-    const debouncedAutoSave = useCallback(
-        debounce(() => {
-            if (isAutoSaveEnabled && unsavedChanges) {
-                saveTerms(true);
-            }
-        }, DEBOUNCE_DELAY),
-        [isAutoSaveEnabled, unsavedChanges, saveTerms]
-    );
-        
-
-
 
     useEffect(() => {
         const handler = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
@@ -154,7 +144,7 @@ const GlossaryAdminApp = () => {
     useEffect(() => {
         const startTime = performance.now();
     
-        apiFetch({ path: '/wp-json/wp/v2/glossary' })
+        fetchFromAPI('/wp-json/wp/v2/glossary')
             .then((data) => {
                 const endTime = performance.now();
                 setLoadTime(endTime - startTime);
@@ -179,14 +169,14 @@ const GlossaryAdminApp = () => {
                 setLoadTime(null);
             });
     
-        apiFetch({ path: '/wp-json/wp/v2/categories' })
+        fetchFromAPI('/wp-json/wp/v2/categories' )
             .then((data) => setCategories(data.map(cat => ({
                 label: cat.name,
                 value: cat.id,
             }))))
             .catch((error) => console.error('Error loading categories:', error));
-    
-        apiFetch({ path: '/wp-json/wp/v2/tags?per_page=-1' })
+
+        fetchFromAPI('/wp-json/wp/v2/tags?per_page=-1' )
             .then((data) => setTags(data.map(tag => ({
                 label: tag.name,
                 value: tag.id,
@@ -255,108 +245,29 @@ const handleDownload = useCallback(() => {
 }, []);
 
 
-
 useEffect(() => {
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-        setIsDragging(true); // Set dragging state to true
-    };
+    const cleanup = setupDragAndDrop({
+        onFileDrop: async (importedTerms) => {
+            return await apiFetch({
+                path: '/wp-json/wp/v2/glossary/import',
+                method: 'POST',
+                data: importedTerms,
+                headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+            });
+        },
+        setIsDragging,
+        setMessage,
+        clearLogs,
+        setIsSaving,
+        fetchLogs,
+        setLoadTime,
+        setTerms,
+        setLogs, // Pass setLogs here
+    });
 
-    const handleDragLeave = (e) => {
-        e.preventDefault();
-        setIsDragging(false); // Reset dragging state when leaving
-    };
+    return cleanup;
+}, [setIsDragging, setMessage, clearLogs, setIsSaving, fetchLogs, setLoadTime, setTerms, setLogs]);
 
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setIsDragging(false); // Reset dragging state after drop
-    
-        const file = e.dataTransfer.files[0];
-    
-        if (file && file.type === 'application/json') {
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const importedTerms = JSON.parse(event.target.result);
-    
-                    if (!Array.isArray(importedTerms)) {
-                        throw new Error('Invalid JSON format. Expected an array of terms.');
-                    }
-    
-                    setIsSaving(true);
-    
-                    // Clear logs before starting the import process
-                    await clearLogs();
-    
-                    const startTime = performance.now();
-    
-                    // Send the imported terms to the server for processing
-                    const response = await apiFetch({
-                        path: '/wp-json/wp/v2/glossary/import',
-                        method: 'POST',
-                        data: importedTerms,
-                        headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-                    });
-    
-                    const endTime = performance.now();
-                    const responseTime = Math.round(endTime - startTime);
-    
-                    // Extract the response data
-                    const { new_terms = [], matched_terms = 0 } = response;
-    
-                    // Calculate new terms and total terms
-                    const totalTerms = importedTerms.length;
-                    const newTerms = totalTerms - matched_terms;
-    
-                    setMessage(
-                        `${newTerms} terms imported successfully in ${responseTime}ms. ${matched_terms} terms already existed.`
-                    );
-    
-                    // Refresh logs after the import process
-                    await fetchLogs(setLogs);
-    
-                    // Fetch updated terms and calculate new load time
-                    const fetchStartTime = performance.now();
-                    const updatedTerms = await apiFetch({ path: '/wp-json/wp/v2/glossary' });
-                    const fetchEndTime = performance.now();
-                    const newLoadTime = Math.round(fetchEndTime - fetchStartTime);
-    
-                    setLoadTime(newLoadTime); // Update the loadTime state
-                    setTerms(updatedTerms); // Replace the terms with the latest data
-                } catch (error) {
-                    console.error('Error importing terms:', error);
-                    setMessage('Error importing terms. Please try again.');
-                } finally {
-                    setIsSaving(false);
-                    setTimeout(() => setMessage(''), 5000);
-                }
-            };
-            reader.readAsText(file);
-        } else {
-            setMessage('Please drop a valid JSON file.');
-            setTimeout(() => setMessage(''), 5000);
-        }
-    };
-    
-    
-    
-
-    window.addEventListener('dragover', handleDragOver);
-    window.addEventListener('dragleave', handleDragLeave);
-    window.addEventListener('drop', handleDrop);
-
-    return () => {
-        window.removeEventListener('dragover', handleDragOver);
-        window.removeEventListener('dragleave', handleDragLeave);
-        window.removeEventListener('drop', handleDrop);
-    };
-}, [setTerms, setLoadTime]);
-
-
-    
-
-    
     
     
     
@@ -380,50 +291,6 @@ useEffect(() => {
 
 
 
-    const removeTerm = useCallback(async (termId) => {
-        const termToDelete = terms.find((term) => term.id === termId);
-    
-        if (!termToDelete) {
-            setMessage(__('Term not found.', 'acemedia-glossary'));
-            return;
-        }
-    
-        const confirmDelete = window.confirm(
-            __('Are you sure you want to delete this term? This action cannot be undone.', 'acemedia-glossary')
-        );
-    
-        if (!confirmDelete) return;
-    
-        setIsSaving(true);
-    
-        try {
-            const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/bulk-delete`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
-                },
-                body: JSON.stringify({ ids: [termId] }), // Send single term ID in array
-            });
-    
-            if (!response.ok) {
-                throw new Error(__('Failed to delete the term.', 'acemedia-glossary'));
-            }
-    
-            const deletedIds = await response.json(); // API should return deleted IDs
-            setTerms((prevTerms) => prevTerms.filter((term) => !deletedIds.includes(term.id)));
-            setMessage(__('Term deleted successfully.', 'acemedia-glossary'));
-        } catch (error) {
-            console.error('Error deleting term:', error);
-            setMessage(__('Failed to delete the term. Please try again.', 'acemedia-glossary'));
-        } finally {
-            setIsSaving(false);
-            setTimeout(() => setMessage(''), 3000);
-        }
-    }, [terms, setTerms, setMessage, setIsSaving]);
-    
-    
-    
 
     const onSave = useCallback(() => saveTerms(), [saveTerms]);
 
@@ -614,6 +481,10 @@ useEffect(() => {
     setTerms={setTerms} // Make sure this is passed
     setModifiedTerms={setModifiedTerms}
     setUnsavedChanges={setUnsavedChanges}
+    quickEdit={quickEdit}
+    setQuickEdit={setQuickEdit}
+    setMessage={setMessage}
+    setIsSaving={setIsSaving}
 />
 
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo } from '@wordpr
 import { FlexBlock, Card, CardHeader, CardBody, TextControl, ToggleControl, TextareaControl, CheckboxControl, PanelRow, Tooltip, IconButton, Flex, FlexItem } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faClock, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faClock, faEdit, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import { decodeHTMLEntities, formatRelativeTime, smoothScrollTo } from '../utils';
 
 const Cards = ({
@@ -18,6 +18,9 @@ const Cards = ({
     setModifiedTerms,
     setUnsavedChanges,
     loadTime,
+    setQuickEdit,
+    setMessage,
+    setIsSaving,
 }) => {
     const termRefs = useRef({});
     const focusedTermIdRef = useRef(null);
@@ -53,6 +56,52 @@ const Cards = ({
             }
         }, 0);
     }, [terms, setTerms]);
+
+
+    const removeTerm = useCallback(async (termId) => {
+        const termToDelete = terms.find((term) => term.id === termId);
+    
+        if (!termToDelete) {
+            setMessage(__('Term not found.', 'acemedia-glossary'));
+            return;
+        }
+    
+        const confirmDelete = window.confirm(
+            __('Are you sure you want to delete this term? This action cannot be undone.', 'acemedia-glossary')
+        );
+    
+        if (!confirmDelete) return;
+    
+        setIsSaving(true);
+    
+        try {
+            const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/bulk-delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
+                },
+                body: JSON.stringify({ ids: [termId] }), // Send single term ID in array
+            });
+    
+            if (!response.ok) {
+                throw new Error(__('Failed to delete the term.', 'acemedia-glossary'));
+            }
+    
+            const deletedIds = await response.json(); // API should return deleted IDs
+            setTerms((prevTerms) => prevTerms.filter((term) => !deletedIds.includes(term.id)));
+            setMessage(__('Term deleted successfully.', 'acemedia-glossary'));
+        } catch (error) {
+            console.error('Error deleting term:', error);
+            setMessage(__('Failed to delete the term. Please try again.', 'acemedia-glossary'));
+        } finally {
+            setIsSaving(false);
+            setTimeout(() => setMessage(''), 3000);
+        }
+    }, [terms, setTerms, setMessage, setIsSaving]);
+    
+    
+    
 
     // Move helper functions for term relationships to Cards.js
     const updateRelatedTerms = (termId, updatedRelatedTerms) => {
