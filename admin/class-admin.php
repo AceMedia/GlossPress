@@ -19,23 +19,20 @@ class AceMediaGlossary_Admin {
         );
     }
 
-
-    
-
     public function enqueueAssets($hook) {
         // Only enqueue scripts on the glossary settings page
         if ('toplevel_page_acemedia-glossary-settings' !== $hook) {
             return;
         }
-  
 
-        wp_enqueue_script('wp-element');    // Loads React and other utilities
-        wp_enqueue_script('wp-data');       // Loads wp.data
-        wp_enqueue_script('wp-core-data');  // Loads core data utilities
-        wp_enqueue_script('wp-components'); // Loads components
-    
-    
-        // Enqueue the active admin color scheme
+        // Core WordPress scripts
+        wp_enqueue_script('wp-element');
+        wp_enqueue_script('wp-data');
+        wp_enqueue_script('wp-core-data');
+        wp_enqueue_script('wp-components');
+        wp_enqueue_script('wp-api-fetch'); // Ensure this is included for API calls
+
+        // Enqueue the admin color scheme for styling
         global $_wp_admin_css_colors;
         $color_scheme = get_user_option('admin_color');
         if ($color_scheme && isset($_wp_admin_css_colors[$color_scheme])) {
@@ -45,7 +42,8 @@ class AceMediaGlossary_Admin {
                 array('wp-admin')
             );
         }
-    
+
+        // Custom admin script
         wp_enqueue_script(
             'acemedia-glossary-admin',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-admin.js',
@@ -53,27 +51,25 @@ class AceMediaGlossary_Admin {
             ACEMEDIA_GLOSSARY_VERSION,
             true
         );
-    
-        // Enqueue your custom styles
+
+        // Custom admin styles
         wp_enqueue_style(
             'acemedia-glossary-admin-styles',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-admin.css',
-            array('wp-admin', 'wp-components'), // Ensure wp-admin is a dependency
+            array('wp-admin', 'wp-components'),
             ACEMEDIA_GLOSSARY_VERSION
         );
+
+        // Enqueue block editor styles
         wp_enqueue_style('wp-block-editor', includes_url('css/dist/block-editor.css'), array(), $GLOBALS['wp_version']);    
-    
-        // Localize script to pass PHP data to JavaScript (e.g., REST API URL)
+
+        // Localize script to pass PHP data to JavaScript
         wp_localize_script('acemedia-glossary-admin', 'AceMediaGlossaryAdmin', array(
-            'apiUrl' => get_rest_url(),
-            'nonce' => wp_create_nonce('wp_rest')
+            'apiUrl' => esc_url_raw(get_rest_url(null, '/')), // Ensure correct REST API URL
+            'nonce' => wp_create_nonce('wp_rest') // REST API nonce
         ));
-        
     }
-    
-
 }
-
 
 function render_acemedia_glossary_settings_page() {
     ?>
