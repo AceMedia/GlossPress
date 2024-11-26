@@ -105,14 +105,44 @@ const Cards = ({
 
     // Move helper functions for term relationships to Cards.js
     const updateRelatedTerms = (termId, updatedRelatedTerms) => {
-        setTerms((prevTerms) =>
-            prevTerms.map((term) =>
-                term.id === termId
-                    ? { ...term, relatedTerms: updatedRelatedTerms }
-                    : term
-            )
-        );
-        setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
+        setTerms((prevTerms) => {
+            // Create a copy of the previous terms to modify
+            const termsCopy = [...prevTerms];
+            const modifiedIds = new Set(); // Track modified term IDs
+    
+            // Update the relationships for the target term (termId)
+            termsCopy.forEach((term) => {
+                if (term.id === termId) {
+                    term.relatedTerms = updatedRelatedTerms;
+                    modifiedIds.add(term.id); // Mark the target term as modified
+                } else {
+                    // Handle bidirectional updates for other terms
+                    if (updatedRelatedTerms.includes(term.id)) {
+                        // If termId is in updatedRelatedTerms, ensure the reverse relationship exists
+                        if (!term.relatedTerms.includes(termId)) {
+                            term.relatedTerms = [...term.relatedTerms, termId];
+                            modifiedIds.add(term.id); // Mark related term as modified
+                        }
+                    } else {
+                        // If termId is not in updatedRelatedTerms, remove the reverse relationship
+                        if (term.relatedTerms.includes(termId)) {
+                            term.relatedTerms = term.relatedTerms.filter((id) => id !== termId);
+                            modifiedIds.add(term.id); // Mark related term as modified
+                        }
+                    }
+                }
+            });
+    
+            // Update modified terms
+            setModifiedTerms((prevModified) => {
+                const updatedSet = new Set(prevModified);
+                modifiedIds.forEach((id) => updatedSet.add(id));
+                return updatedSet;
+            });
+    
+            return termsCopy;
+        });
+    
         setUnsavedChanges(true);
     };
 
