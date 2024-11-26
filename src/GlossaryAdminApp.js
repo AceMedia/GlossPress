@@ -17,7 +17,15 @@ import SaveBar from './SaveBar/SaveBar';
 import './styles/scss/settings.scss';
 
 
-import { debounce, decodeHTMLEntities, fetchFromAPI } from './utils';
+import { 
+    decodeHTMLEntities, 
+    debounce, 
+    fetchLogs, 
+    clearLogs, 
+    saveCss, 
+    formatRelativeTime 
+} from './utils';
+
 
 const DEBOUNCE_DELAY = 2000;
 
@@ -39,6 +47,8 @@ const GlossaryAdminApp = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const isInitialLoad = useRef(true);
     const termRefs = useRef({});
+
+    const [logs, setLogs] = useState('');
 
     const [isCssModalOpen, setIsCssModalOpen] = useState(false); // State for the CSS modal
 const [customCss, setCustomCss] = useState(''); // State for custom CSS
@@ -333,21 +343,6 @@ useEffect(() => {
 }, []);
 
 
-const saveCss = () => {
-    apiFetch({
-        path: '/wp-json/wp/v2/save-custom-css',
-        method: 'POST',
-        data: { css: customCss },
-        headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-    })
-        .then(() => {
-            setMessage(__('Custom CSS saved successfully!', 'acemedia-glossary'));
-        })
-        .catch((error) => {
-            console.error('Error saving custom CSS:', error);
-            setMessage(__('Failed to save custom CSS.', 'acemedia-glossary'));
-        });
-};
 
 
 
@@ -445,7 +440,7 @@ useEffect(() => {
                     );
     
                     // Refresh logs after the import process
-                    await fetchLogs();
+                    await fetchLogs(setLogs);
     
                     // Fetch updated terms and calculate new load time
                     const fetchStartTime = performance.now();
@@ -487,22 +482,6 @@ useEffect(() => {
 
 
 
-
-    const formatRelativeTime = useCallback((timestamp) => {
-        if (!timestamp) return null;
-        const time = new Date(timestamp);
-        const now = new Date();
-        const diffInSeconds = Math.floor((now - time) / 1000);
-
-        const intervals = { year: 31536000, month: 2592000, week: 604800, day: 86400, hour: 3600, minute: 60, second: 1 };
-        for (const [key, seconds] of Object.entries(intervals)) {
-            const interval = Math.floor(diffInSeconds / seconds);
-            if (interval >= 1) {
-                return `${interval} ${key}${interval !== 1 ? 's' : ''} ago`;
-            }
-        }
-        return 'Just now';
-    }, []);
 
     const addTerm = () => {
         const newTerm = {
@@ -916,39 +895,10 @@ const deleteSelectedTerms = async () => {
     };
 
 
-    const fetchLogs = async () => {
-        try {
-            const response = await apiFetch({
-                path: '/wp-json/wp/v2/logs',
-                method: 'GET',
-                headers: {
-                    'X-WP-Nonce': AceMediaGlossaryAdmin.nonce, // Ensure the nonce is correctly set
-                },
-            });
-            setLogs(response);
-        } catch (error) {
-            console.error('Error fetching logs:', error);
-        }
-    };
+  
     
-    
-    const clearLogs = async () => {
-        try {
-            await apiFetch({
-                path: '/wp-json/wp/v2/logs/clear',
-                method: 'POST',
-                headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-            });
-            setLogs('');
-        } catch (error) {
-            console.error('Error clearing logs:', error);
-        }
-    };
-
-    const [logs, setLogs] = useState('');
-
 useEffect(() => {
-    fetchLogs();
+    fetchLogs(setLogs);
 }, []);
     
     
@@ -1095,7 +1045,7 @@ useEffect(() => {
         : __('Download JSON Backup', 'acemedia-glossary')}
 </Button>
 
-{logs && logs.trim() && (
+{logs && (
     <PanelBody className="debugger" title={__('Debug Logs', 'acemedia-glossary')} initialOpen={false}>
         <TextareaControl
             label={__('Import Logs', 'acemedia-glossary')}
@@ -1439,32 +1389,47 @@ useEffect(() => {
 )}
 
 
-
 {isCssModalOpen && (
     <Modal
         title={__('Edit Custom CSS', 'acemedia-glossary')}
         onRequestClose={() => setIsCssModalOpen(false)}
         isDismissible={true}
-        size='large'
+        size="large"
     >
-        <TextareaControl
-            label={__('Custom CSS', 'acemedia-glossary')}
-            value={customCss}
-            onChange={(value) => setCustomCss(value)}
-            rows={15}
+       <TextareaControl
+    label={__('Custom CSS', 'acemedia-glossary')}
+    value={customCss}
+    onChange={(value) => {
+        console.log('Custom CSS input value:', value); // Debugging log
+        setCustomCss(value); // Update the state with the CSS value
+    }}
+    rows={15}
+    style={{
+        fontFamily: 'monospace',
+        fontSize: '14px',
+        width: '100%',
+        height: '300px',
+    }}
+    placeholder={__('Write your custom CSS here...', 'acemedia-glossary')}
+/>
+
+        <div
             style={{
-                fontFamily: 'monospace',
-                fontSize: '14px',
-                width: '100%',
-                height: '300px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: '1em',
             }}
-            placeholder={__('Write your custom CSS here...', 'acemedia-glossary')}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1em' }}>
-        <Button
+        >
+         <Button
     isPrimary
-    onClick={() => {
-        saveCss(); // Reuse the saveCss function
+    onClick={async () => {
+        if (customCss.trim()) {
+            const responseMessage = await saveCss(customCss.trim()); // Get the response message
+            setMessage(responseMessage); // Pass the message to the SaveBar
+            setTimeout(() => setMessage(''), 3000); // Clear the message after 3 seconds
+        } else {
+            console.error(__('Custom CSS cannot be empty.', 'acemedia-glossary'));
+        }
         setIsCssModalOpen(false); // Close the modal after saving
     }}
 >

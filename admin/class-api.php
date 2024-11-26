@@ -653,14 +653,23 @@ function get_custom_css() {
 }
 
 function save_custom_css(WP_REST_Request $request) {
-    $css = $request->get_param('css'); // Get the CSS data from the request
-    if (is_string($css)) {
-        update_option('acemedia_custom_css', wp_strip_all_tags($css)); // Save sanitized CSS
-        return new WP_REST_Response(array('success' => true), 200);
-    } else {
+    $css = $request->get_param('css');
+
+    if (!is_string($css)) {
         return new WP_Error('invalid_data', 'CSS must be a string.', array('status' => 400));
     }
+
+    // Sanitize and save the CSS
+    $sanitized_css = sanitize_textarea_field($css);
+    update_option('acemedia_custom_css', $sanitized_css);
+
+    // Return a proper success response
+    return rest_ensure_response(array(
+        'success' => true,
+        'message' => 'Custom CSS saved successfully.',
+    ));
 }
+
 
 
 
