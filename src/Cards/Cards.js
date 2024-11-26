@@ -17,7 +17,7 @@ const Cards = ({
     setTerms,
     setModifiedTerms,
     setUnsavedChanges,
-    loadTime
+    loadTime,
 }) => {
     const termRefs = useRef({});
     const focusedTermIdRef = useRef(null);
@@ -209,7 +209,7 @@ const Cards = ({
 
         {Object.keys(displayedTerms).sort().map(group => (
             <FlexBlock style={{ display: 'grid', gap: '1em', flex: 'initial' }} key={group} id={group}>
-                {sortOption === 'alphabetical' && <h3 className='group-title'>sss{group}</h3>}
+                {sortOption === 'alphabetical' && <h3 className='group-title'>{group}</h3>}
                 {displayedTerms[group].map((term) => (
                 <Card
                 key={term.id}
