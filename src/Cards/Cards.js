@@ -4,6 +4,7 @@ import { __ } from '@wordpress/i18n';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faClock, faEdit, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import { decodeHTMLEntities, formatRelativeTime, smoothScrollTo } from '../utils';
+import RelatedTagsAndCats from './RelatedTagsAndCats';
 
 const Cards = ({
     displayedTerms,
@@ -101,72 +102,6 @@ const Cards = ({
     }, [terms, setTerms, setMessage, setIsSaving]);
     
     
-    
-
-    // Move helper functions for term relationships to Cards.js
-    const updateRelatedTerms = (termId, updatedRelatedTerms) => {
-        setTerms((prevTerms) => {
-            // Create a copy of the previous terms to modify
-            const termsCopy = [...prevTerms];
-            const modifiedIds = new Set(); // Track modified term IDs
-    
-            // Update the relationships for the target term (termId)
-            termsCopy.forEach((term) => {
-                if (term.id === termId) {
-                    term.relatedTerms = updatedRelatedTerms;
-                    modifiedIds.add(term.id); // Mark the target term as modified
-                } else {
-                    // Handle bidirectional updates for other terms
-                    if (updatedRelatedTerms.includes(term.id)) {
-                        // If termId is in updatedRelatedTerms, ensure the reverse relationship exists
-                        if (!term.relatedTerms.includes(termId)) {
-                            term.relatedTerms = [...term.relatedTerms, termId];
-                            modifiedIds.add(term.id); // Mark related term as modified
-                        }
-                    } else {
-                        // If termId is not in updatedRelatedTerms, remove the reverse relationship
-                        if (term.relatedTerms.includes(termId)) {
-                            term.relatedTerms = term.relatedTerms.filter((id) => id !== termId);
-                            modifiedIds.add(term.id); // Mark related term as modified
-                        }
-                    }
-                }
-            });
-    
-            // Update modified terms
-            setModifiedTerms((prevModified) => {
-                const updatedSet = new Set(prevModified);
-                modifiedIds.forEach((id) => updatedSet.add(id));
-                return updatedSet;
-            });
-    
-            return termsCopy;
-        });
-    
-        setUnsavedChanges(true);
-    };
-
-    const updateCategories = (termId, updatedCategories) => {
-        setTerms((prevTerms) =>
-            prevTerms.map((term) =>
-                term.id === termId
-                    ? { ...term, categories: updatedCategories }
-                    : term
-            )
-        );
-        setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
-        setUnsavedChanges(true);
-    };
-
-    const updateTags = (termId, updatedTags) => {
-        setTerms((prevTerms) =>
-            prevTerms.map((term) =>
-                term.id === termId ? { ...term, tags: updatedTags } : term
-            )
-        );
-        setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
-        setUnsavedChanges(true);
-    };
 
     // Calculate visible count with a fallback for empty displayedTerms
     const visibleCount = Object.keys(displayedTerms).reduce((count, key) => {
@@ -359,75 +294,19 @@ onChange={(value) => updateTerm(term.id, 'content', value)}
 placeholder={__('Enter term content...', 'acemedia-glossary')}
 data-term-id={term.id} // Add attribute for focusing
 />
-<Flex className='related-options' style={{ gap: '1rem' }} justify="start">
-<FlexItem style={{ flex: '1 1 30%' }}>
-<h3>Related Terms</h3>
-<div className="scroller">
-{terms.filter(t => t.id !== term.id).map((option) => (
-    <CheckboxControl
-        key={option.id}
-        label={decodeHTMLEntities(option.title)}
-        checked={term.relatedTerms.includes(option.id)}
-        onChange={(isChecked) => {
-            const updatedRelatedTerms = isChecked
-                ? [...term.relatedTerms, option.id]
-                : term.relatedTerms.filter(id => id !== option.id);
-            updateRelatedTerms(term.id, updatedRelatedTerms);
-        }}
-    />
-))}
-</div>
-</FlexItem>
-
-<FlexItem style={{ flex: '1 1 30%' }}>
-<h3>Related Categories</h3>
-<div className="scroller">
-{categories
-.filter((category) => category.value !== 1) // Exclude category with ID 1
-.map((category) => (
-    <CheckboxControl
-        key={category.value}
-        label={category.label}
-        checked={term.categories.some((cat) => cat.id === category.value)} // Check by id
-        onChange={(isChecked) => {
-            const updatedCategories = isChecked
-                ? [
-                      ...term.categories,
-                      {
-                          id: category.value,
-                          slug: category.label.toLowerCase().replace(/\s+/g, '-'),
-                          title: category.label,
-                      },
-                  ]
-                : term.categories.filter((cat) => cat.id !== category.value);
-            updateCategories(term.id, updatedCategories); // Update with the full object
-        }}
-    />
-))}
-</div>
-</FlexItem>
 
 
-<FlexItem style={{ flex: '1 1 30%' }}>
-<h3>Related Tags</h3>
-<div className="scroller">
-{tags.map((tag) => (
-<CheckboxControl
-    key={tag.value}
-    label={tag.label}
-    checked={term.tags.some((t) => t.id === tag.value)} // Check by id
-    onChange={(isChecked) => {
-        const updatedTags = isChecked
-            ? [...term.tags, { id: tag.value, slug: tag.label.toLowerCase().replace(/\s+/g, '-'), title: tag.label }]
-            : term.tags.filter((t) => t.id !== tag.value);
-        updateTags(term.id, updatedTags); // Update with the full object
-    }}
+<RelatedTagsAndCats
+    term={term}
+    terms={terms}
+    categories={categories}
+    tags={tags}
+    setTerms={setTerms}
+    setModifiedTerms={setModifiedTerms}
+    setUnsavedChanges={setUnsavedChanges}
 />
-))}
-</div>
-</FlexItem>
 
-</Flex>
+
 
                                 <PanelRow>
                                 <IconButton
