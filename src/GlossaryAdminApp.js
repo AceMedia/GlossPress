@@ -4,15 +4,12 @@ import { Button,
     __experimentalToggleGroupControlOption as ToggleGroupControlOption, ToggleControl, PanelRow, TextControl, TextareaControl, CheckboxControl, Card, CardHeader, CardBody, PanelBody, IconButton, Notice, Flex, FlexItem, Tooltip, SelectControl, FlexBlock, Modal } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import { useSelect } from '@wordpress/data';
-import { store as coreDataStore } from '@wordpress/core-data';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faSortAlphaDown, faAnchor, faTags, faEdit, faHighlighter, faEye, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faAnchor, faEdit, faEye, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 
-import { faCss } from '@fortawesome/free-brands-svg-icons';
 
-import TagsAndCategoriesFilter from './SideBar/TagsAndCategoriesFilter';
-import SearchComponent from './SideBar/SearchComponent';
+
+import Sidebar from './SideBar/SideBar';
 import SaveBar from './SaveBar/SaveBar';
 import './styles/scss/settings.scss';
 
@@ -25,6 +22,9 @@ import {
     saveCss, 
     formatRelativeTime 
 } from './utils';
+
+import Modals from './Modals';
+
 
 
 const DEBOUNCE_DELAY = 2000;
@@ -47,46 +47,40 @@ const GlossaryAdminApp = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const isInitialLoad = useRef(true);
     const termRefs = useRef({});
-
     const [logs, setLogs] = useState('');
-
-    const [isCssModalOpen, setIsCssModalOpen] = useState(false); // State for the CSS modal
-const [customCss, setCustomCss] = useState(''); // State for custom CSS
-
+    const [customCss, setCustomCss] = useState(''); // State for custom CSS
     const [isDragging, setIsDragging] = useState(false);
-
     const [quickEdit, setQuickEdit] = useState('false'); // Initialize quickEdit state
-
-
     const [selectedTerms, setSelectedTerms] = useState([]);
-
-
     const [autoHighlight, setAutoHighlight] = useState(false);
-
-// Fetch the initial value from wp_option on component mount
-useEffect(() => {
-    apiFetch({ path: '/wp-json/wp/v2/options/auto_highlight' }) // Updated to match registered route
-        .then((data) => {
-            setAutoHighlight(data.value === true); // Convert response value to boolean
-        })
-        .catch((error) => console.error('Error fetching auto_highlight option:', error));
-}, []);
-
-const saveAutoHighlightOption = (isEnabled) => {
-    apiFetch({
-        path: '/wp-json/wp/v2/options/auto_highlight', // Updated to match registered route
-        method: 'POST',
-        data: { value: isEnabled ? 'true' : 'false' }, // Send as string 'true' or 'false'
-        headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-    })
-        .then(() => console.log('Auto Highlight option updated successfully'))
-        .catch((error) => console.error('Error saving auto_highlight option:', error));
-};
-
-
-
-
     const isSavingRef = useRef(false);
+    const [newTermTitle, setNewTermTitle] = useState('');
+    const [newTermContent, setNewTermContent] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+    const [tagFilter, setTagFilter] = useState([]);
+    const [categoryFilter, setCategoryFilter] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCssModalOpen, setIsCssModalOpen] = useState(false); // State for the CSS modal
+
+    // Fetch the initial value from wp_option on component mount
+    useEffect(() => {
+        apiFetch({ path: '/wp-json/wp/v2/options/auto_highlight' }) // Updated to match registered route
+            .then((data) => {
+                setAutoHighlight(data.value === true); // Convert response value to boolean
+            })
+            .catch((error) => console.error('Error fetching auto_highlight option:', error));
+    }, []);
+
+    const saveAutoHighlightOption = (isEnabled) => {
+        apiFetch({
+            path: '/wp-json/wp/v2/options/auto_highlight', // Updated to match registered route
+            method: 'POST',
+            data: { value: isEnabled ? 'true' : 'false' }, // Send as string 'true' or 'false'
+            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
+        })
+            .then(() => console.log('Auto Highlight option updated successfully'))
+            .catch((error) => console.error('Error saving auto_highlight option:', error));
+    };
 
     const saveTerms = useCallback((isAutoSave = false) => {
         if (!unsavedChanges || isSavingRef.current) return;
@@ -139,33 +133,25 @@ const saveAutoHighlightOption = (isEnabled) => {
 
 
 
-// Create a memoized debouncedAutoSave function
-const debouncedAutoSave = useCallback(
-    debounce(() => {
-        if (isAutoSaveEnabled && unsavedChanges) {
-            saveTerms(true);
-        }
-    }, DEBOUNCE_DELAY),
-    [isAutoSaveEnabled, unsavedChanges, saveTerms]
-);
-    
-
-
-    const [newTermTitle, setNewTermTitle] = useState('');
-const [newTermContent, setNewTermContent] = useState('');
-
-
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
-
-useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
-    return () => clearTimeout(handler);
-}, [searchQuery]);
+    // Create a memoized debouncedAutoSave function
+    const debouncedAutoSave = useCallback(
+        debounce(() => {
+            if (isAutoSaveEnabled && unsavedChanges) {
+                saveTerms(true);
+            }
+        }, DEBOUNCE_DELAY),
+        [isAutoSaveEnabled, unsavedChanges, saveTerms]
+    );
+        
 
 
 
-    
-    const handleSearchChange = useCallback((value) => setSearchQuery(value), []);
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
+
+
 
     // Fetch glossary terms, categories, and tags once on component mount
     useEffect(() => {
@@ -216,8 +202,6 @@ useEffect(() => {
 
     
 
-    const [tagFilter, setTagFilter] = useState([]);
-const [categoryFilter, setCategoryFilter] = useState([]);
 
 // Handler for tags filter
 const handleTagChange = (selectedTag) => {
@@ -795,7 +779,6 @@ useEffect(() => {
     
 
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
 const [newTermData, setNewTermData] = useState({
     id: Date.now(),
     title: '',
@@ -911,161 +894,30 @@ useEffect(() => {
                 </div>
             )}
             <Flex alignItems="flex-start" className='main-panel'>
-                <FlexItem alignItems="flex-start" className="sidebar side-panel" style={{ flex: '0 0 300px', paddingRight: '20px' }}>
-                <h1>
-    <span className="dashicons dashicons-book-alt"></span>
-    <i>Gloss</i>Press
-</h1>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1em', position: 'sticky', top: 'calc(32px + 1em)' }}>
-                    <SearchComponent searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-
-
-
-
-                    <PanelBody 
-    title={
-        <span>
-            <FontAwesomeIcon icon={faSortAlphaDown} /> {__('Sort by', 'acemedia-glossary')}
-        </span>
-    } 
-    initialOpen={true}
->
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-        <ToggleGroupControl
-            label={__('Sort by', 'acemedia-glossary')}
-            value={sortOption}
-            onChange={setSortOption}
-            defaultValue="alphabetical"
-            isBlock
-            __nextHasNoMarginBottom
-        >
-            <ToggleGroupControlOption 
-                value="alphabetical" 
-                label={__('A-Z', 'acemedia-glossary')}
+                
+            <Sidebar
+                tags={tags}
+                categories={categories}
+                sortOption={sortOption}
+                setSortOption={setSortOption}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                tagFilter={tagFilter}
+                categoryFilter={categoryFilter}
+                autoHighlight={autoHighlight}
+                setAutoHighlight={setAutoHighlight}
+                saveAutoHighlightOption={saveAutoHighlightOption}
+                customCss={customCss}
+                setIsCssModalOpen={setIsCssModalOpen}
+                handleDownload={handleDownload}
+                unsavedChanges={unsavedChanges}
+                setTagFilter={setTagFilter} // Pass setter instead of handlers
+                setCategoryFilter={setCategoryFilter} 
+                logs={logs}
+                displayedTerms={displayedTerms}
+                fetchLogs={() => {/* Logic to fetch logs */}}
+                clearLogs={() => {/* Logic to clear logs */}}
             />
-            <ToggleGroupControlOption 
-                value="created" 
-                label={__('Created', 'acemedia-glossary')}
-            />
-            <ToggleGroupControlOption 
-                value="updated" 
-                label={__('Updated', 'acemedia-glossary')}
-            />
-        </ToggleGroupControl>
-    </div>
-</PanelBody>
-
-
-
-
-
-{renderAlphaIndex()}
-
-
-<TagsAndCategoriesFilter
-    tags={tags}
-    categories={categories}
-    tagFilter={tagFilter}
-    handleTagChange={handleTagChange}
-    categoryFilter={categoryFilter}
-    handleCategoryChange={handleCategoryChange}
-/>
-
-
-
-
-
-
-
-<PanelBody
-    className="auto-highlight-panel"
-    title={
-        <span
-            onClick={(e) => {
-                e.preventDefault(); // Prevent default click behavior
-                setAutoHighlight(!autoHighlight); // Toggle the state
-                saveAutoHighlightOption(!autoHighlight); // Save the new state
-            }}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-        >
-            <FontAwesomeIcon icon={faHighlighter} />
-            <span style={{ marginLeft: '10px' }}>Auto Highlight</span>
-            <ToggleControl
-                checked={autoHighlight}
-                onChange={(isChecked) => {
-                    setAutoHighlight(isChecked);
-                    saveAutoHighlightOption(isChecked);
-                }}
-                style={{ marginLeft: 'auto' }} // Push toggle to the right
-            />
-        </span>
-    }
-    initialOpen={false}
-    onToggle={() => {
-        const newState = !autoHighlight;
-        setAutoHighlight(newState); // Update state
-        saveAutoHighlightOption(newState); // Save to wp_option
-    }}
->
-</PanelBody>
-
-<Button
-    isPrimary={!!customCss} // Set primary if custom CSS exists
-    isSecondary={!customCss} // Set secondary otherwise
-    onClick={() => setIsCssModalOpen(true)}
-    style={{
-         textAlign: 'center', display: 'block'
-    }}
->
-    <FontAwesomeIcon 
-        icon={faCss} 
-        style={{ 
-            verticalAlign: 'middle', 
-            fontSize: '1.5em', 
-            marginRight: '5px',
-            color: customCss ? 'white' : 'inherit' // Set color to white if custom CSS exists
-        }} 
-    />
-    {customCss
-        ? __('Edit Custom CSS', 'acemedia-glossary')
-        : __('Add Custom CSS', 'acemedia-glossary')}
-</Button>
-
-
-<Button
-    isSecondary
-    onClick={handleDownload}
-    disabled={unsavedChanges}
-    style={{ textAlign: 'center', display: 'block' }}
->
-    <span className="dashicons dashicons-download" style={{ marginRight: '5px', verticalAlign: 'middle', fontSize: '1.5em' }}></span>
-    {unsavedChanges
-        ? __('Save Changes to enable Download', 'acemedia-glossary')
-        : __('Download JSON Backup', 'acemedia-glossary')}
-</Button>
-
-{logs && (
-    <PanelBody className="debugger" title={__('Debug Logs', 'acemedia-glossary')} initialOpen={false}>
-        <TextareaControl
-            label={__('Import Logs', 'acemedia-glossary')}
-            value={logs}
-            onChange={() => {}} // Make read-only
-            rows={10}
-            style={{ fontFamily: 'monospace' }}
-        />
-        <Button isSecondary onClick={fetchLogs} style={{ marginRight: '10px' }}>
-            {__('Refresh Logs', 'acemedia-glossary')}
-        </Button>
-        <Button isDestructive onClick={clearLogs}>
-            {__('Clear Logs', 'acemedia-glossary')}
-        </Button>
-    </PanelBody>
-)}
-
-
-                    </div>
-                </FlexItem>
                 <FlexBlock className="terms-list" style={{ flex: '1' }}>
                 <div style={{ marginBottom: '15px' }} className={`currently-viewing ${sortOption === 'alphabetical' ? 'alpha' : ''}`}>
     
@@ -1318,131 +1170,24 @@ useEffect(() => {
 </SaveBar>
 
 
-            {isModalOpen && (
-    <Modal
-        title={__('Add New Term', 'acemedia-glossary')}
-        onRequestClose={() => setIsModalOpen(false)}
-        isDismissible={true}
-    >
-        <TextControl
-            label={__('Term', 'acemedia-glossary')}
-            value={newTermTitle}
-            onChange={(value) => setNewTermTitle(value)}
-            placeholder={__('Enter term title...', 'acemedia-glossary')}
-        />
-        <TextareaControl
-            label={__('Content', 'acemedia-glossary')}
-            value={newTermContent}
-            onChange={(value) => setNewTermContent(value)}
-            placeholder={__('Enter term content...', 'acemedia-glossary')}
-        />
-        
-        <Button
-    isPrimary
-    onClick={() => {
-        const newTermData = {
-            id: Date.now(),
-            title: newTermTitle || 'Untitled Term',
-            content: newTermContent || '',
-            relatedTerms: [],
-            categories: [],
-            tags: [],
-            date: new Date().toISOString(),
-            modified: new Date().toISOString(),
-            isOpen: false,
-        };
-
-        // Make the API save call directly
-        apiFetch({
-            path: '/wp-json/wp/v2/glossary',
-            method: 'POST',
-            data: { ...newTermData },
-            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-        })
-            .then(() => {
-                // Update the state with the saved term
-                setTerms((prevTerms) => [...prevTerms, newTermData]);
-                setModifiedTerms((prevModified) => new Set(prevModified).add(newTermData.id));
-                setUnsavedChanges(false); // Clear unsaved changes for the modal term only
-                setMessage('Term added and saved successfully!');
-                setTimeout(() => setMessage(''), 3000);
-            })
-            .catch((error) => {
-                console.error('Error saving term:', error);
-                setMessage('Error saving new term');
-                setTimeout(() => setMessage(''), 3000);
-            });
-
-        // Clear modal input fields and close the modal
-        setNewTermTitle('');
-        setNewTermContent('');
-        setIsModalOpen(false);
-    }}
->
-    {__('Add Term', 'acemedia-glossary')}
-</Button>
-
-        <Button isSecondary onClick={() => setIsModalOpen(false)}>
-            {__('Cancel', 'acemedia-glossary')}
-        </Button>
-    </Modal>
-)}
-
-
-{isCssModalOpen && (
-    <Modal
-        title={__('Edit Custom CSS', 'acemedia-glossary')}
-        onRequestClose={() => setIsCssModalOpen(false)}
-        isDismissible={true}
-        size="large"
-    >
-       <TextareaControl
-    label={__('Custom CSS', 'acemedia-glossary')}
-    value={customCss}
-    onChange={(value) => {
-        console.log('Custom CSS input value:', value); // Debugging log
-        setCustomCss(value); // Update the state with the CSS value
-    }}
-    rows={15}
-    style={{
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        width: '100%',
-        height: '300px',
-    }}
-    placeholder={__('Write your custom CSS here...', 'acemedia-glossary')}
+<Modals
+    isModalOpen={isModalOpen}
+    isCssModalOpen={isCssModalOpen}
+    newTermTitle={newTermTitle}
+    newTermContent={newTermContent}
+    customCss={customCss}
+    setIsModalOpen={setIsModalOpen}
+    setIsCssModalOpen={setIsCssModalOpen}
+    setNewTermTitle={setNewTermTitle}
+    setNewTermContent={setNewTermContent}
+    setCustomCss={setCustomCss}
+    setTerms={setTerms}
+    setModifiedTerms={setModifiedTerms}
+    setUnsavedChanges={setUnsavedChanges}
+    setMessage={setMessage}
+    saveCss={saveCss}
+    apiFetch={apiFetch}
 />
-
-        <div
-            style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginTop: '1em',
-            }}
-        >
-         <Button
-    isPrimary
-    onClick={async () => {
-        if (customCss.trim()) {
-            const responseMessage = await saveCss(customCss.trim()); // Get the response message
-            setMessage(responseMessage); // Pass the message to the SaveBar
-            setTimeout(() => setMessage(''), 3000); // Clear the message after 3 seconds
-        } else {
-            console.error(__('Custom CSS cannot be empty.', 'acemedia-glossary'));
-        }
-        setIsCssModalOpen(false); // Close the modal after saving
-    }}
->
-    {__('Save Custom CSS', 'acemedia-glossary')}
-</Button>
-
-            <Button isSecondary onClick={() => setIsCssModalOpen(false)}>
-                {__('Cancel', 'acemedia-glossary')}
-            </Button>
-        </div>
-    </Modal>
-)}
-
 
 
         </>
