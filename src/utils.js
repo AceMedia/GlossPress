@@ -27,6 +27,39 @@ export const debounce = (func, delay) => {
     };
 };
 
+
+
+
+
+/**
+ * Smoothly scroll to a specific vertical position.
+ * @param {number} targetY - The target vertical position to scroll to.
+ * @param {number} [duration=1000] - Duration of the scroll animation in milliseconds.
+ */
+export const smoothScrollTo = (targetY, duration = 1000) => {
+    const startY = window.scrollY;
+    const distance = targetY - startY;
+    const startTime = performance.now();
+
+    const easeInOutQuad = (t) =>
+        t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // Ease-in-out formula
+
+    const step = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1); // Clamp progress to 1
+
+        const easedProgress = easeInOutQuad(progress); // Apply easing
+        window.scrollTo(0, startY + distance * easedProgress);
+
+        if (progress < 1) {
+            requestAnimationFrame(step);
+        }
+    };
+
+    requestAnimationFrame(step);
+};
+
+
 /**
  * Generic API fetch utility.
  * @param {string} path - API path to fetch.
