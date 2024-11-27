@@ -48,26 +48,8 @@ const Sidebar = memo(({
     };
   
 
-    const handleTagChange = (selectedTag) => {
-        setTagFilter((prev) => {
-            if (selectedTag === 'all_tags') {
-                return []; // Reset to all tags
-            }
-            if (prev.includes(selectedTag)) {
-                return prev.filter((tag) => tag !== selectedTag); // Remove tag if already selected
-            }
-            return [...prev, selectedTag]; // Add tag
-        });
-    };
 
-    const handleCategoryChange = (selectedCategory) => {
-        setCategoryFilter((prev) => {
-            if (prev.includes(selectedCategory)) {
-                return prev.filter((cat) => cat !== selectedCategory); // Remove if already selected
-            }
-            return [...prev, selectedCategory]; // Add category
-        });
-    };
+    
 
     const renderAlphaIndex = useCallback(() => {
         if (sortOption === 'alphabetical') {
@@ -151,10 +133,10 @@ initialOpen={true}
     setTags={setTags} // Pass the state updater function
     categories={categories}
     tagFilter={tagFilter}
-    handleTagChange={handleTagChange}
     categoryFilter={categoryFilter}
-    handleCategoryChange={handleCategoryChange}
     setCategories={setCategories} // Pass the state updater function
+    setTagFilter={setTagFilter} // Pass the state updater function
+    setCategoryFilter={setCategoryFilter} // Pass the state updater function
 />
 
 

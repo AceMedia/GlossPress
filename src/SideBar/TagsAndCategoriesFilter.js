@@ -10,9 +10,9 @@ const TagsAndCategoriesFilter = ({
     categories,
     setCategories,
     tagFilter,
-    handleTagChange,
     categoryFilter,
-    handleCategoryChange,
+    setTagFilter,
+    setCategoryFilter,
 }) => {
     const [currentPage, setCurrentPage] = useState(1); // Track current page for tags
     const [isFetchingTags, setIsFetchingTags] = useState(false); // Track fetching state for tags
@@ -38,6 +38,30 @@ const TagsAndCategoriesFilter = ({
     useEffect(() => {
         localStorage.setItem('isCategoriesPanelOpen', JSON.stringify(isCategoriesPanelOpen));
     }, [isCategoriesPanelOpen]);
+
+    const handleTagChange = (selectedTag) => {
+        setTagFilter((prev) => {
+            if (selectedTag === 'all_tags') {
+                return []; // Reset to all tags
+            }
+            if (prev.includes(selectedTag)) {
+                return prev.filter((tag) => tag !== selectedTag); // Remove tag if already selected
+            }
+            return [...prev, selectedTag]; // Add tag
+        });
+    };
+
+    const handleCategoryChange = (selectedCategory) => {
+        setCategoryFilter((prev) => {
+            if (selectedCategory === 'all_categories') {
+                return []; // Reset to all categories
+            }
+            if (prev.includes(selectedCategory)) {
+                return prev.filter((cat) => cat !== selectedCategory); // Remove category if already selected
+            }
+            return [...prev, selectedCategory]; // Add category
+        });
+    };
 
     const fetchTags = async (page = 1, search = '') => {
         if (isFetchingTags || (!hasMoreTags && search === '')) return;
@@ -72,13 +96,17 @@ const TagsAndCategoriesFilter = ({
             const newCategories = await response.json();
 
             setCategories((prevCategories) =>
-                page === 1 || search ? newCategories.map((category) => ({ label: category.name, value: category.id })) : [
-                    ...prevCategories,
-                    ...newCategories.map((category) => ({ label: category.name, value: category.id })),
-                ]
+                page === 1 || search
+                    ? newCategories.map((category) => ({ label: category.name, value: category.id }))
+                    : [...prevCategories, ...newCategories.map((category) => ({ label: category.name, value: category.id }))]
             );
 
-            if (newCategories.length < 10 && search === '') setHasMoreCategories(false);
+            if (newCategories.length < 10 && search === '') {
+                setHasMoreCategories(false); // No more pages
+            }
+            if (!search) {
+                setCurrentPage((prevPage) => prevPage + 1); // Increment current page only if not searching
+            }
         } catch (error) {
             console.error('Error fetching categories:', error);
         } finally {
@@ -123,13 +151,17 @@ const TagsAndCategoriesFilter = ({
                     placeholder={__('Search Tags...', 'acemedia-glossary')}
                     value={tagSearchTerm}
                     onChange={handleTagSearch}
-                    autoComplete='off'
+                    autoComplete="off"
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '200px', overflowY: 'auto' }}>
                     {[{ label: 'All Tags', value: 'all_tags' }, ...tags].map((tag) => (
                         <Button
                             key={tag.value}
-                            isPressed={tagFilter.includes(tag.value)}
+                            isPressed={
+                                tag.value === 'all_tags'
+                                    ? tagFilter.length === 0
+                                    : tagFilter.includes(tag.value)
+                            }
                             onClick={() => handleTagChange(tag.value)}
                             className="toggle-button"
                         >
@@ -158,13 +190,17 @@ const TagsAndCategoriesFilter = ({
                     placeholder={__('Search Categories...', 'acemedia-glossary')}
                     value={categorySearchTerm}
                     onChange={handleCategorySearch}
-                    autoComplete='off'
+                    autoComplete="off"
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '200px', overflowY: 'auto' }}>
-                    {categories.map((category) => (
+                    {[{ label: 'All Categories', value: 'all_categories' }, ...categories].map((category) => (
                         <Button
                             key={category.value}
-                            isPressed={categoryFilter.includes(category.value)}
+                            isPressed={
+                                category.value === 'all_categories'
+                                    ? categoryFilter.length === 0
+                                    : categoryFilter.includes(category.value)
+                            }
                             onClick={() => handleCategoryChange(category.value)}
                             className="toggle-button"
                         >
@@ -174,7 +210,7 @@ const TagsAndCategoriesFilter = ({
                     {isFetchingCategories && <Spinner />}
                     {hasMoreCategories && !categorySearchTerm && (
                         <Button
-                            onClick={() => fetchCategories(1)}
+                            onClick={() => fetchCategories(currentPage + 1)}
                             disabled={isFetchingCategories}
                             className="toggle-button"
                         >
