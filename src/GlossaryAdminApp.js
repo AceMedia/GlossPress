@@ -444,6 +444,7 @@ useEffect(() => {
             <Sidebar
                 tags={tags}
                 setTags={setTags}
+                setCategories={setCategories}
                 categories={categories}
                 sortOption={sortOption}
                 setSortOption={setSortOption}

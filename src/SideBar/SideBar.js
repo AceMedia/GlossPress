@@ -36,7 +36,8 @@ const Sidebar = memo(({
     displayedTerms, 
     setTagFilter,
     setCategoryFilter,
-    setTags
+    setTags,
+    setCategories
 }) => {
 
 
@@ -153,6 +154,7 @@ initialOpen={true}
     handleTagChange={handleTagChange}
     categoryFilter={categoryFilter}
     handleCategoryChange={handleCategoryChange}
+    setCategories={setCategories} // Pass the state updater function
 />
 
 

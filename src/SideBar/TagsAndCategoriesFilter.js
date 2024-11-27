@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from '@wordpress/element';
-import { PanelBody, Button } from '@wordpress/components';
+import React, { useState, useEffect } from '@wordpress/element';
+import { PanelBody, Button, TextControl, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTags } from '@fortawesome/free-solid-svg-icons';
@@ -8,14 +8,21 @@ const TagsAndCategoriesFilter = ({
     tags,
     setTags,
     categories,
+    setCategories,
     tagFilter,
     handleTagChange,
     categoryFilter,
     handleCategoryChange,
 }) => {
     const [currentPage, setCurrentPage] = useState(1); // Track current page for tags
-    const [isFetching, setIsFetching] = useState(false); // Track fetching state
+    const [isFetchingTags, setIsFetchingTags] = useState(false); // Track fetching state for tags
+    const [isFetchingCategories, setIsFetchingCategories] = useState(false); // Track fetching state for categories
     const [hasMoreTags, setHasMoreTags] = useState(true); // Track if more tags are available
+    const [hasMoreCategories, setHasMoreCategories] = useState(true); // Track if more categories are available
+    const [tagSearchTerm, setTagSearchTerm] = useState(''); // Track tag search input
+    const [categorySearchTerm, setCategorySearchTerm] = useState(''); // Track category search input
+    const [originalTags, setOriginalTags] = useState([]); // Store original tags for reset
+    const [originalCategories, setOriginalCategories] = useState([]); // Store original categories for reset
 
     const [isTagsPanelOpen, setIsTagsPanelOpen] = useState(
         () => JSON.parse(localStorage.getItem('isTagsPanelOpen')) || false
@@ -32,34 +39,76 @@ const TagsAndCategoriesFilter = ({
         localStorage.setItem('isCategoriesPanelOpen', JSON.stringify(isCategoriesPanelOpen));
     }, [isCategoriesPanelOpen]);
 
-    const fetchNextPage = async () => {
-        if (isFetching || !hasMoreTags) return; // Prevent fetch if already fetching or no more tags
-        setIsFetching(true);
+    const fetchTags = async (page = 1, search = '') => {
+        if (isFetchingTags || (!hasMoreTags && search === '')) return;
+        setIsFetchingTags(true);
         try {
-            const nextPage = currentPage + 1;
-            const response = await fetch(`/wp-json/wp/v2/tags?per_page=10&page=${nextPage}`);
+            const response = await fetch(`/wp-json/wp/v2/tags?per_page=10&page=${page}&search=${search}`);
             if (!response.ok) throw new Error('Failed to fetch tags');
             const newTags = await response.json();
 
-            // Update tags state with new tags
-            setTags((prevTags) => [
-                ...prevTags,
-                ...newTags.map((tag) => ({
-                    label: tag.name,
-                    value: tag.id,
-                })),
-            ]);
+            setTags((prevTags) =>
+                page === 1 || search ? newTags.map((tag) => ({ label: tag.name, value: tag.id })) : [
+                    ...prevTags,
+                    ...newTags.map((tag) => ({ label: tag.name, value: tag.id })),
+                ]
+            );
 
-            // If fewer than 10 tags are returned, assume no more pages
-            if (newTags.length < 10) {
-                setHasMoreTags(false);
-            } else {
-                setCurrentPage(nextPage); // Increment the page only if there are more
-            }
+            if (newTags.length < 10 && search === '') setHasMoreTags(false);
+            if (!search) setCurrentPage(page);
         } catch (error) {
-            console.error('Error fetching next page of tags:', error);
+            console.error('Error fetching tags:', error);
         } finally {
-            setIsFetching(false);
+            setIsFetchingTags(false);
+        }
+    };
+
+    const fetchCategories = async (page = 1, search = '') => {
+        if (isFetchingCategories || (!hasMoreCategories && search === '')) return;
+        setIsFetchingCategories(true);
+        try {
+            const response = await fetch(`/wp-json/wp/v2/categories?per_page=10&page=${page}&search=${search}`);
+            if (!response.ok) throw new Error('Failed to fetch categories');
+            const newCategories = await response.json();
+
+            setCategories((prevCategories) =>
+                page === 1 || search ? newCategories.map((category) => ({ label: category.name, value: category.id })) : [
+                    ...prevCategories,
+                    ...newCategories.map((category) => ({ label: category.name, value: category.id })),
+                ]
+            );
+
+            if (newCategories.length < 10 && search === '') setHasMoreCategories(false);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        } finally {
+            setIsFetchingCategories(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!originalTags.length) setOriginalTags(tags);
+        if (!originalCategories.length) setOriginalCategories(categories);
+    }, [tags, categories]);
+
+    const handleTagSearch = (search) => {
+        setTagSearchTerm(search);
+        if (search.trim() === '') {
+            setTags(originalTags); // Reset to original tags
+            setHasMoreTags(true);
+            setCurrentPage(1);
+        } else {
+            fetchTags(1, search);
+        }
+    };
+
+    const handleCategorySearch = (search) => {
+        setCategorySearchTerm(search);
+        if (search.trim() === '') {
+            setCategories(originalCategories); // Reset to original categories
+            setHasMoreCategories(true);
+        } else {
+            fetchCategories(1, search);
         }
     };
 
@@ -70,7 +119,13 @@ const TagsAndCategoriesFilter = ({
                 initialOpen={isTagsPanelOpen}
                 onToggle={() => setIsTagsPanelOpen((prev) => !prev)}
             >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <TextControl
+                    placeholder={__('Search Tags...', 'acemedia-glossary')}
+                    value={tagSearchTerm}
+                    onChange={handleTagSearch}
+                    autoComplete='off'
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '200px', overflowY: 'auto' }}>
                     {[{ label: 'All Tags', value: 'all_tags' }, ...tags].map((tag) => (
                         <Button
                             key={tag.value}
@@ -81,10 +136,11 @@ const TagsAndCategoriesFilter = ({
                             {tag.label}
                         </Button>
                     ))}
-                    {hasMoreTags && (
+                    {isFetchingTags && <Spinner />}
+                    {hasMoreTags && !tagSearchTerm && (
                         <Button
-                            onClick={fetchNextPage} // Fetch the next page
-                            disabled={isFetching} // Disable button while fetching
+                            onClick={() => fetchTags(currentPage + 1)}
+                            disabled={isFetchingTags}
                             className="toggle-button"
                         >
                             {__('Show More')}
@@ -98,7 +154,13 @@ const TagsAndCategoriesFilter = ({
                 initialOpen={isCategoriesPanelOpen}
                 onToggle={() => setIsCategoriesPanelOpen((prev) => !prev)}
             >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <TextControl
+                    placeholder={__('Search Categories...', 'acemedia-glossary')}
+                    value={categorySearchTerm}
+                    onChange={handleCategorySearch}
+                    autoComplete='off'
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '200px', overflowY: 'auto' }}>
                     {categories.map((category) => (
                         <Button
                             key={category.value}
@@ -109,6 +171,16 @@ const TagsAndCategoriesFilter = ({
                             {category.label}
                         </Button>
                     ))}
+                    {isFetchingCategories && <Spinner />}
+                    {hasMoreCategories && !categorySearchTerm && (
+                        <Button
+                            onClick={() => fetchCategories(1)}
+                            disabled={isFetchingCategories}
+                            className="toggle-button"
+                        >
+                            {__('Show More')}
+                        </Button>
+                    )}
                 </div>
             </PanelBody>
         </>
