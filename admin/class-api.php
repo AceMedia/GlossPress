@@ -670,7 +670,54 @@ function save_custom_css(WP_REST_Request $request) {
     ));
 }
 
+add_action('rest_api_init', function () {
+    // Update a specific glossary term (categories and tags)
+    register_rest_route('wp/v2', '/glossary/(?P<id>\d+)', array(
+        'methods' => 'POST',
+        'callback' => 'update_glossary_categories_tags',
+        'permission_callback' => function () {
+            return current_user_can('manage_options'); // Restrict to admins
+        },
+        'args' => array(
+            'id' => array(
+                'required' => true,
+                'validate_callback' => function ($param) {
+                    return is_numeric($param);
+                },
+            ),
+        ),
+    ));
+});
 
+function update_glossary_categories_tags($request) {
+    $term_id = intval($request['id']);
+    $categories = $request->get_param('categories');
+    $tags = $request->get_param('tags');
+
+    // Check if the glossary term exists
+    $term = get_post($term_id);
+    if (!$term || $term->post_type !== 'acemedia_glossary') {
+        return new WP_Error('term_not_found', 'Glossary term not found', array('status' => 404));
+    }
+
+    // Update categories
+    if (is_array($categories)) {
+        wp_set_post_terms($term_id, $categories, 'category');
+    }
+
+    // Update tags
+    if (is_array($tags)) {
+        wp_set_post_terms($term_id, $tags, 'post_tag');
+    }
+
+    // Clear cache if applicable
+    delete_transient('acemedia_glossary_terms');
+
+    return new WP_REST_Response(array(
+        'message' => 'Categories and tags updated successfully',
+        'id' => $term_id,
+    ), 200);
+}
 
 
 add_action('rest_api_init', function () {
