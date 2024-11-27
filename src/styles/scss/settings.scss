@@ -1047,6 +1047,30 @@ h3.group-title {
 			transform-origin: center center;
 		}
 	}
+	h5 {
+		text-align: center;
+		font-size: .8em;
+		opacity: 0.35;
+		margin: 1.5em 0 0;
+		text-transform: uppercase;
+		gap: 0.5em;
+		color: $primary-color;
+		position: relative;
+		
+		&::before,
+		&::after {
+			content: "";
+			display: inline-block;
+			opacity: 0.35;
+			width: 20px;
+			height: 1px;
+			background: $primary-color;
+			border-radius: 5px;
+			vertical-align: super;
+			margin: 0 0.5em;
+		}
+	}
+	
 }
 
 

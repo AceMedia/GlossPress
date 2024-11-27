@@ -155,6 +155,13 @@ const Sidebar = memo(({
                     setCategoryFilter={setCategoryFilter}
                 />
 
+
+
+            
+
+
+<h5>Settings</h5>
+
 <PanelBody
     className="auto-highlight-panel"
     
@@ -185,45 +192,59 @@ const Sidebar = memo(({
 </PanelBody>
 
 
-                <Button
-                    isPrimary={!!customCss}
-                    isSecondary={!customCss}
-                    onClick={() => setIsCssModalOpen(true)}
-                    style={{
-                        textAlign: 'center',
-                        display: 'block',
-                    }}
-                >
-                    <FontAwesomeIcon
-                        icon={faCss}
-                        style={{
-                            verticalAlign: 'middle',
-                            fontSize: '1.5em',
-                            marginRight: '5px',
-                            color: customCss ? 'white' : 'inherit',
-                        }}
-                    />
-                    {customCss
-                        ? __('Edit Custom CSS', 'acemedia-glossary')
-                        : __('Add Custom CSS', 'acemedia-glossary')}
-                </Button>
 
-                <Button
-                    isSecondary
-                    onClick={handleDownload}
-                    disabled={unsavedChanges}
-                    style={{ textAlign: 'center', display: 'block' }}
-                >
-                    <span
-                        className="dashicons dashicons-download"
-                        style={{ marginRight: '5px', verticalAlign: 'middle', fontSize: '1.5em' }}
-                    ></span>
-                    {unsavedChanges
-                        ? __('Save Changes to enable Download', 'acemedia-glossary')
-                        : __('Download JSON Backup', 'acemedia-glossary')}
-                </Button>
+<div style={{ display: 'flex', gap: '10px' }}>
+    <div style={{ flex: '1 1 50%' }}>
+        <Button
+            isPrimary={!!customCss}
+            isSecondary={!customCss}
+            onClick={() => setIsCssModalOpen(true)}
+            style={{
+                textAlign: 'center',
+                width: '100%', // Ensure the button takes full width of its flex item
+            }}
+        >
+            <FontAwesomeIcon
+                icon={faCss}
+                style={{
+                    verticalAlign: 'middle',
+                    fontSize: '1.5em',
+                    marginRight: '5px',
+                    color: customCss ? 'white' : 'inherit',
+                }}
+            />
+            {customCss
+                ? __('Edit CSS', 'acemedia-glossary')
+                : __('Add CSS', 'acemedia-glossary')}
+        </Button>
+    </div>
 
-                {localLogs && (
+    <div style={{ flex: '1 1 50%' }}>
+        <Button
+            isSecondary
+            onClick={handleDownload}
+            disabled={unsavedChanges}
+            style={{
+                textAlign: 'center',
+                width: '100%', // Ensure the button takes full width of its flex item
+            }}
+        >
+            <span
+                className="dashicons dashicons-download"
+                style={{ marginRight: '5px', verticalAlign: 'middle', fontSize: '1.5em' }}
+            ></span>
+            {unsavedChanges
+                ? __('Save to Download', 'acemedia-glossary')
+                : __('Download JSON', 'acemedia-glossary')}
+        </Button>
+    </div>
+</div>
+
+
+
+{localLogs && (
+<>
+<h5>Developer</h5>
                     <PanelBody
                         className="debugger"
                         title={
@@ -247,7 +268,9 @@ const Sidebar = memo(({
                             {__('Clear Logs', 'acemedia-glossary')}
                         </Button>
                     </PanelBody>
+                    </>
                 )}
+
             </div>
         </FlexItem>
     );

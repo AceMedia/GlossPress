@@ -2,7 +2,7 @@ import React, { useState, useEffect } from '@wordpress/element';
 import { PanelBody, Button, TextControl, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTags } from '@fortawesome/free-solid-svg-icons';
+import { faFolderClosed, faTags } from '@fortawesome/free-solid-svg-icons';
 
 const TagsAndCategoriesFilter = ({
     tags,
@@ -142,6 +142,45 @@ const TagsAndCategoriesFilter = ({
 
     return (
         <>
+
+            <PanelBody
+                title={<span><FontAwesomeIcon icon={faFolderClosed} /> {__('Categories', 'acemedia-glossary')}</span>}
+                initialOpen={isCategoriesPanelOpen}
+                onToggle={() => setIsCategoriesPanelOpen((prev) => !prev)}
+            >
+                <TextControl
+                    placeholder={__('Search Categories...', 'acemedia-glossary')}
+                    value={categorySearchTerm}
+                    onChange={handleCategorySearch}
+                    autoComplete="off"
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '200px', overflowY: 'auto' }}>
+                    {[{ label: 'All Categories', value: 'all_categories' }, ...categories].map((category) => (
+                        <Button
+                            key={category.value}
+                            isPressed={
+                                category.value === 'all_categories'
+                                    ? categoryFilter.length === 0
+                                    : categoryFilter.includes(category.value)
+                            }
+                            onClick={() => handleCategoryChange(category.value)}
+                            className="toggle-button"
+                        >
+                            {category.label}
+                        </Button>
+                    ))}
+                    {isFetchingCategories && <Spinner />}
+                    {hasMoreCategories && !categorySearchTerm && (
+                        <Button
+                            onClick={() => fetchCategories(currentPage + 1)}
+                            disabled={isFetchingCategories}
+                            className="toggle-button"
+                        >
+                            {__('Show More')}
+                        </Button>
+                    )}
+                </div>
+            </PanelBody>
             <PanelBody
                 title={<span><FontAwesomeIcon icon={faTags} /> {__('Tags', 'acemedia-glossary')}</span>}
                 initialOpen={isTagsPanelOpen}
@@ -173,45 +212,6 @@ const TagsAndCategoriesFilter = ({
                         <Button
                             onClick={() => fetchTags(currentPage + 1)}
                             disabled={isFetchingTags}
-                            className="toggle-button"
-                        >
-                            {__('Show More')}
-                        </Button>
-                    )}
-                </div>
-            </PanelBody>
-
-            <PanelBody
-                title={<span><FontAwesomeIcon icon={faTags} /> {__('Categories', 'acemedia-glossary')}</span>}
-                initialOpen={isCategoriesPanelOpen}
-                onToggle={() => setIsCategoriesPanelOpen((prev) => !prev)}
-            >
-                <TextControl
-                    placeholder={__('Search Categories...', 'acemedia-glossary')}
-                    value={categorySearchTerm}
-                    onChange={handleCategorySearch}
-                    autoComplete="off"
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '200px', overflowY: 'auto' }}>
-                    {[{ label: 'All Categories', value: 'all_categories' }, ...categories].map((category) => (
-                        <Button
-                            key={category.value}
-                            isPressed={
-                                category.value === 'all_categories'
-                                    ? categoryFilter.length === 0
-                                    : categoryFilter.includes(category.value)
-                            }
-                            onClick={() => handleCategoryChange(category.value)}
-                            className="toggle-button"
-                        >
-                            {category.label}
-                        </Button>
-                    ))}
-                    {isFetchingCategories && <Spinner />}
-                    {hasMoreCategories && !categorySearchTerm && (
-                        <Button
-                            onClick={() => fetchCategories(currentPage + 1)}
-                            disabled={isFetchingCategories}
                             className="toggle-button"
                         >
                             {__('Show More')}

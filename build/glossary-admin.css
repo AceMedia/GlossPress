@@ -1036,6 +1036,27 @@ h3.group-title {
   transform: rotate(-15deg) translate(-50%, 0%);
   transform-origin: center center;
 }
+.sidebar h5 {
+  text-align: center;
+  font-size: 0.8em;
+  opacity: 0.35;
+  margin: 1.5em 0 0;
+  text-transform: uppercase;
+  gap: 0.5em;
+  color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+  position: relative;
+}
+.sidebar h5::before, .sidebar h5::after {
+  content: "";
+  display: inline-block;
+  opacity: 0.35;
+  width: 20px;
+  height: 1px;
+  background: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+  border-radius: 5px;
+  vertical-align: super;
+  margin: 0 0.5em;
+}
 
 @keyframes shine {
   0% {
