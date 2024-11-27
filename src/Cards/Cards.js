@@ -181,6 +181,7 @@ const Cards = ({
 
 
 
+{totalCount > 0 && (
 
     <Flex className="bulk-actions" style={{ alignItems: 'center', gap: '10px' }}>
 
@@ -205,18 +206,23 @@ const Cards = ({
 
 
     <Flex className="bulk-actions-toggle" style={{ alignItems: 'center', gap: '10px' }}>
-    <FontAwesomeIcon icon={faEdit} />
-    <ToggleControl
-    label="Bulk Edit"
-        checked={quickEdit === 'true'}
-        onChange={(isChecked) => {
-            setQuickEdit(isChecked ? 'true' : 'false');
-            if (!isChecked) setSelectedTerms([]); // Clear selected terms
-        }}
-    />
-</Flex>
+        <FontAwesomeIcon icon={faEdit} />
+        <ToggleControl
+            label={__('Bulk Edit', 'acemedia-glossary')}
+            checked={quickEdit === 'true'}
+            onChange={(isChecked) => {
+                setQuickEdit(isChecked ? 'true' : 'false');
+                if (!isChecked) setSelectedTerms([]); // Clear selected terms
+            }}
+            disabled={totalCount === 0} // Disable toggle when no terms
+        />
+    </Flex>
+
+
 </Flex>
 
+
+)}
 
 
 </div>

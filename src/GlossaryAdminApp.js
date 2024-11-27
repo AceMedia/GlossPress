@@ -367,14 +367,16 @@ const deleteSelectedTerms = async () => {
         return;
     }
 
-
     setIsSaving(true);
 
     const confirmDelete = window.confirm(
         __('Are you sure you want to delete the selected terms? This action cannot be undone.', 'acemedia-glossary')
     );
 
-    if (!confirmDelete) return;
+    if (!confirmDelete) {
+        setIsSaving(false); // Reset saving state if canceled
+        return;
+    }
 
     try {
         const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/bulk-delete`, {
@@ -392,18 +394,28 @@ const deleteSelectedTerms = async () => {
 
         // Update terms after successful deletion
         const deletedIds = await response.json();
-        setTerms((prevTerms) => prevTerms.filter((term) => !deletedIds.includes(term.id)));
+        setTerms((prevTerms) => {
+            const updatedTerms = prevTerms.filter((term) => !deletedIds.includes(term.id));
+            
+            // Check if terms are empty and reset Quick Edit if true
+            if (updatedTerms.length === 0) {
+                setQuickEdit('false');
+            }
+
+            return updatedTerms;
+        });
+
         setSelectedTerms([]); // Clear selection
         setMessage(__('Selected terms deleted successfully.', 'acemedia-glossary'));
     } catch (error) {
         console.error('Error deleting selected terms:', error);
         setMessage(__('Failed to delete selected terms. Please try again.', 'acemedia-glossary'));
     } finally {
-
         setIsSaving(false);
         setTimeout(() => setMessage(''), 3000);
     }
 };
+
 
 
 
