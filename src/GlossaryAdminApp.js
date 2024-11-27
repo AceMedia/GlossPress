@@ -176,7 +176,7 @@ const GlossaryAdminApp = () => {
             }))))
             .catch((error) => console.error('Error loading categories:', error));
 
-        fetchFromAPI('/wp-json/wp/v2/tags?per_page=-1' )
+        fetchFromAPI('/wp-json/wp/v2/tags?per_page=10' )
             .then((data) => setTags(data.map(tag => ({
                 label: tag.name,
                 value: tag.id,
@@ -443,6 +443,7 @@ useEffect(() => {
                 
             <Sidebar
                 tags={tags}
+                setTags={setTags}
                 categories={categories}
                 sortOption={sortOption}
                 setSortOption={setSortOption}
