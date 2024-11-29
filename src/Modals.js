@@ -61,9 +61,10 @@ const Modals = ({
         }
     }, [isModalOpen, setNewTermContent]);
 
-    const handleAddTerm = useCallback(() => {
+    const handleAddTerm = useCallback(async () => {
+        const tempId = Date.now();
         const newTermData = {
-            id: Date.now(),
+            id: tempId,
             title: newTermTitle || __('Untitled Term', 'acemedia-glossary'),
             content: newTermContent || '',
             relatedTerms: [],
@@ -74,32 +75,51 @@ const Modals = ({
             isOpen: false,
         };
 
-        apiFetch({
-            path: '/wp-json/wp/v2/glossary',
-            method: 'POST',
-            data: { ...newTermData },
-            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-        })
-            .then(() => {
-                setTerms((prevTerms) => [...prevTerms, newTermData]);
-                setModifiedTerms((prevModified) => new Set(prevModified).add(newTermData.id));
-                setUnsavedChanges(false);
-                setMessage(__('Term added and saved successfully!', 'acemedia-glossary'));
-                setTimeout(() => setMessage(''), 3000);
-            })
-            .catch((error) => {
-                console.error('Error saving term:', error);
-                setMessage(__('Error saving new term', 'acemedia-glossary'));
-                setTimeout(() => setMessage(''), 3000);
+        // Add the new term with a temporary ID
+        setTerms((prevTerms) => [...prevTerms, newTermData]);
+        setModifiedTerms((prev) => new Set([...prev, tempId]));
+        setUnsavedChanges(true);
+
+        try {
+            // Send the new term data to the server
+          
+            // Send the new term data to the server
+            const response = await apiFetch({
+                path: '/wp-json/wp/v2/glossary',
+                method: 'POST',
+                data: {
+                    title: newTermData.title,
+                    content: newTermData.content,
+                    status: 'publish',
+                },
+                headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
             });
 
-        setNewTermTitle('');
-        setNewTermContent('');
-        setIsModalOpen(false);
+            // Update the term ID with the one received from the server
+            setTerms((prevTerms) =>
+                prevTerms.map((term) =>
+                    term.id === tempId ? { ...term, id: response.id } : term
+                )
+            );
+            setModifiedTerms((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(tempId);
+                newSet.add(response.id);
+                return newSet;
+            });
+            setUnsavedChanges(false);
+            setMessage(__('Term added successfully.', 'acemedia-glossary'));
+        } catch (error) {
+            console.error('Error adding term:', error);
+            setMessage(__('Failed to add the term. Please try again.', 'acemedia-glossary'));
+        } finally {
+            setIsModalOpen(false);
+            setNewTermTitle('');
+            setNewTermContent('');
+        }
     }, [
         newTermTitle,
         newTermContent,
-        apiFetch,
         setTerms,
         setModifiedTerms,
         setUnsavedChanges,
