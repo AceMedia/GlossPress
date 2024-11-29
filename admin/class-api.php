@@ -148,7 +148,7 @@ function save_glossary_term($request) {
     $data = $request->get_json_params();
 
     $title = isset($data['title']) ? sanitize_text_field($data['title']) : '';
-    $content = isset($data['content']) ? sanitize_textarea_field($data['content']) : '';
+    $content = isset($data['content']) ? $data['content'] : '';
     $term_id = isset($data['id']) ? intval($data['id']) : 0;
     $related_terms = isset($data['relatedTerms']) && is_array($data['relatedTerms']) ? array_map('intval', $data['relatedTerms']) : [];
     $categories = isset($data['categories']) ? array_map('intval', $data['categories']) : [];
