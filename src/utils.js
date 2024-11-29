@@ -79,8 +79,6 @@ export const fetchFromAPI = async (path, method = 'GET', data = null, headers = 
         };
     }
 
-    console.log('Payload:', options);
-
     try {
         const response = await apiFetch({ path, ...options });
         return response;
