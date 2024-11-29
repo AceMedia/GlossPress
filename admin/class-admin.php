@@ -32,6 +32,34 @@ class AceMediaGlossary_Admin {
         wp_enqueue_script('wp-components');
         wp_enqueue_script('wp-api-fetch'); // Ensure this is included for API calls
 
+
+
+    
+        // Enqueue the Isolated Block Editor
+        wp_enqueue_script(
+            'isolated-block-editor',
+            ACEMEDIA_GLOSSARY_URL . 'editor/isolated-block-editor.js',
+            array('react', 'react-dom'),
+            '2.29.0',
+            true
+        );
+    
+        wp_enqueue_style(
+            'isolated-block-editor-core',
+            ACEMEDIA_GLOSSARY_URL . 'editor/core.css',
+            array(),
+            '2.29.0'
+        );
+    
+        wp_enqueue_style(
+            'isolated-block-editor',
+            ACEMEDIA_GLOSSARY_URL . 'editor/isolated-block-editor.css',
+            array(),
+            '2.29.0'
+        );
+    
+
+
         // Enqueue the admin color scheme for styling
         global $_wp_admin_css_colors;
         $color_scheme = get_user_option('admin_color');
@@ -47,7 +75,7 @@ class AceMediaGlossary_Admin {
         wp_enqueue_script(
             'acemedia-glossary-admin',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-admin.js',
-            array('wp-element', 'wp-data', 'wp-core-data', 'wp-components', 'wp-api-fetch'),
+            array('wp-editor', 'wp-block-editor', 'wp-element', 'wp-data', 'wp-core-data', 'wp-components', 'wp-api-fetch'),
             ACEMEDIA_GLOSSARY_VERSION,
             true
         );
@@ -61,7 +89,6 @@ class AceMediaGlossary_Admin {
         );
 
         // Enqueue block editor styles
-        wp_enqueue_style('wp-block-editor', includes_url('css/dist/block-editor.css'), array(), $GLOBALS['wp_version']);    
 
         // Localize script to pass PHP data to JavaScript
         wp_localize_script('acemedia-glossary-admin', 'AceMediaGlossaryAdmin', array(
