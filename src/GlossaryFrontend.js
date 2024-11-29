@@ -103,15 +103,11 @@ const GlossaryFrontend = ({ data }) => {
                 </CardHeader>
                 {isOpen && (
                     <CardBody>
-                    {term.content ? (
-                        <div>
-                            {term.content.split('\n').map((line, index) => (
-                                <p key={index}>{line.trim()}</p>
-                            ))}
-                        </div>
-                    ) : (
-                        <p>{__('No content available.', 'acemedia-glossary')}</p>
-                    )}
+                      {term.content ? (
+                            <div dangerouslySetInnerHTML={{ __html: term.content }} />
+                        ) : (
+                            <p>{__('No content available.', 'acemedia-glossary')}</p>
+                        )}
     
                         {/* "See Also" Section */}
                         {term.relatedTerms.length > 0 && (
