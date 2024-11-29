@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useCallback, memo } from '@wordpress/element';
 import { Modal, Button, TextControl, TextareaControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
@@ -19,7 +20,48 @@ const Modals = ({
     saveCss,
     apiFetch,
 }) => {
-    const handleAddTerm = () => {
+    const editorRef = useRef(null);
+
+    useEffect(() => {
+        if (isModalOpen && editorRef.current) {
+            wp.attachEditor(editorRef.current); // Attach the block editor to the textarea
+
+            // Observe manual and programmatic changes to the textarea
+            const textareaElement = editorRef.current;
+
+            const originalValueDescriptor = Object.getOwnPropertyDescriptor(
+                HTMLTextAreaElement.prototype,
+                'value'
+            );
+
+            // Override the `value` property to intercept programmatic changes
+            Object.defineProperty(textareaElement, 'value', {
+                get: originalValueDescriptor.get,
+                set: function (newValue) {
+                    console.log(`Programmatic update detected: ${newValue}`);
+                    setNewTermContent(newValue); // Update the state
+                    originalValueDescriptor.set.call(this, newValue); // Call the original setter
+                },
+            });
+
+            // Listen for manual input changes
+            const inputListener = (event) => {
+                const updatedValue = event.target.value;
+                console.log(`Manual input detected: ${updatedValue}`);
+                setNewTermContent(updatedValue); // Update the state
+            };
+
+            textareaElement.addEventListener('input', inputListener);
+
+            return () => {
+                // Cleanup listeners and restore the original property descriptor
+                textareaElement.removeEventListener('input', inputListener);
+                Object.defineProperty(textareaElement, 'value', originalValueDescriptor);
+            };
+        }
+    }, [isModalOpen, setNewTermContent]);
+
+    const handleAddTerm = useCallback(() => {
         const newTermData = {
             id: Date.now(),
             title: newTermTitle || __('Untitled Term', 'acemedia-glossary'),
@@ -54,7 +96,18 @@ const Modals = ({
         setNewTermTitle('');
         setNewTermContent('');
         setIsModalOpen(false);
-    };
+    }, [
+        newTermTitle,
+        newTermContent,
+        apiFetch,
+        setTerms,
+        setModifiedTerms,
+        setUnsavedChanges,
+        setMessage,
+        setIsModalOpen,
+        setNewTermTitle,
+        setNewTermContent,
+    ]);
 
     const handleSaveCustomCss = async () => {
         if (customCss.trim()) {
@@ -71,133 +124,77 @@ const Modals = ({
         <>
             {/* Add Term Modal */}
             {isModalOpen && (
-    <Modal
-        title={__('Add New Term', 'acemedia-glossary')}
-        onRequestClose={() => setIsModalOpen(false)}
-        isDismissible={true}
-    >
-        <TextControl
-            label={__('Term', 'acemedia-glossary')}
-            value={newTermTitle}
-            onChange={(value) => setNewTermTitle(value)}
-            placeholder={__('Enter term title...', 'acemedia-glossary')}
-        />
-        <TextareaControl
-            label={__('Content', 'acemedia-glossary')}
-            value={newTermContent}
-            onChange={(value) => setNewTermContent(value)}
-            placeholder={__('Enter term content...', 'acemedia-glossary')}
-        />
-        
-        <Button
-    isPrimary
-    onClick={() => {
-        const newTermData = {
-            id: Date.now(),
-            title: newTermTitle || 'Untitled Term',
-            content: newTermContent || '',
-            relatedTerms: [],
-            categories: [],
-            tags: [],
-            date: new Date().toISOString(),
-            modified: new Date().toISOString(),
-            isOpen: false,
-        };
+                <Modal
+                    title={__('Add New Term', 'acemedia-glossary')}
+                    onRequestClose={() => setIsModalOpen(false)}
+                    isDismissible={true}
+                >
+                    <TextControl
+                        label={__('Term', 'acemedia-glossary')}
+                        value={newTermTitle}
+                        onChange={(value) => setNewTermTitle(value)}
+                        placeholder={__('Enter term title...', 'acemedia-glossary')}
+                    />
 
-        // Make the API save call directly
-        apiFetch({
-            path: '/wp-json/wp/v2/glossary',
-            method: 'POST',
-            data: { ...newTermData },
-            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-        })
-            .then(() => {
-                // Update the state with the saved term
-                setTerms((prevTerms) => [...prevTerms, newTermData]);
-                setModifiedTerms((prevModified) => new Set(prevModified).add(newTermData.id));
-                setUnsavedChanges(false); // Clear unsaved changes for the modal term only
-                setMessage('Term added and saved successfully!');
-                setTimeout(() => setMessage(''), 3000);
-            })
-            .catch((error) => {
-                console.error('Error saving term:', error);
-                setMessage('Error saving new term');
-                setTimeout(() => setMessage(''), 3000);
-            });
+                    <textarea
+                        id="isolated-block-editor"
+                        ref={editorRef}
+                        defaultValue={newTermContent}
+                        style={{ minHeight: '300px', width: '100%' }}
+                    ></textarea>
 
-        // Clear modal input fields and close the modal
-        setNewTermTitle('');
-        setNewTermContent('');
-        setIsModalOpen(false);
-    }}
->
-    {__('Add Term', 'acemedia-glossary')}
-</Button>
+                    <Button isPrimary onClick={handleAddTerm}>
+                        {__('Add Term', 'acemedia-glossary')}
+                    </Button>
+                    <Button isSecondary onClick={() => setIsModalOpen(false)}>
+                        {__('Cancel', 'acemedia-glossary')}
+                    </Button>
+                </Modal>
+            )}
 
-        <Button isSecondary onClick={() => setIsModalOpen(false)}>
-            {__('Cancel', 'acemedia-glossary')}
-        </Button>
-    </Modal>
-)}
+            {/* Edit Custom CSS Modal */}
+            {isCssModalOpen && (
+                <Modal
+                    title={__('Edit Custom CSS', 'acemedia-glossary')}
+                    onRequestClose={() => setIsCssModalOpen(false)}
+                    isDismissible={true}
+                    size="large"
+                >
+                    <TextareaControl
+                        label={__('Custom CSS', 'acemedia-glossary')}
+                        value={customCss}
+                        onChange={(value) => {
+                            console.log('Custom CSS input value:', value);
+                            setCustomCss(value);
+                        }}
+                        rows={15}
+                        style={{
+                            fontFamily: 'monospace',
+                            fontSize: '14px',
+                            width: '100%',
+                            height: '300px',
+                        }}
+                        placeholder={__('Write your custom CSS here...', 'acemedia-glossary')}
+                    />
 
-
-{isCssModalOpen && (
-    <Modal
-        title={__('Edit Custom CSS', 'acemedia-glossary')}
-        onRequestClose={() => setIsCssModalOpen(false)}
-        isDismissible={true}
-        size="large"
-    >
-       <TextareaControl
-    label={__('Custom CSS', 'acemedia-glossary')}
-    value={customCss}
-    onChange={(value) => {
-        console.log('Custom CSS input value:', value); // Debugging log
-        setCustomCss(value); // Update the state with the CSS value
-    }}
-    rows={15}
-    style={{
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        width: '100%',
-        height: '300px',
-    }}
-    placeholder={__('Write your custom CSS here...', 'acemedia-glossary')}
-/>
-
-        <div
-            style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginTop: '1em',
-            }}
-        >
-         <Button
-    isPrimary
-    onClick={async () => {
-        if (customCss.trim()) {
-            const responseMessage = await saveCss(customCss.trim()); // Get the response message
-            setMessage(responseMessage); // Pass the message to the SaveBar
-            setTimeout(() => setMessage(''), 3000); // Clear the message after 3 seconds
-        } else {
-            console.error(__('Custom CSS cannot be empty.', 'acemedia-glossary'));
-        }
-        setIsCssModalOpen(false); // Close the modal after saving
-    }}
->
-    {__('Save Custom CSS', 'acemedia-glossary')}
-</Button>
-
-            <Button isSecondary onClick={() => setIsCssModalOpen(false)}>
-                {__('Cancel', 'acemedia-glossary')}
-            </Button>
-        </div>
-    </Modal>
-)}
-
-
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            marginTop: '1em',
+                        }}
+                    >
+                        <Button isPrimary onClick={handleSaveCustomCss}>
+                            {__('Save Custom CSS', 'acemedia-glossary')}
+                        </Button>
+                        <Button isSecondary onClick={() => setIsCssModalOpen(false)}>
+                            {__('Cancel', 'acemedia-glossary')}
+                        </Button>
+                    </div>
+                </Modal>
+            )}
         </>
     );
 };
 
-export default Modals;
+export default memo(Modals);
