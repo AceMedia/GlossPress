@@ -1,10 +1,22 @@
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from '@wordpress/element';
-import { FlexBlock, Card, CardHeader, CardBody, TextControl, ToggleControl, TextareaControl, CheckboxControl, PanelRow, Tooltip, IconButton, Flex, FlexItem } from '@wordpress/components';
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from '@wordpress/element';
+import { FlexBlock, Card, CardHeader, CardBody, TextControl, ToggleControl, TextareaControl, PanelRow, Tooltip, IconButton, Flex } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faClock, faEdit, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import { decodeHTMLEntities, formatRelativeTime, smoothScrollTo } from '../utils';
 import RelatedTagsAndCats from './RelatedTagsAndCats';
+
+// Debounce utility function
+function debounce(func, wait) {
+    if (typeof func !== 'function') {
+        throw new TypeError('Expected a function to debounce');
+    }
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+}
 
 const Cards = ({
     displayedTerms,
@@ -23,11 +35,97 @@ const Cards = ({
     setMessage,
     setIsSaving,
 }) => {
+    const editorRef = useRef(null);
+    const activeEditor = useRef(null); // Track the active editor instance
     const termRefs = useRef({});
     const focusedTermIdRef = useRef(null);
-    const focusedFieldRef = useRef(null); 
+    const focusedFieldRef = useRef(null);
 
-    // Move toggleTermOpen to Cards.js
+
+    
+
+
+    const debouncedUpdateTerm = useMemo(() => {
+        if (updateTerm) {
+            return debounce(updateTerm, 300); // Only debounce if updateTerm is available
+        }
+        return () => {}; // Provide a no-op fallback
+    }, [updateTerm]);
+    
+    const updateTerm = useCallback((termId, key, value, isEditorChange = false) => {
+        setTerms((prevTerms) => {
+            const termIndex = prevTerms.findIndex(term => term.id === termId);
+            if (termIndex === -1) return prevTerms;
+    
+            const updatedTerm = { ...prevTerms[termIndex], [key]: value };
+            const updatedTerms = [...prevTerms];
+            updatedTerms[termIndex] = updatedTerm;
+    
+            return updatedTerms;
+        });
+    
+        setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
+        setUnsavedChanges(true);
+    
+        if (!isEditorChange) {
+            focusedTermIdRef.current = termId;
+            focusedFieldRef.current = key;
+        }
+    }, [setTerms, setModifiedTerms, setUnsavedChanges]);
+
+    const attachEditor = useCallback((term) => {
+        if (!editorRef.current || activeEditor.current?.id === term.id) return;
+    
+        console.log("Attaching editor to:", editorRef.current);
+    
+        if (activeEditor.current?.instance) {
+            activeEditor.current.instance.destroy();
+            console.log("Destroyed previous editor instance.");
+        }
+    
+        const editorInstance = wp.attachEditor(editorRef.current, {
+            value: term.content,
+            onSaveContent: (content) => {
+                console.log('Content saved:', content);
+                // Update your application state or perform additional logic
+                updateTerm(termId, 'content', content, true);
+            },
+            onLoad: (parse) => {
+                console.log('Editor loaded:', parse);
+            },
+            onError: (error) => {
+                console.error("Editor error:", error);
+            },
+        });
+    
+        console.log("Editor instance returned:", editorInstance);
+    
+        activeEditor.current = { id: term.id, instance: editorInstance };
+    }, [updateTerm]);
+    
+    
+    useEffect(() => {
+        if (!activeEditor.current?.instance) {
+            console.log("Waiting for editor instance to initialize...");
+            return;
+        }
+    
+        console.log("Editor instance initialized:", activeEditor.current.instance);
+    
+        return () => {
+            if (activeEditor.current?.instance) {
+                console.log("Destroying editor instance...");
+                activeEditor.current.instance.destroy();
+                activeEditor.current = null;
+            }
+        };
+    }, [activeEditor]);
+    
+    
+    
+    
+    
+
     const toggleTermOpen = useCallback((termId) => {
         const isCurrentlyOpen = terms.find((term) => term.id === termId)?.isOpen;
 
@@ -46,7 +144,7 @@ const Cards = ({
 
         setTimeout(() => {
             if (termRefs.current[termId]) {
-                smoothScrollTo(termRefs.current[termId].offsetTop - 56, 300);
+                smoothScrollTo(termRefs.current[termId].offsetTop - 56, 1000);
                 setTimeout(() => {
                     setTerms((prevTerms) =>
                         prevTerms.map((term) =>
@@ -56,25 +154,38 @@ const Cards = ({
                 }, 10);
             }
         }, 0);
+
+
+
+        // Cleanup the editor instance if the current card is being closed
+        if (isCurrentlyOpen && activeEditor.current?.id === termId) {
+            if (activeEditor.current.instance) {
+                activeEditor.current.instance.destroy();
+                activeEditor.current = null;
+                console.log(`Destroyed editor instance for term ID ${termId}`);
+            }
+        }
+
     }, [terms, setTerms]);
 
+    
 
     const removeTerm = useCallback(async (termId) => {
         const termToDelete = terms.find((term) => term.id === termId);
-    
+
         if (!termToDelete) {
             setMessage(__('Term not found.', 'acemedia-glossary'));
             return;
         }
-    
+
         const confirmDelete = window.confirm(
             __('Are you sure you want to delete this term? This action cannot be undone.', 'acemedia-glossary')
         );
-    
+
         if (!confirmDelete) return;
-    
+
         setIsSaving(true);
-    
+
         try {
             const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/bulk-delete`, {
                 method: 'POST',
@@ -82,14 +193,14 @@ const Cards = ({
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
                 },
-                body: JSON.stringify({ ids: [termId] }), // Send single term ID in array
+                body: JSON.stringify({ ids: [termId] }),
             });
-    
+
             if (!response.ok) {
                 throw new Error(__('Failed to delete the term.', 'acemedia-glossary'));
             }
-    
-            const deletedIds = await response.json(); // API should return deleted IDs
+
+            const deletedIds = await response.json();
             setTerms((prevTerms) => prevTerms.filter((term) => !deletedIds.includes(term.id)));
             setMessage(__('Term deleted successfully.', 'acemedia-glossary'));
         } catch (error) {
@@ -100,123 +211,125 @@ const Cards = ({
             setTimeout(() => setMessage(''), 3000);
         }
     }, [terms, setTerms, setMessage, setIsSaving]);
-    
-    
 
-    // Calculate visible count with a fallback for empty displayedTerms
+    const openTerm = useMemo(() => terms.find(term => term.isOpen), [terms]);
+
+useEffect(() => {
+    if (openTerm) {
+        attachEditor(openTerm);
+    }
+
+    return () => {
+        if (activeEditor.current?.instance) {
+            activeEditor.current.instance.destroy();
+            activeEditor.current = null;
+        }
+    };
+}, [openTerm, attachEditor]);
+
+const observeTextareaWithInput = (textareaElement, termId) => {
+    if (!textareaElement) {
+        console.warn('Textarea element not found for observation.');
+        return;
+    }
+
+    // Preserve the original property descriptor
+    const desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
+
+    // Override the `value` property to intercept changes
+    Object.defineProperty(textareaElement, "value", {
+        get: desc.get,
+        set: function (newValue) {
+            console.log(`Programmatic update detected for term ID ${termId}:`, newValue);
+            updateTerm(termId, 'content', newValue, true); // Update term content
+            desc.set.call(this, newValue); // Call the original setter
+        },
+    });
+
+    // Listen for manual input
+    const inputListener = (event) => {
+        const updatedValue = event.target.value;
+        console.log(`Manual input detected for term ID ${termId}:`, updatedValue);
+        updateTerm(termId, 'content', updatedValue, true);
+    };
+
+    textareaElement.addEventListener("input", inputListener);
+
+    console.log(`Started observing manual and programmatic updates for term ID ${termId}.`);
+
+    // Cleanup listeners and reset property descriptor on unmount
+    return () => {
+        textareaElement.removeEventListener("input", inputListener);
+        Object.defineProperty(textareaElement, "value", desc); // Restore original property descriptor
+    };
+};
+
+
+
+
+
+
     const visibleCount = Object.keys(displayedTerms).reduce((count, key) => {
         return count + (displayedTerms[key]?.length || 0);
     }, 0);
-    
+
     const totalCount = terms.length;
 
-
-
-    
-    useEffect(() => {
-        if (focusedTermIdRef.current && focusedFieldRef.current) {
-            const selector = focusedFieldRef.current === 'title' ? 'input[type="text"]' : 'textarea';
-            const element = document.querySelector(`[data-term-id="${focusedTermIdRef.current}"] ${selector}`);
-            if (element) {
-                element.focus();
-            }
-            focusedTermIdRef.current = null; // Clear refs after focusing
-            focusedFieldRef.current = null;
-        }
-    }, [terms]);
-
-
-    const updateTerm = useCallback((termId, key, value) => {
-        setTerms((prevTerms) =>
-            prevTerms.map((term) =>
-                term.id === termId ? { ...term, [key]: value } : term
-            )
-        );
-        setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
-        setUnsavedChanges(true);
-        
-        // Preserve focus after updating
-        focusedTermIdRef.current = termId;
-        focusedFieldRef.current = key;
-    }, []);
-    
-    useEffect(() => {
-        if (focusedTermIdRef.current && focusedFieldRef.current) {
-            const termId = focusedTermIdRef.current;
-            const field = focusedFieldRef.current;
-            
-            const selector = field === 'title' ? 'input[type="text"]' : 'textarea';
-            const element = document.querySelector(`[data-term-id="${termId}"] ${selector}`);
-            
-            if (element) {
-                element.focus();
-                element.selectionStart = element.value.length; // Move cursor to the end
-            }
-        }
-    }, [terms]); // Only focus when terms are updated
-
-
-
     return (
+        <FlexBlock className="terms-list" style={{ flex: '1' }}>
+            <div style={{ marginBottom: '15px' }} className={`currently-viewing ${sortOption === 'alphabetical' ? 'alpha' : ''}`}>
+                <Tooltip text={`${visibleCount} of ${totalCount} terms visible`}>
+                    <span className="pill">
+                        <FontAwesomeIcon icon={faEye} style={{ marginRight: '5px' }} />
+                        {`${visibleCount} of ${totalCount}`}
+                    </span>
+                </Tooltip>
+                <Tooltip text={`${loadTime}ms response time for the current view`}>
+                    <span className="pill">
+                        <FontAwesomeIcon icon={faClock} style={{ marginRight: '5px' }} />
+                        {loadTime}ms
+                    </span>
+                </Tooltip>
 
-        <>
 
 
-<FlexBlock className="terms-list" style={{ flex: '1' }}>
-                <div style={{ marginBottom: '15px' }} className={`currently-viewing ${sortOption === 'alphabetical' ? 'alpha' : ''}`}>
+
+                {totalCount > 0 && (
+
+<Flex className="bulk-actions" style={{ alignItems: 'center', gap: '10px' }}>
+
+{quickEdit === 'true' && (
+
     
-
-    <Tooltip text={`${visibleCount} of ${totalCount} terms visible`}>
-        <span className="pill">
-            <FontAwesomeIcon icon={faEye} style={{ marginRight: '5px' }} />
-            {`${visibleCount} of ${totalCount}`}
-        </span>
-    </Tooltip>
-    <Tooltip text={`${loadTime}ms response time for the current view`}>
-        <span className="pill">
-            <FontAwesomeIcon icon={faClock} style={{ marginRight: '5px' }} />
-            {loadTime}ms
-        </span>
-    </Tooltip>
-
-
-
-{totalCount > 0 && (
-
-    <Flex className="bulk-actions" style={{ alignItems: 'center', gap: '10px' }}>
-
-    {quickEdit === 'true' && (
-
-        
-    <Flex className="bulk-actions-select" style={{ alignItems: 'center', gap: '10px' }}>
-    <FontAwesomeIcon icon={faCheckDouble} />
-        <ToggleControl
-            label={__('Select All', 'acemedia-glossary')}
-            checked={Object.keys(displayedTerms).every((group) =>
-                displayedTerms[group].every((term) => selectedTerms.includes(term.id))
-            )}
-            onChange={(isChecked) => {
-                const visibleTermIds = Object.keys(displayedTerms)
-                    .flatMap((group) => displayedTerms[group].map((term) => term.id));
-                setSelectedTerms(isChecked ? visibleTermIds : []);
-            }}
-        />
+<Flex className="bulk-actions-select" style={{ alignItems: 'center', gap: '10px' }}>
+<FontAwesomeIcon icon={faCheckDouble} />
+    <ToggleControl
+        label={__('Select All', 'acemedia-glossary')}
+        checked={Object.keys(displayedTerms).every((group) =>
+            displayedTerms[group].every((term) => selectedTerms.includes(term.id))
+        )}
+        onChange={(isChecked) => {
+            const visibleTermIds = Object.keys(displayedTerms)
+                .flatMap((group) => displayedTerms[group].map((term) => term.id));
+            setSelectedTerms(isChecked ? visibleTermIds : []);
+        }}
+    />
 </Flex>
-    )}
+)}
 
 
-    <Flex className="bulk-actions-toggle" style={{ alignItems: 'center', gap: '10px' }}>
-        <FontAwesomeIcon icon={faEdit} />
-        <ToggleControl
-            label={__('Bulk Edit', 'acemedia-glossary')}
-            checked={quickEdit === 'true'}
-            onChange={(isChecked) => {
-                setQuickEdit(isChecked ? 'true' : 'false');
-                if (!isChecked) setSelectedTerms([]); // Clear selected terms
-            }}
-            disabled={totalCount === 0} // Disable toggle when no terms
-        />
-    </Flex>
+<Flex className="bulk-actions-toggle" style={{ alignItems: 'center', gap: '10px' }}>
+    <FontAwesomeIcon icon={faEdit} />
+    <ToggleControl
+        label={__('Bulk Edit', 'acemedia-glossary')}
+        checked={quickEdit === 'true'}
+        onChange={(isChecked) => {
+            setQuickEdit(isChecked ? 'true' : 'false');
+            if (!isChecked) setSelectedTerms([]); // Clear selected terms
+        }}
+        disabled={totalCount === 0} // Disable toggle when no terms
+    />
+</Flex>
 
 
 </Flex>
@@ -225,19 +338,19 @@ const Cards = ({
 )}
 
 
-</div>
+            </div>
 
-        {Object.keys(displayedTerms).sort().map(group => (
-            <FlexBlock style={{ display: 'grid', gap: '1em', flex: 'initial' }} key={group} id={group}>
-                {sortOption === 'alphabetical' && <h3 className='group-title'>{group}</h3>}
-                {displayedTerms[group].map((term) => (
-                <Card
-                key={term.id}
-                className={`glossary-term-card ${quickEdit === 'true' ? 'editing' : ''}`}
-                data-term-id={term.id}
-                ref={el => termRefs.current[term.id] = el} // Assign ref here
-                >
-                     <CardHeader
+            {Object.keys(displayedTerms).sort().map(group => (
+                <FlexBlock style={{ display: 'grid', gap: '1em', flex: 'initial' }} key={group} id={group}>
+                    {sortOption === 'alphabetical' && <h3 className='group-title'>{group}</h3>}
+                    {displayedTerms[group].map((term) => (
+                        <Card
+                            key={term.id}
+                            className={`glossary-term-card ${quickEdit === 'true' ? 'editing' : ''}`}
+                            data-term-id={term.id}
+                            ref={el => termRefs.current[term.id] = el}
+                        >
+                              <CardHeader
 onClick={(event) => {
 if (quickEdit === 'true') {
 // Prevent toggling if clicking on the actual checkbox
@@ -282,58 +395,64 @@ style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}
 </Tooltip>
 </div>
 </CardHeader>
-
-                        {term.isOpen && (
-                            <CardBody>
-                                <TextControl
-label={__('Term', 'acemedia-glossary')}
-value={decodeHTMLEntities(term.title)}
-onChange={(value) => updateTerm(term.id, 'title', value)}
-placeholder={__('Enter term title...', 'acemedia-glossary')}
-data-term-id={term.id} // Add attribute for focusing
+                            {term.isOpen && (
+                                <CardBody>
+<TextControl
+    label={__('Term', 'acemedia-glossary')}
+    value={decodeHTMLEntities(term.title)}
+    onChange={(value) => {
+        updateTerm(term.id, 'title', value, false); // Immediate update for typing
+        debouncedUpdateTerm(term.id, 'title', value); // Debounced for backend-heavy tasks
+    }}
+    placeholder={__('Enter term title...', 'acemedia-glossary')}
+    data-term-id={term.id}
 />
 
 <TextareaControl
-label={__('Content', 'acemedia-glossary')}
-value={term.content}
-onChange={(value) => updateTerm(term.id, 'content', value)}
-placeholder={__('Enter term content...', 'acemedia-glossary')}
-data-term-id={term.id} // Add attribute for focusing
-/>
-
-
-<RelatedTagsAndCats
-    term={term}
-    terms={terms}
-    categories={categories}
-    tags={tags}
-    setTerms={setTerms}
-    setModifiedTerms={setModifiedTerms}
-    setUnsavedChanges={setUnsavedChanges}
+    ref={(el) => {
+        if (el) {
+            editorRef.current = el;
+            console.log("Textarea ref set:", el);
+            const cleanup = observeTextareaWithInput(el, term.id); // Observe both manual and programmatic updates
+            return cleanup; // Cleanup function on unmount
+        }
+    }}
+    label={__('Content', 'acemedia-glossary')}
+    value={term.content} // Initial content
+    onChange={(value) => updateTerm(term.id, 'content', value)}
+    placeholder={__('Enter term content...', 'acemedia-glossary')}
 />
 
 
 
-                                <PanelRow>
-                                <IconButton
-icon="trash"
-label={__('Remove Term', 'acemedia-glossary')}
-onClick={() => removeTerm(term.id)}
-className="remove-term-btn"
-/>
-                                </PanelRow>
-                            </CardBody>
-                        )}
-                    </Card>
-                ))}
-                      </FlexBlock>
-            ))}
 
 
+
+                                    <RelatedTagsAndCats
+                                        term={term}
+                                        terms={terms}
+                                        categories={categories}
+                                        tags={tags}
+                                        setTerms={setTerms}
+                                        setModifiedTerms={setModifiedTerms}
+                                        setUnsavedChanges={setUnsavedChanges}
+                                    />
+                                    <PanelRow>
+                                        <IconButton
+                                            icon="trash"
+                                            label={__('Remove Term', 'acemedia-glossary')}
+                                            onClick={() => removeTerm(term.id)}
+                                            className="remove-term-btn"
+                                        />
+                                    </PanelRow>
+                                </CardBody>
+                            )}
+                        </Card>
+                    ))}
                 </FlexBlock>
-
-        </>
+            ))}
+        </FlexBlock>
     );
 };
 
-export default Cards;
+export default memo(Cards);
