@@ -8,6 +8,9 @@ const RelatedTagsAndCats = ({
     setTerms,
     setModifiedTerms,
     setUnsavedChanges,
+    isAutoSaveEnabled,
+    isSaving,
+    updateTerm,
 }) => {
     const [categories, setCategories] = useState([]);
     const [tags, setTags] = useState([]);
@@ -69,11 +72,14 @@ const RelatedTagsAndCats = ({
     const [modifiedTags, setModifiedTags] = useState(false);
 
     const saveModifiedTerms = useCallback(async () => {
+        if (!isAutoSaveEnabled) return; // Prevent saving if auto-save is disabled
+    
         try {
             if (modifiedCategories || modifiedTags) {
                 const body = {};
                 if (modifiedCategories) {
                     body.categories = selectedCategories.map((cat) => cat.id);
+                    console.log('selectedCategories', selectedCategories);
                 }
                 if (modifiedTags) {
                     body.tags = selectedTags.map((tag) => tag.id);
@@ -94,26 +100,33 @@ const RelatedTagsAndCats = ({
         } catch (error) {
             console.error('Error saving categories or tags:', error);
         }
-    }, [term.id, selectedCategories, selectedTags, modifiedCategories, modifiedTags]);
+    }, [term.id, selectedCategories, selectedTags, modifiedCategories, modifiedTags, isAutoSaveEnabled]);
     
-
+    
     useEffect(() => {
-        saveModifiedTerms();
-    }, [saveModifiedTerms]);
+        if (isAutoSaveEnabled) {
+            saveModifiedTerms();
+        }
+    }, [saveModifiedTerms, isAutoSaveEnabled]);
+    
 
     // Fetch all selected categories by their IDs
     const fetchSelectedCategories = useCallback(async () => {
         if (term.categories?.length > 0) {
             setLoadingCategories(true);
             try {
-                const response = await fetch(
-                    `/wp-json/wp/v2/categories?include=${term.categories.map((cat) => cat.id).join(',')}`
-                );
-                if (!response.ok) throw new Error('Failed to fetch selected categories');
-                const data = await response.json();
-                // Sort categories alphabetically by name
-                const sortedCategories = data.sort((a, b) => a.name.localeCompare(b.name));
-                setSelectedCategories(sortedCategories);
+                const validCategoryIds = term.categories.filter((cat) => cat?.id).map((cat) => cat.id);
+    
+                if (validCategoryIds.length > 0) {
+                    const response = await fetch(
+                        `/wp-json/wp/v2/categories?include=${validCategoryIds.join(',')}`
+                    );
+                    if (!response.ok) throw new Error('Failed to fetch selected categories');
+                    const data = await response.json();
+    
+                    const sortedCategories = data.sort((a, b) => a.name.localeCompare(b.name));
+                    setSelectedCategories(sortedCategories);
+                }
             } catch (error) {
                 console.error('Error fetching selected categories:', error);
             } finally {
@@ -122,20 +135,28 @@ const RelatedTagsAndCats = ({
         }
     }, [term.categories]);
     
+    
 
     // Fetch all selected tags by their IDs
     const fetchSelectedTags = useCallback(async () => {
         if (term.tags?.length > 0) {
             setLoadingTags(true);
             try {
-                const response = await fetch(
-                    `/wp-json/wp/v2/tags?include=${term.tags.map((tag) => tag.id).join(',')}`
-                );
-                if (!response.ok) throw new Error('Failed to fetch selected tags');
-                const data = await response.json();
-                // Sort tags alphabetically by name
-                const sortedTags = data.sort((a, b) => a.name.localeCompare(b.name));
-                setSelectedTags(sortedTags);
+                // Filter out invalid or empty IDs
+                const validTagIds = term.tags.filter((tag) => tag?.id).map((tag) => tag.id);
+    
+                // Only proceed if there are valid IDs
+                if (validTagIds.length > 0) {
+                    const response = await fetch(
+                        `/wp-json/wp/v2/tags?include=${validTagIds.join(',')}`
+                    );
+                    if (!response.ok) throw new Error('Failed to fetch selected tags');
+                    const data = await response.json();
+    
+                    // Sort tags alphabetically by name
+                    const sortedTags = data.sort((a, b) => a.name.localeCompare(b.name));
+                    setSelectedTags(sortedTags);
+                }
             } catch (error) {
                 console.error('Error fetching selected tags:', error);
             } finally {
@@ -143,6 +164,7 @@ const RelatedTagsAndCats = ({
             }
         }
     }, [term.tags]);
+    
     
 
     // Fetch categories from REST API
@@ -178,24 +200,41 @@ const RelatedTagsAndCats = ({
     }, []);
 
     // Handle category selection
-    const handleCategorySelection = (category, isChecked) => {
-        const updatedCategories = isChecked
-            ? [...selectedCategories, category]
-            : selectedCategories.filter((cat) => cat.id !== category.id);
-        setSelectedCategories(updatedCategories);
-        setModifiedCategories(true);
-        setUnsavedChanges(true);
-    };
-
-    // Handle tag selection
     const handleTagSelection = (tag, isChecked) => {
         const updatedTags = isChecked
             ? [...selectedTags, tag]
             : selectedTags.filter((t) => t.id !== tag.id);
-        setSelectedTags(updatedTags);
+        
+        // Update state and sanitize the array
+        setSelectedTags(updatedTags.filter((t) => t?.id));
         setModifiedTags(true);
-        setUnsavedChanges(true);
+    
+        // Get just the IDs for the term update
+        const tagIds = updatedTags.map((t) => t.id).filter(Boolean);
+        
+        // Update the term with valid tag IDs
+        updateTerm(term.id, 'tags', tagIds);
     };
+    
+
+    // Handle tag selection
+    const handleCategorySelection = (category, isChecked) => {
+        const updatedCategories = isChecked
+            ? [...selectedCategories, category]
+            : selectedCategories.filter((cat) => cat.id !== category.id);
+        
+        // Update state and sanitize the array
+        setSelectedCategories(updatedCategories.filter((cat) => cat?.id));
+        setModifiedCategories(true);
+    
+        // Get just the IDs for the term update
+        const categoryIds = updatedCategories.map((cat) => cat.id).filter(Boolean);
+        
+        // Update the term with valid category IDs
+        updateTerm(term.id, 'categories', categoryIds);
+    };
+    
+    
 
     useEffect(() => {
         fetchCategories();

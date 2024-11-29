@@ -34,6 +34,8 @@ const Cards = ({
     setQuickEdit,
     setMessage,
     setIsSaving,
+    isSaving,
+    isAutoSaveEnabled
 }) => {
     const editorRef = useRef(null);
     const activeEditor = useRef(null); // Track the active editor instance
@@ -44,20 +46,30 @@ const Cards = ({
 
     
 
-
     const debouncedUpdateTerm = useMemo(() => {
+        if (!isAutoSaveEnabled) return () => {}; // No-op if auto-save is disabled
         if (updateTerm) {
-            return debounce(updateTerm, 300); // Only debounce if updateTerm is available
+            return debounce(updateTerm, 300); // Debounced if enabled
         }
-        return () => {}; // Provide a no-op fallback
-    }, [updateTerm]);
+        return () => {};
+    }, [updateTerm, isAutoSaveEnabled]);
     
     const updateTerm = useCallback((termId, key, value, isEditorChange = false) => {
+        console.log('updateTerm', termId, key, value, isEditorChange);
         setTerms((prevTerms) => {
             const termIndex = prevTerms.findIndex(term => term.id === termId);
             if (termIndex === -1) return prevTerms;
     
-            const updatedTerm = { ...prevTerms[termIndex], [key]: value };
+            // Create a copy of the term
+            const updatedTerm = { ...prevTerms[termIndex] };
+            
+            // Special handling for tags and categories
+            if (key === 'tags' || key === 'categories') {
+                updatedTerm[key] = value.map(id => ({ id }));
+            } else {
+                updatedTerm[key] = value;
+            }
+    
             const updatedTerms = [...prevTerms];
             updatedTerms[termIndex] = updatedTerm;
     
@@ -73,32 +85,27 @@ const Cards = ({
         }
     }, [setTerms, setModifiedTerms, setUnsavedChanges]);
 
+
     const attachEditor = useCallback((term) => {
         if (!editorRef.current || activeEditor.current?.id === term.id) return;
     
-        console.log("Attaching editor to:", editorRef.current);
     
         if (activeEditor.current?.instance) {
             activeEditor.current.instance.destroy();
-            console.log("Destroyed previous editor instance.");
         }
     
         const editorInstance = wp.attachEditor(editorRef.current, {
             value: term.content,
             onSaveContent: (content) => {
-                console.log('Content saved:', content);
                 // Update your application state or perform additional logic
                 updateTerm(termId, 'content', content, true);
             },
             onLoad: (parse) => {
-                console.log('Editor loaded:', parse);
             },
             onError: (error) => {
-                console.error("Editor error:", error);
             },
         });
     
-        console.log("Editor instance returned:", editorInstance);
     
         activeEditor.current = { id: term.id, instance: editorInstance };
     }, [updateTerm]);
@@ -106,15 +113,12 @@ const Cards = ({
     
     useEffect(() => {
         if (!activeEditor.current?.instance) {
-            console.log("Waiting for editor instance to initialize...");
             return;
         }
     
-        console.log("Editor instance initialized:", activeEditor.current.instance);
     
         return () => {
             if (activeEditor.current?.instance) {
-                console.log("Destroying editor instance...");
                 activeEditor.current.instance.destroy();
                 activeEditor.current = null;
             }
@@ -162,7 +166,6 @@ const Cards = ({
             if (activeEditor.current.instance) {
                 activeEditor.current.instance.destroy();
                 activeEditor.current = null;
-                console.log(`Destroyed editor instance for term ID ${termId}`);
             }
         }
 
@@ -204,7 +207,6 @@ const Cards = ({
             setTerms((prevTerms) => prevTerms.filter((term) => !deletedIds.includes(term.id)));
             setMessage(__('Term deleted successfully.', 'acemedia-glossary'));
         } catch (error) {
-            console.error('Error deleting term:', error);
             setMessage(__('Failed to delete the term. Please try again.', 'acemedia-glossary'));
         } finally {
             setIsSaving(false);
@@ -229,7 +231,6 @@ useEffect(() => {
 
 const observeTextareaWithInput = (textareaElement, termId) => {
     if (!textareaElement) {
-        console.warn('Textarea element not found for observation.');
         return;
     }
 
@@ -240,7 +241,6 @@ const observeTextareaWithInput = (textareaElement, termId) => {
     Object.defineProperty(textareaElement, "value", {
         get: desc.get,
         set: function (newValue) {
-            console.log(`Programmatic update detected for term ID ${termId}:`, newValue);
             updateTerm(termId, 'content', newValue, true); // Update term content
             desc.set.call(this, newValue); // Call the original setter
         },
@@ -249,13 +249,11 @@ const observeTextareaWithInput = (textareaElement, termId) => {
     // Listen for manual input
     const inputListener = (event) => {
         const updatedValue = event.target.value;
-        console.log(`Manual input detected for term ID ${termId}:`, updatedValue);
         updateTerm(termId, 'content', updatedValue, true);
     };
 
     textareaElement.addEventListener("input", inputListener);
 
-    console.log(`Started observing manual and programmatic updates for term ID ${termId}.`);
 
     // Cleanup listeners and reset property descriptor on unmount
     return () => {
@@ -412,7 +410,6 @@ style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}
     ref={(el) => {
         if (el) {
             editorRef.current = el;
-            console.log("Textarea ref set:", el);
             const cleanup = observeTextareaWithInput(el, term.id); // Observe both manual and programmatic updates
             return cleanup; // Cleanup function on unmount
         }
@@ -436,6 +433,9 @@ style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}
                                         setTerms={setTerms}
                                         setModifiedTerms={setModifiedTerms}
                                         setUnsavedChanges={setUnsavedChanges}
+                                        isAutoSaveEnabled={isAutoSaveEnabled} 
+                                        updateTerm={updateTerm}
+                                        isSaving={isSaving}
                                     />
                                     <PanelRow>
                                         <IconButton

@@ -499,6 +499,8 @@ useEffect(() => {
     setQuickEdit={setQuickEdit}
     setMessage={setMessage}
     setIsSaving={setIsSaving}
+    isAutoSaveEnabled={isAutoSaveEnabled}
+    isSaving={isSaving}
 />
 
 
