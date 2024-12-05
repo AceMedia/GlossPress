@@ -1,0 +1,38 @@
+{
+  "name": "ace-glossary-plugin",
+  "version": "0.1.0",
+  "description": "Ace Glossary Plugin with React-based admin and frontend.",
+  "author": "Shane Rounce",
+  "license": "GPL-2.0-or-later",
+  "main": "build/glossary-admin.js",
+  "scripts": {
+    "build": "wp-scripts build",
+    "dev-js": "webpack --config webpack.config.js --mode=development --watch",
+    "build-css": "sass src/styles/scss:assets/styles --no-source-map",
+    "watch-css": "chokidar 'src/**/*.scss' -c 'npm run build-css'",
+    "format": "wp-scripts format",
+    "lint:css": "wp-scripts lint-style src/styles/**/*.scss --fix",
+    "lint:js": "wp-scripts lint-js",
+    "packages-update": "wp-scripts packages-update",
+    "plugin-zip": "zip -r ace-glossary-plugin.zip * -x '*.git*' 'node_modules/*' '*.DS_Store' '*.zip' 'svn/*' 'svn' 'src/*' 'src'",
+    "start": "wp-scripts start"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.1.0",
+    "css-loader": "^6.5.1",
+    "mini-css-extract-plugin": "^2.4.5",
+    "sass": "^1.49.9",
+    "sass-loader": "^12.3.0",
+    "style-loader": "^3.3.1"
+  },
+  "dependencies": {
+    "@fortawesome/free-brands-svg-icons": "^6.7.1",
+    "@fortawesome/free-solid-svg-icons": "^6.6.0",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@wordpress/api-fetch": "^7.11.0",
+    "@wordpress/components": "^28.11.0",
+    "@wordpress/core-data": "^7.11.0",
+    "@wordpress/data": "^10.11.0",
+    "@wordpress/element": "^6.12.0"
+  }
+}
