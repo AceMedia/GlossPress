@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from '@wordpress/element';
 import { Spinner, TextControl, PanelBody, ToggleControl, Flex, FlexItem, Card, CardHeader, CardBody } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 
 const GlossaryFrontend = ({ data }) => {
     const [terms, setTerms] = useState([]);
@@ -11,12 +12,15 @@ const GlossaryFrontend = ({ data }) => {
     const [searchQuery, setSearchQuery] = useState(''); // State for search query
  
     const generateAnchorId = (title) => {
-        return title.toLowerCase().replace(/\s+/g, '-');
+        return title
+            .toLowerCase()
+            .replace(/\s+/g, '-') // Replace spaces with dashes
+            .replace(/[^\w\-]/g, ''); // Remove all non-word characters except dashes
     };
 
     useEffect(() => {
         if (openCardId && termRefs.current[openCardId]) {
-            scrollToElement(openCardId);
+         //   scrollToElement(openCardId);
             window.history.pushState(null, '', `#${openCardId}`);
         }
     }, [openCardId]);
@@ -31,7 +35,7 @@ const GlossaryFrontend = ({ data }) => {
         }
     }, [loading]);
 
-    
+
     const toggleCard = (title, shouldScrollOnly = false) => {
         const id = generateAnchorId(title);
     
@@ -42,31 +46,84 @@ const GlossaryFrontend = ({ data }) => {
     
         setOpenCardId((prevId) => {
             if (prevId === id) {
-                return shouldScrollOnly ? prevId : null; // Close card if toggle requested
+                if (!shouldScrollOnly) return null; // Close card if toggle requested
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        scrollToElement(id);
+                    }, 50);
+                });
+                return prevId; // Keep it open if only scrolling
             }
-            scrollToElement(id); // Scroll to the new card
+            // Open the new card and scroll to it
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        scrollToElement(id);
+                    }, 50);
+                });
             return id;
         });
     };
+    
 
-    const scrollToElement = (id) => {
+    const escapeCSSSelector = (id) => {
+        return id.replace(/([!"#$%&'()*+,.\/:;<=>?@[\]^`{|}~])/g, '\\$1');
+    };
+    
+    const calculateHeaderOffset = () => {
+        const fixedElementsOffset = Array.from(document.querySelectorAll('header, .fixed, .sticky, #wpadminbar'))
+            .reduce((total, el) => {
+            const position = window.getComputedStyle(el).position;
+            if (position === 'fixed' || position === 'sticky' || el.id === 'wpadminbar') {
+                return total + el.getBoundingClientRect().height;
+            }
+            if (el.tagName.toLowerCase() === 'header') {
+                const childHeights = Array.from(el.children).map(child => {
+                const childPosition = window.getComputedStyle(child).position;
+                if (childPosition === 'fixed' || childPosition === 'sticky') {
+                    return child.getBoundingClientRect().height;
+                }
+                return 0;
+                });
+                const maxChildHeight = Math.max(...childHeights);
+                return total + maxChildHeight;
+            }
+            return total;
+            }, 0);
+        
+        // Add 2em padding
+        const emSize = parseFloat(getComputedStyle(document.documentElement).fontSize) * 2;
+        return fixedElementsOffset + emSize;
+    };
+    
+    const scrollToElement = (id, retries = 5) => {
         const element = document.getElementById(id);
         if (element) {
-            const offset = 100;
-            const bodyRect = document.body.getBoundingClientRect().top;
-            const elementRect = element.getBoundingClientRect().top;
-            const elementPosition = elementRect - bodyRect;
-            const offsetPosition = elementPosition - offset;
-
-            console.log('Scrolling to:', elementPosition);
-            console.log('Scrolling to:', offsetPosition);
-
-            window.scrollTo({
-                top: offsetPosition,
-                behavior: 'smooth'
+            const headerOffset = calculateHeaderOffset();
+            const elementRect = element.getBoundingClientRect();
+            const absoluteElementTop = elementRect.top + window.pageYOffset;
+            const middle = absoluteElementTop - headerOffset;
+    
+            requestAnimationFrame(() => {
+                window.scrollTo({
+                    top: middle,
+                    behavior: 'smooth'
+                });
             });
+    
+            setTimeout(() => {
+                const newRect = element.getBoundingClientRect();
+                if (newRect.top < 0 || newRect.top > window.innerHeight) {
+                    window.scrollTo({
+                        top: middle,
+                        behavior: 'auto'
+                    });
+                }
+            }, 500);
+        } else if (retries > 0) {
+            setTimeout(() => scrollToElement(id, retries - 1), 100);
         }
     };
+    
 
 
     const decodeHTMLEntities = (str) => {
@@ -145,10 +202,23 @@ const GlossaryFrontend = ({ data }) => {
                 id={anchorId}
             >
                 <CardHeader
-                    onClick={() => onToggle(term.title)}
+    onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Toggle the card
+        onToggle(term.title);
+        
+        // Then attempt scroll after a brief delay
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                scrollToElement(generateAnchorId(term.title));
+            }, 50);
+        });
+    }}
                     style={{ cursor: 'pointer', fontWeight: 'bold' }}
                 >
-                    <h4 id={anchorId}>{term.title}</h4>
+                    <h4>{term.title}</h4>
                 </CardHeader>
                 {isOpen && (
                     <CardBody>
@@ -170,19 +240,29 @@ const GlossaryFrontend = ({ data }) => {
                                     const isSecondLast = index === term.relatedTerms.length - 2;
     
                                     return (
-                                        <>
-                                            <a
-                                                key={relatedId}
-                                                href={`#${relatedAnchorId}`}
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    setOpenCardId(relatedAnchorId);
-                                                }}
-                                            >
-                                                {termTitle}
-                                            </a>
+                                        <span key={relatedId}>
+                                           <a
+    key={relatedId}
+    href={`#${relatedAnchorId}`}
+    onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Toggle the card
+        onToggle(relatedTerm.title);
+        
+        // Then attempt scroll after a brief delay
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                scrollToElement(generateAnchorId(relatedTerm.title));
+            }, 50);
+        });
+    }}
+>
+    {termTitle}
+</a>
                                             {!isLast && (isSecondLast ? ' & ' : ', ')}
-                                        </>
+                                        </span>
                                     );
                                 })}
                             </div>
@@ -308,8 +388,8 @@ const GlossaryFrontend = ({ data }) => {
         const lowercasedQuery = searchQuery.toLowerCase();
         return terms.filter(
             (term) =>
-                term.title.toLowerCase().includes(lowercasedQuery) ||
-                term.content.toLowerCase().includes(lowercasedQuery)
+                (term.title && term.title.toLowerCase().includes(lowercasedQuery)) ||
+                (term.content && term.content.toLowerCase().includes(lowercasedQuery))
         );
     }, [terms, searchQuery]);
 
@@ -322,13 +402,15 @@ const GlossaryFrontend = ({ data }) => {
     }, [filteredTerms, sortOption]); // Use filteredTerms here
     
     const groupedTerms = useMemo(() => {
+        if (!terms.length) return {};
+        // Use sortedTerms instead of terms to maintain consistent order
         return sortedTerms.reduce((groups, term) => {
             const firstChar = term.title.charAt(0).toUpperCase();
             if (!groups[firstChar]) groups[firstChar] = [];
             groups[firstChar].push(term);
             return groups;
         }, {});
-    }, [sortedTerms]);
+    }, [sortedTerms]); 
     
     
     const sortedGroupKeys = useMemo(() => {
@@ -368,88 +450,111 @@ const GlossaryFrontend = ({ data }) => {
                     </div>
 
 
-                    <div className="glossary-alphanumeric-index">
-    <Flex className="alphanumeric-links" justify="start" align="center" wrap gap="0.5em">
-        {'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((char) => (
-            <FlexItem key={char}>
-                {groupedTerms[char] ? (
-                    <a
-                    href={`#group-${char}`}
-                    onClick={(e) => {
-                        e.preventDefault();
-                        const group = groupedTerms[char];
-                        if (group && group[0]) {
-                            toggleCard(generateAnchorId(group[0].title));
-                        }
-                    }}
-                    className="alphanumeric-link"
-                >
-                    {char}
-                </a>
-                ) : (
-                    <span className="alphanumeric-link disabled">{char}</span>
-                )}
-            </FlexItem>
-        ))}
-    </Flex>
-</div>
-
-<div className="glossary-index">
-    <Flex className="glossary-anchor-links" justify="start" align="flex-start" wrap gap="1em">
-        {sortedGroupKeys.map((key) => (
-            <FlexItem key={key}>
-                <Flex direction="row" align="flex-start" gap={2}>
-                    <FlexItem style={{ flex: '1 1 20%' }}>
-                        <a
-                            href={`#${generateAnchorId(key)}`}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                toggleCard(generateAnchorId(groupedTerms[key][0]?.title), true);
-                            }}
-                            className="glossary-anchor-link"
-                        >
-                            {key}
-                        </a>
-                    </FlexItem>
-                    <FlexItem style={{ flex: '1 1 80%' }}>
-                        <ul className="glossary-anchor-list">
-                            {groupedTerms[key].map((term) => (
-                                <li key={generateAnchorId(term.title)} className="glossary-anchor-item">
-                                    <a
-                                        href={`#${generateAnchorId(term.title)}`}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            toggleCard(generateAnchorId(term.title), true);
-                                        }}
-                                        className="glossary-term-link"
-                                    >
-                                        {term.title}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    </FlexItem>
-                </Flex>
-            </FlexItem>
-        ))}
-    </Flex>
-</div>
+                    {/* Hide alphanumeric index and anchor links when searching */}
+                    {!searchQuery && (
+                    <><div className="glossary-alphanumeric-index">
+                                <Flex className="alphanumeric-links" justify="start" align="center" wrap gap="0.5em">
+                                    {'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((char) => (
+                                        <FlexItem key={char}>
+                                            {groupedTerms[char] ? (
+                                                <a
+                                                    href={`#${generateAnchorId(char)}`}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        const group = groupedTerms[char];
+                                                        if (group && group[0]) {
+                                                            toggleCard(group[0].title, true);
+                                                        }
+                                                    } }
+                                                    className="alphanumeric-link"
+                                                >
+                                                    {char}
+                                                </a>
+                                            ) : (
+                                                <span className="alphanumeric-link disabled">{char}</span>
+                                            )}
+                                        </FlexItem>
+                                    ))}
+                                </Flex>
+                            </div><div className="glossary-index">
+                                    <Flex className="glossary-anchor-links" justify="start" align="flex-start" wrap gap="1em">
+                                        {sortedGroupKeys.map((key) => (
+                                            <FlexItem key={key}>
+                                                <Flex direction="row" align="flex-start" gap={2}>
+                                                    <FlexItem style={{ flex: '1 1 20%' }}>
+                                                        <a
+                                                            href={`#${generateAnchorId(key)}`}
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                toggleCard(generateAnchorId(groupedTerms[key][0]?.title), true);
+                                                            } }
+                                                            className="glossary-anchor-link"
+                                                        >
+                                                            {key}
+                                                        </a>
+                                                    </FlexItem>
+                                                    <FlexItem style={{ flex: '1 1 80%' }}>
+                                                        <ul className="glossary-anchor-list">
+                                                            {groupedTerms[key].map((term) => (
+                                                                <li key={generateAnchorId(term.title)} className="glossary-anchor-item">
+                                                          <a
+    href={`#${generateAnchorId(term.title)}`}
+    onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent event bubbling
+        
+        // First toggle the card
+        toggleCard(term.title, true);
+        
+        // Then attempt scroll after a brief delay
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                scrollToElement(generateAnchorId(term.title));
+            }, 50);
+        });
+    }}
+    className="glossary-term-link"
+>
+    {term.title}
+</a>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </FlexItem>
+                                                </Flex>
+                                            </FlexItem>
+                                        ))}
+                                    </Flex>
+                                </div></>
+                    )}
 
 <div className="glossary-terms">
-    {sortedGroupKeys.map((key) => (
-        <div key={key} id={`group-${key}`}>
-            <h3>{key}</h3>
-            {groupedTerms[key].map((term) => (
-                <GlossaryItem
-                    key={generateAnchorId(term.title)}
-                    term={term}
-                    isOpen={openCardId === generateAnchorId(term.title)}
-                    onToggle={toggleCard}
-                />
-            ))}
-        </div>
-    ))}
+    {Object.keys(groupedTerms).map((key) => {
+        // Filter terms dynamically based on the search query
+        const filteredGroupTerms = groupedTerms[key].filter((term) =>
+            term.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            term.content?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        // Skip rendering the group if no terms match the search query
+        if (filteredGroupTerms.length === 0) return null;
+
+        return (
+            <div key={key} id={`group-${key}`}>
+                <h3>{key}</h3>
+                {filteredGroupTerms.map((term) => (
+                    <GlossaryItem
+                        key={generateAnchorId(term.title)}
+                        term={term}
+                        isOpen={openCardId === generateAnchorId(term.title)}
+                        onToggle={toggleCard}
+                    />
+                ))}
+            </div>
+        );
+    })}
 </div>
+
                     
 
                 </>
