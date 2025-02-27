@@ -169,7 +169,7 @@ function highlight_glossary_terms($content) {
     // Check if auto_highlight is enabled
     $auto_highlight_enabled = get_option('auto_highlight', 'false') === 'true';
 
-    if (!$auto_highlight_enabled) {
+    if (!$auto_highlight_enabled || !is_singular() || is_front_page() || is_archive()) {
         return $content; // Skip processing if auto_highlight is disabled
     }
 
@@ -190,6 +190,11 @@ function highlight_glossary_terms($content) {
             'definition' => $post->post_content,
         ];
     }, $glossary_posts);
+
+    // Sort glossary terms by length in descending order to prioritize longer terms
+    usort($glossary_data, function ($a, $b) {
+        return strlen($b['title']) - strlen($a['title']);
+    });
 
     // Build a regex pattern to match glossary terms
     $patterns = array_map(function ($term) {
@@ -215,10 +220,9 @@ function highlight_glossary_terms($content) {
         return $matches[0];
     }, $content);
 
-     // Enqueue the tooltip script and styles if matches were found
-     if (preg_match($regex, $content)) {
+    // Enqueue the tooltip script and styles if matches were found
+    if (preg_match($regex, $content)) {
         add_action('wp_enqueue_scripts', function () {
-
             wp_enqueue_style(
                 'wp-components',
                 includes_url('/css/dist/components/style.css'),
@@ -226,14 +230,12 @@ function highlight_glossary_terms($content) {
                 null // No versioning to match WP core
             );
 
-
-
-        wp_enqueue_style(
-            'acemedia-glossary-tooltips',
-            ACEMEDIA_GLOSSARY_URL . 'build/glossary-tooltips.css',
-            array(),
-            ACEMEDIA_GLOSSARY_VERSION
-        );
+            wp_enqueue_style(
+                'acemedia-glossary-tooltips',
+                ACEMEDIA_GLOSSARY_URL . 'build/glossary-tooltips.css',
+                array(),
+                ACEMEDIA_GLOSSARY_VERSION
+            );
 
             wp_enqueue_script(
                 'acemedia-glossary-tooltips',

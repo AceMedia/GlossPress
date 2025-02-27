@@ -60,11 +60,20 @@ class AceMediaGlossary {
             ACEMEDIA_GLOSSARY_VERSION,
             true
         );
-
-        // Enqueue only if shortcode is used
-        if (is_singular()) {
+    
+        // Check if the glossary block or shortcode is present
+        if ($this->hasGlossaryContent()) {
             wp_enqueue_script('acemedia-glossary-frontend');
         }
+    }
+    
+    private function hasGlossaryContent() {
+        global $post;
+        if (!$post) {
+            return false;
+        }
+    
+        return has_block('acemedia/glossary', $post->post_content) || has_shortcode($post->post_content, 'glossary');
     }
 
 

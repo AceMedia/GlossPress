@@ -1,0 +1,1310 @@
+$primary-color: var(--wp-components-color-accent,var(--wp-admin-theme-color,#3858e9));
+$dark-primary-color: var(--wp-components-color-accent,var(--wp-admin-theme-color-darker-20,#3858e9));
+
+
+$background-color: #f1f5f9;
+$white: #fff;
+$red: #f00;
+$green: #28a745;
+$slate: #e2e8f0;
+
+@use "../../SaveBar/SaveBar";
+
+
+table {
+
+	input {
+		width: 100%;
+		display: block;
+	}
+}
+
+.column-action {
+	text-align: right;
+}
+
+.wp-core-ui {
+
+	button.are-you-sure:focus {
+		background: $red;
+		color: $white;
+	}
+}
+
+#ace-settings-root {
+	margin: -10px -20px 0 -22px;
+
+	* {
+		box-sizing: border-box;
+	}
+
+	 .main-panel {
+		padding: 0;
+		min-height: calc(100vh - 32px);
+		align-items: stretch;
+		justify-items: stretch;
+
+		> div { // Targeting direct child elements
+			align-items: stretch;
+			justify-items: stretch;
+			flex-grow: 1;
+		}
+	}
+
+
+	.settings-header > div {
+		display: flex;
+		align-items: center;
+		margin-bottom: 10px;
+		justify-content: space-between;
+
+		h1 {
+			color: $primary-color;
+			font-weight: 600;
+			word-spacing: -10px;
+			text-transform: uppercase;
+			display: block;
+			text-align: center;
+			margin: 0px auto;
+			svg * {
+				fill: $dark-primary-color;
+			}
+
+			span {
+				text-transform: none;
+				font-style: italic;
+				display: inline-block;
+				color: $primary-color;
+				vertical-align: text-bottom;
+
+				&::after {
+					content: "🌱";
+					font-style: normal;
+				}
+			}
+		}
+
+		.description {
+			display: inline-block;
+			font-size: 1em;
+			line-height: 30px;
+			font-weight: 700;
+			margin: 0 0 0 10px;
+			color: $primary-color;
+		}
+	}
+
+	.main-panel {
+		padding: 0 0 63px 0;
+		width: 100%;
+		gap: 0;
+	}
+
+	.side-panel {
+		position: sticky;
+		align-self: normal !important;
+		top: calc(42px + 1em);
+		bottom: 100px;
+		max-width: 30%;
+		padding: 1.5em;
+		min-width: 20%;
+		width: 30%;
+
+		.components-base-control__label {
+			display: none;
+		}
+
+		.components-panel__body.is-opened {
+
+			> div {
+				margin-top: 0.5em;
+			}
+		}
+
+		button.toggle-button {
+			padding: 16px 16px 16px 16px;
+			outline: none !important;
+			border: none !important;
+
+			svg {
+				opacity: 0.5;
+				position: absolute;
+				left: 25px;
+				top: 50%;
+				transform: translate3d(-50%, -50%, 0);
+			}
+
+			&:hover {
+				background: rgba(248, 250, 252, 1);
+			}
+
+			&.is-pressed:not(:first-child) {
+				background: $primary-color;
+				color: $white !important;
+
+				svg {
+					opacity: 1;
+				}
+			}
+
+			&.is-pressed:is(:first-child) {
+				background-color: $primary-color;
+
+				svg {
+					opacity: 1;
+				}
+			}
+		}
+
+		.svg-inline--fa {
+			margin-right: 0.5em;
+			width: 20px;
+			text-align: center;
+			align-content: center;
+			color: $primary-color;
+		}
+
+		h1 {
+			margin: 0;
+			padding: 0;
+		}
+
+		.components-input-control__container,
+		.components-toggle-group-control {
+			border-radius: 0.5em;
+		}
+
+		.components-toggle-group-control {
+			border: 1px solid rgb(203, 213, 225);
+			outline: none !important;
+			box-shadow: none !important;
+
+			> div > div > div {
+				border-radius: 0.4em !important;
+				background: $primary-color;
+			}
+		}
+
+		.components-panel__body {
+			padding: 0;
+			border: none !important;
+		}
+	}
+
+
+}
+
+body {
+	background: $background-color !important;
+}
+
+ul#adminmenu a.wp-has-current-submenu::after,
+ul#adminmenu > li.current > a.current::after {
+	border-right-color: $background-color;
+}
+
+
+.components-card {
+
+	&:last-child {
+		margin-bottom: 0 !important;
+	}
+}
+
+.components-card,
+.components-modal__frame {
+	//box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+	//border-radius: 0.5em !important;
+//	border: 1px solid rgb(203, 213, 225) !important;
+
+	.components-card__header {
+		position: relative;
+		overflow: hidden !important;
+		padding-left: 50px;
+
+		p,
+		h2 {
+			margin: 0;
+			font-size: 1em;
+		}
+
+		h2 {
+			font-size: 1.4em;
+		}
+
+		.icon {
+			margin-left: -0.5em;
+			margin-right: 5px;
+			background: rgba(248, 250, 252, 1);
+			border-right: 1px solid rgb(203, 213, 225) !important;
+			height: 100%;
+			padding: 0;
+			position: absolute;
+			left: 0.5em;
+			vertical-align: middle;
+			display: flex;
+			width: 40px;
+			text-align: center;
+			align-items: center;
+
+			svg {
+				padding: 0;
+				margin: 0;
+				width: auto;
+				height: auto;
+				transform: translate3d(-50%, -50%, 0);
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				color: $primary-color;
+
+			}
+
+			&::before {
+				flex: auto;
+			}
+		}
+
+		&:hover {
+			cursor: pointer;
+		}
+	}
+
+	.components-base-control__field input[type="text"],
+	.components-base-control__field textarea {
+		background-color: rgba(255, 255, 255, 1);
+		border-radius: 0.5em;
+		border-width: 0;
+		box-shadow: inset 0 0 0 0 #0000, inset 0 0 0 1px rgba(203, 213, 225, 1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+		color: rgba(30, 41, 59, 1);
+		font-size: 1rem;
+		padding: 1rem;
+		height: auto;
+		width: 100%;
+		line-height: 1;
+
+		&:disabled {
+			background: rgba(248, 250, 252, 1);
+			color: rgba(209, 213, 219, 1);
+			pointer-events: none;
+		}
+
+		&:focus,
+		&:active {
+			box-shadow: inset 0 0 0 0 #fff, inset 0 0 0 2px $primary-color, 0 0 #0000;
+			outline: 2px solid transparent;
+			outline-offset: 2px;
+		}
+	}
+
+
+	.components-base-control__field textarea {
+		line-height: 1.75;
+	}
+
+	.components-input-control__container {
+		padding: 0;
+		background-color: rgba(255, 255, 255, 1) !important;
+		border-radius: 0.5em;
+		font-size: 1.2em !important;
+		line-height: 1;	
+		border: none !important;
+		box-shadow: none !important;
+		* {
+			border: none !important;
+			box-shadow: none !important;
+			outline: none !important;
+		}
+		> select {
+			padding: 1em !important;
+			height: auto !important;
+			border: none !important;
+			outline: none !important;
+			font-size: 1em !important;
+			line-height: 1;
+			margin: 1px !important;
+			background: transparent !important;
+		}
+		.components-input-control__backdrop {
+			border: none !important;
+		box-shadow: inset 0 0 0 0 #0000, inset 0 0 0 1px rgba(203, 213, 225, 1), 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+		color: rgba(30, 41, 59, 1) !important;
+		}
+
+	}
+
+}
+
+.components-card:has(.components-card__body) .components-card__header {
+	background: rgba(248, 250, 252, 1) !important;
+}
+
+button {
+	border-radius: 0.5em !important;
+}
+
+label {
+	font-size: 1em !important;
+	text-transform: none !important;
+	font-weight: 600;
+	margin-bottom: 0.5em;
+	display: block;
+
+}
+
+
+.custom-select-toggle {
+	border-radius: 0.375rem;
+	background-color: #f0f4f8; /* Adjust for matching color */
+	padding: 0.5rem 1rem;
+	color: #334155; /* Adjust for text color */
+	font-size: 0.875rem;
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.custom-select-toggle:hover {
+	background-color: $slate; /* Adjust for hover */
+	cursor: pointer;
+}
+
+.components-menu-group__label {
+	font-weight: 700;
+	padding-left: 1rem;
+	padding-top: 0.5rem;
+}
+
+.custom-select-control .components-menu-item {
+	padding: 0.5rem 1rem;
+}
+
+.components-panel__body-title {
+
+	button {
+		font-size: 1.2em !important;
+		color: #999;
+	}
+}
+
+
+.components-button,
+.components-button[aria-expanded="false"] {
+	color: #444;
+}
+
+.components-panel__body.is-opened > .components-panel__body-title {
+	margin: 0;
+
+	button {
+		background: $slate;
+	}
+
+	.components-panel__icon {
+		flex: none;
+		float: left;
+		display: block;
+	}
+}
+
+
+.components-button.components-panel__body-toggle {
+	background: transparent;
+	background: rgba(248, 250, 252, 0.5);
+	border: 1px solid $slate !important;
+
+
+	&:hover {
+		background: rgba(248, 250, 252, 1);
+	}
+
+	svg {
+		transform: scale(1.2);
+	}
+}
+
+.side-panel > div > input {
+	border: 1px solid rgb(203, 213, 225);
+	padding: 0.5em 1em !important;
+	box-shadow: rgba(0, 0, 0, 0) 0 0 0 0, rgba(0, 0, 0, 0) 0 0 0 0, rgba(0, 0, 0, 0.05) 0 1px 2px 0;
+}
+
+
+.components-panel__icon {
+	flex: none;
+	float: left;
+	display: block;
+}
+
+.components-button.components-panel__body-toggle {
+	background: transparent;
+	background: rgba(248, 250, 252, 0.5);
+
+	&:hover {
+		background: rgba(248, 250, 252, 1);
+	}
+
+	svg {
+		transform: scale(1.2);
+	}
+}
+
+.side-panel div.search-holder {
+	position: relative;
+
+	input {
+		border: 1px solid rgb(203, 213, 225);
+		border-radius: 0.5em !important;
+		padding: 0.5em 1em 0.5em 3em !important;
+		box-shadow: rgba(0, 0, 0, 0) 0 0 0 0, rgba(0, 0, 0, 0) 0 0 0 0, rgba(0, 0, 0, 0.05) 0 1px 2px 0;
+		&:focus {
+			box-shadow: rgba(0, 0, 0, 0) 0 0 0 0, rgba(0, 0, 0, 0) 0 0 0 0, $primary-color 0 0 0 2px;
+		}
+	}
+
+	span {
+		position: absolute;
+		top: 50%;
+		left: 5px;
+		z-index: 99;
+		height: 30px;
+		width: 30px;
+		transform: translateY(-50%);
+
+		&::before {
+			font-size: 26px;
+			line-height: 30px;
+		}
+	}
+}
+
+.components-button.toggle-button {
+	position: relative;
+	padding-left: 42px !important;
+	overflow: hidden;
+	transition: 1s linear all;
+
+	.svg-inline--fa {
+		opacity: 0.8 !important;
+		z-index: 99 !important;
+	}
+
+	&.is-pressed {
+
+		.svg-inline--fa {
+			opacity: 1 !important;
+			color: $white !important;
+		}
+	}
+
+	.components-flex {
+		gap: 0;
+	}
+}
+
+
+.tag-toggles {
+
+	.components-button.toggle-button {
+		position: relative;
+		padding-left: 42px !important;
+		overflow: hidden;
+		transition: 1s linear all;
+
+		.svg-inline--fa {
+			opacity: 0 !important;
+			z-index: 99 !important;
+		}
+
+		&.is-pressed {
+
+			.svg-inline--fa {
+				opacity: 1 !important;
+			}
+		}
+
+		&:first-child .svg-inline--fa {
+			display: none !important;
+		}
+
+		.components-flex {
+			gap: 0;
+		}
+	}
+}
+
+
+.field-tag-color {
+	border-radius: 50px;
+	display: inline-block;
+	height: 10px;
+	width: 10px;
+	background: conic-gradient(from 180deg, rgba(255, 0, 0, 1) 0%, rgba(255, 154, 0, 1) 10%, rgba(208, 222, 33, 1) 20%, rgba(79, 220, 74, 1) 30%, rgba(63, 218, 216, 1) 40%, rgba(47, 201, 226, 1) 50%, rgba(28, 127, 238, 1) 60%, rgba(95, 21, 242, 1) 70%, rgba(186, 12, 248, 1) 80%, rgba(251, 7, 217, 1) 90%, rgba(255, 0, 0, 1) 100%);
+	margin-right: 0.5em;
+	position: absolute;
+	left: 25px;
+	top: 50%;
+	transform: translate3d(-50%, -50%, 0);
+	transition: 0.25s ease-in-out all;
+	z-index: -1;
+}
+
+.is-pressed:not(:first-child) .field-tag-color {
+	transform: translate3d(-50%, -50%, 0) scale(120);
+	transition: 1s ease-in-out all;
+}
+
+.is-pressed:is(:first-child) .field-tag-color {
+	transform: translate3d(-50%, -50%, 0) scale(1.5);
+	z-index: 999;
+}
+
+
+.field-tag-count {
+	position: absolute;
+	right: -40px;
+	top: 1px;
+	height: calc(100% - 2px);
+	display: flex; /* Use flexbox */
+	align-items: center; /* Center items vertically */
+	justify-content: center; /* Center items horizontally if needed */
+	font-size: 0.8em;
+	padding: 0.5em 1em;
+	background: rgba(255, 255, 255, 0.25);
+	color: #000;
+	transition: 0.25s ease-in-out all;
+	border-radius: 0 0.5em 0.5em 0;
+
+	&:hover {
+		background: rgb(255, 255, 255, 0.5);
+	}
+}
+
+.components-button.toggle-button {
+	display: inline-flex;
+	align-items: center;
+
+	&:hover {
+
+		.field-tag-count {
+			right: 1px;
+		}
+	}
+}
+
+
+.components-toggle-group-control-option-base[data-active-item="true"] {
+
+	div {
+		font-weight: 700;
+	}
+}
+
+.currently-viewing {
+	font-size: 1em;
+	color: $primary-color;
+	svg {
+		transform: scale(1.2);
+		color: $dark-primary-color
+	}
+	strong {
+		color: $dark-primary-color;
+	}
+	ul {
+		display: inline;
+		float: right;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		li {
+			display: inline;
+			padding: 0;
+			margin: 0 0 0 1em;
+		}
+	}
+}
+
+#wpbody-content {
+	padding-bottom: 0 !important;
+}
+
+
+.main-panel > .components-flex-block {
+	display: flex !important;
+	flex-direction: column !important; /* Assuming this is the desired full height */
+	flex-grow: 1 !important;
+	background-color: $slate;
+	padding: 1.5em;
+	gap: 1em;
+	> div:not(.currently-viewing) {
+		border-radius: 0.5em;
+	}
+}
+
+.main-panel > .components-flex-block > .currently-viewing {
+
+	/* This element will take only the height it needs */
+	flex-shrink: 0; /* Prevent shrinking so it keeps its natural height */
+}
+
+.main-panel > .components-flex-block > .no-choices {
+
+	/* This element will take up the remaining space */
+	flex-grow: 1; /* Make this element expand to fill the remaining space */
+	display: flex; /* Optional: if you want to center content within this element */
+	justify-content: center; /* Center horizontally */
+	align-items: center; /* Center vertically */
+	flex-direction: column;
+}
+
+
+.card-tags,
+.ace-tag-select {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	flex-wrap: wrap;
+
+	> span.tag,
+	> div:nth-child(3) > div:first-child > div:not(:last-child) {
+		color: #fff;
+		white-space: nowrap;
+		line-height: 26px;
+		text-decoration: none;
+		position: relative;
+		box-shadow: none;
+		transition: background-color 0.2s, color 0.2s;
+		border-radius: 0 0.5em 0.5em 0 !important;
+		padding: 0 0.5em 0 20px !important;
+		text-align: left;
+
+		&:is(div) {
+			padding-right: 31px !important;
+		}
+
+		> div {
+			display: inline-block;
+			padding: 0;
+
+			&[role="button"] {
+				cursor: pointer;
+				position: absolute;
+				right: 0;
+				top: 0;
+				height: 100%;
+				width: 26px;
+
+				svg {
+					position: absolute;
+					top: 50%;
+					left: 50%;
+					transform: translate3d(-50%, -50%, 0);
+				}
+			}
+		}
+
+		&::before {
+			content: "";
+			background: #fff;
+			border-radius: 50%;
+			box-shadow: none;
+			height: 5px;
+			width: 5px;
+			position: absolute;
+			left: 8px;
+			top: 50%;
+			transform: translateY(-50%);
+		}
+
+		&::after {
+			content: "";
+			position: absolute;
+			top: 0;
+			left: 0;
+			border-bottom: 13px solid $white;
+			border-right: 10px solid transparent;
+			border-top: 13px solid $white;
+			transition: border-left-color 0.2s;
+		}
+
+		&:hover {
+			background-color: $red;
+			color: #fff;
+
+			&::after {
+				border-left-color: $red;
+			}
+		}
+	}
+
+	> div:nth-child(3) > div:first-child > div:last-child {
+		margin: 0 0 0 1em !important;
+		padding: 0 !important;
+
+		input {
+			min-height: 24px !important;
+			line-height: 24px !important;
+			padding: 0 !important;
+			box-sizing: content-box;
+			margin: 0 !important;
+		}
+	}
+}
+
+
+.components-card-header:hover .card-tags {
+
+	span {
+
+		&::before {
+			background: #f8fafc;
+		}
+
+		&::after {
+			border-bottom: 13px solid #f8fafc;
+			border-top: 13px solid #f8fafc;
+		}
+	}
+}
+
+
+.bulk-panel, .auto-highlight-panel {
+
+	h2 {
+
+		button {
+
+			span:first-child svg {
+				display: none !important;
+			}
+
+			.components-base-control {
+				position: absolute;
+				right: 1em;
+				top: 50%;
+				transform: translateY(-50%);
+				padding: 0;
+				margin: 0;
+			}
+		}
+	}
+}
+
+.bulk-select-field {
+	position: absolute;
+	left: 0.5em;
+	top: 50%;
+	display: inline-block;
+	width: 20px !important;
+	height: 20px !important;
+	transform: translateY(-50%);
+	z-index: 999;
+
+	input {
+		width: 100% !important;
+	}
+
+}
+
+.components-card.quick-edit {
+	padding-left: 3em;
+
+
+}
+
+
+.tag-toggle {
+	position: absolute;
+	right: 1em;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 999;
+	pointer-events: none;
+}
+
+
+.settings-header {
+
+	> div {
+		position: relative;
+	}
+}
+
+
+.grass {
+	display: flex;
+	display: none !important;
+	align-items: flex-end; /* Align blades to the bottom */
+	justify-content: space-around; /* Space blades evenly */ /* Adjust height as needed */
+	overflow: hidden;
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 30%;
+	z-index: -1;
+}
+
+.blade {
+	width: 3px; /* Width of each blade */
+	height: 100%; /* Height of each blade */
+	background: linear-gradient(to top, #6fba3e, #9ddf5a); /* Grass color */
+	border-radius: 1px; /* Rounded edges */
+	position: relative;
+	animation: sway 1s ease-in-out infinite; /* Swaying animation */
+	transform-origin: bottom;
+}
+
+@keyframes sway {
+
+	0%,
+	100% {
+		transform: rotate(0deg); /* No rotation */
+	}
+
+	50% {
+		transform: rotate(-10deg); /* Sway to one side */
+	}
+}
+
+
+.updated-times {
+
+	> * {
+		padding: 0 0.5em;
+		line-height: 26px;
+		font-size: 0.8em;
+		background: $slate;
+		border-radius: 0.5em;
+		color: $primary-color;
+		strong {
+			color: $dark-primary-color;
+		}
+	}
+}
+
+
+
+.field-options-row {
+	> * {
+		width: 40%;
+		&:last-child {
+			width: 20%;
+				width: 100%;
+		}
+	}
+}
+
+
+.pill {
+	background: $white;
+	flex-shrink: 0; // Prevent shrinking
+	margin-right: 1em;
+	white-space: nowrap; // Prevent text wrapping
+	display: inline-flex;
+	align-items: center;
+	display: inline-block;
+	font-size: .8em;
+	font-weight: bold;
+	padding: 0em 1em;
+	border-radius: 10px;
+	position: relative;
+	overflow: hidden;
+	padding-left: 30px;
+	box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+	border: 1px solid rgb(203, 213, 225) !important;
+	margin-right: 1em;
+	svg, .fa {
+		background: $primary-color;
+		position: absolute;
+		left: 0px;
+		top: 0px;
+		height: 100%;
+		color: $white;
+		padding: .5em .25em .5em .5em;
+		margin-right: .5em !important;
+		width: 20px;
+	}
+}
+
+
+h3.group-title {
+	position: sticky;
+	top: calc(26px + 1em); /* Adjust this if you want it to stick lower than the very top */
+	z-index: 999; /* Ensures h3 is on top if there’s overlapping content */
+	font-size: 1.5em;
+	padding: 0px !important;
+	margin: 0px !important;
+	display: inline-block;
+	line-height: 1;
+	pointer-events: none;
+	color: $primary-color;
+}
+
+.currently-viewing {
+	position: sticky;
+	top: 32px;
+	z-index: 99;
+	padding: 1em 1.5em 2em;
+	margin: -1.5em -1.5em -1em !important;
+	background: linear-gradient(180deg, $slate 53%, transparent 100%); 
+	transition: .25s linear all;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+	&.alpha {
+		padding-left: 50px;
+	}
+	.components-checkbox-control {
+		display: inline-block;
+	}
+
+    .bulk-actions {
+		flex-grow: 0; /* Prevent it from growing */
+		flex-shrink: 0; /* Prevent it from shrinking */
+		width: auto; /* Let it size itself automatically */
+		margin-left: auto; 
+		flex-wrap: nowrap;
+	}
+	.bulk-actions-toggle, .bulk-actions-select {
+		position: relative;
+		opacity: .25;
+		transition: all .25s linear;
+		display: flex;
+		align-items: center;
+		gap: 5px; /* Ensure label/icon are spaced properly */
+		flex-wrap: nowrap; /* Prevent wrapping */
+		white-space: nowrap; /* Prevent label from wrapping */
+		&:hover {
+			opacity: 1;
+		}
+		.components-form-toggle {
+			position: absolute;
+			left: .5em;
+			top: 50%;
+			transform: translateY(-50%);
+		}
+		svg {
+			position: absolute;
+			left: calc(37px + 1em);
+			top: 50%;
+			transform: translateY(-50%)scale(1.3);
+			pointer-events: none;
+			color: $primary-color;
+		}
+		label {
+			padding: .5em 1em .5em 70px;
+			background: $white;
+			border-radius: 100px;
+			color: $primary-color;
+		}
+		* {
+			padding: 0px;
+			margin: 0px;
+		}
+    }
+
+}
+
+
+.sidebar {
+	position: sticky;
+	top: 32px;
+	z-index: 99;
+	h1{
+		font-weight: 900;
+		letter-spacing: -2px;
+		font-size: 3em;
+		color: $primary-color;
+		text-align: center;
+		vertical-align: middle;
+		margin-bottom: .25em !important;
+		i {
+			color: $dark-primary-color;
+			background: linear-gradient(
+			   to right,
+			   $primary-color,
+			   $white,
+			   $primary-color
+			);
+			background-size: 200%;
+			background-clip: text;
+			animation-name: shine;
+			background-position: 50%;
+			animation-duration: 10s;
+			animation-iteration-count: infinite;
+			display: inline-block;
+		 }
+		 
+		span {
+			font-size: inherit !important;
+			display: inline-block;
+			margin-right: .25em !important;
+			line-height: inherit !important;
+			transform: rotate(-15deg) translate(-50%, 0%);
+			transform-origin: center center;
+		}
+	}
+	h5 {
+		text-align: center;
+		font-size: .8em;
+		opacity: 0.35;
+		margin: 1.5em 0 0;
+		text-transform: uppercase;
+		gap: 0.5em;
+		color: $primary-color;
+		position: relative;
+		
+		&::before,
+		&::after {
+			content: "";
+			display: inline-block;
+			opacity: 0.35;
+			width: 20px;
+			height: 1px;
+			background: $primary-color;
+			border-radius: 5px;
+			vertical-align: super;
+			margin: 0 0.5em;
+		}
+	}
+	
+}
+
+
+
+@keyframes shine {
+	0% {
+	   background-position: 0%;
+	}
+	100% {
+	   background-position: 100%;
+	}
+ }
+
+.glossary-term-card {
+	.components-card__header {
+		padding-left: 2em;
+	}
+}
+
+
+.terms-list {
+	> div:nth-child(2) {
+		margin-top: -50px;
+	}
+}
+
+
+.alpha-index {
+	display: flex;
+	gap: .5em;
+	justify-content: space-between;
+    flex-wrap: wrap; 
+	a, span {
+		display: inline-block;
+		padding: 0.5em;
+		line-height: 1;
+		background: $slate;
+		color: $primary-color;
+		text-decoration: none;
+		font-weight: normal;
+		border-radius: 0.5em;
+		transition: .25s linear all;
+		&:hover {
+			background: $primary-color;
+			color: $white;
+		}
+	}
+	a {
+		color: $dark-primary-color;
+		font-weight: bold;
+	}
+	span {
+		opacity: 0.25;
+	}
+}
+
+
+.related-options {
+	h3 {
+		font-size: 1em;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0px 0px 8px;
+	}
+	.scroller {
+		max-height: 200px;
+		height: 200px;
+		overflow-y: auto;
+		overflow-x: hidden;
+		padding: .5em;
+		background: $slate;
+		box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+		border-radius: 0.5em !important;
+		border: 1px solid rgb(203, 213, 225) !important;
+		position: relative;
+		* {
+			max-width: 100%;
+			overflow: hidden;
+		}
+		.components-checkbox-control {
+			border-radius: .25em;
+			background: $white;
+			position: relative;
+			margin-bottom: .25em;
+			color: $primary-color;
+			&:hover {
+				color: $dark-primary-color;
+			}
+			&:last-child {
+				margin-bottom: 0px;
+			}
+			> div {
+				position: relative;
+				padding: 0px;
+				margin: 0px;
+			}
+			label {
+				width: 100%;
+				padding: .5em .5em .5em calc(22px + .5em);
+				margin: 0px;
+			}
+			.components-checkbox-control__input-container {
+				position: absolute;
+				left: .5em;
+				top: 50%;
+				transform: translateY(-50%);
+			}
+		}
+	}
+}
+
+
+
+.admin-ui {
+
+    &.dragging {
+    }
+
+    .drag-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,355,255, 0.75); // Semi-transparent dark overlay
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        font-size: 1.5em;
+		z-index: 9999;
+		p {
+			position: absolute;
+			font-size: 2em;
+			font-weight: bold;
+			left: 50%;
+			text-align: center;
+			top: 50%;
+			border-radius: 1em;
+			transform: translate3d(-50%, -50%, 0);
+			color: $dark-primary-color;
+			padding: 2em;
+			border: 2px dashed $primary-color;
+		}
+    }
+}
+
+
+.debugger {
+	textarea {
+		width: 100%;
+		height: 200px;
+		font-size: 8px;
+		line-height: 1.2;
+		background: #111;
+		font-family: monospace;
+		color: #00ff00;
+		background: #000;
+		border: none;
+		padding: 1em;
+		resize: none;
+		overflow: auto;
+		white-space: pre;
+		word-wrap: normal;
+		border-radius: .5em;
+	}
+}
+
+
+button.wp-saving-button {
+	.dashicons {
+		margin-right: .5em;
+	}
+}
+
+
+
+
+
+.components-card__header.components-card-header {
+	.bulk-select-toggle {
+		position: absolute;
+		height: 100%;
+		left: -50px;
+		top: 0px;
+		background: $slate;
+		padding: 0px;
+		width: 50px;
+		transition: .25s linear all;
+		> div {
+			text-align: center;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate3d(-50%, -50%, 0);
+			label {
+				display: none;
+			}
+			* {
+				padding: 0px;
+				margin: 0px;
+			}
+		}
+	}
+}
+
+.components-card h2 {
+	transition: .25s linear all;
+}
+
+.components-card.editing {
+	.components-card__header.components-card-header {
+		.bulk-select-toggle {
+			left: 0px;
+		}
+	}
+	h2 {
+		transform: translateX(50px);
+	}
+}
+
+.currently-viewing .bulk-actions-select {
+	opacity: 1;
+}
+
+
+#wpbody-content {
+	.notice {
+		display: none !important;
+	}
+}
+
+
+.iso-editor .block-editor-writing-flow .block-editor-block-list__layout .wp-block {
+	outline: none !important;
+}

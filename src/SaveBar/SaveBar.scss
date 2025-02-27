@@ -1,0 +1,142 @@
+$primary-color: var(--wp-components-color-accent,var(--wp-admin-theme-color,#3858e9));
+$dark-primary-color: var(--wp-components-color-accent,var(--wp-admin-theme-color-darker-20,#3858e9));
+
+
+.ace-save-bar {
+    position: fixed;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    padding: 1em;
+    display: flex; // Make it a flex container
+    align-items: center; // Vertically center all children
+    background: #FFF; // Light gray
+    border-top: 1px solid rgb(203, 213, 225);; // Lighter gray
+    z-index: 1000; // Make sure it's on top of everything
+
+
+    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px -1px 2px 0px;
+    
+
+    > *:not(.submit) {
+        margin-right: auto; // Push everything except .submit to the left
+    }
+
+    .submit {
+        display: flex; // Make the submit area a flex container
+        align-items: center; // Center items vertically
+        justify-content: flex-end; // Align items to the right
+        gap: 1em; // Space between "Unsaved Changes!" and button
+        margin: 0px !important;
+        padding: 0px !important;
+        background: $primary-color !important;
+        #unsaved-changes-message {
+            margin: 0 !important;
+            color: red;
+            font-weight: bold;
+        }
+
+        input[type="submit"] {
+            &:focus, &:active {
+                outline: none !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+        }
+    }
+    .ace-save-bar-toggle-control {
+        margin: 0 !important; /* Override any existing margins */
+    }
+}
+
+
+
+
+
+#wpfooter{
+    display: none;
+}
+
+
+
+[data-tooltip] {
+    position: relative;
+    cursor: pointer;
+}
+
+/* Tooltip text */
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 12px); /* Position above the element */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.85); /* Dark background */
+    color: #fff; /* White text */
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 12px;
+    white-space: wrap;
+    word-wrap: normal;
+    word-break: keep-all;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+    min-width: 30vw;
+    max-width: 50vw;
+    width: 100%;
+    text-align: left;
+    line-height: 1.4;
+}
+
+/* Arrow pointer */
+[data-tooltip]::before {
+    content: '';
+    position: absolute;
+    bottom: 100%; /* Position just above the element */
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent; /* Dark arrow */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+/* Show tooltip and arrow on hover */
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+    opacity: 1;
+}
+
+
+.save-message {
+    margin-left: 10px;
+    color: green; /* Adjust color as needed */
+    transition: opacity 0.5s ease-in-out;
+    opacity: 1; /* Default opacity */
+}
+
+.wp-saving-button.saved {
+    background-color: green; /* Change button color on success */
+    border-color: green; /* Change border color on success */
+}
+
+.saved {
+    background-color: green; /* Adjust styles for saved state */
+    border-color: green; /* Adjust styles for saved state */
+}
+
+
+.wp-saving-button {
+    background-color: #007cba; /* Default color (WordPress blue) */
+    color: #fff; /* Text color */
+    border: none;
+}
+
+.wp-saving-button.enabled {
+    background-color: #28a745; /* Green color */
+    color: #fff; /* Ensure text is white */
+}
