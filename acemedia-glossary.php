@@ -8,6 +8,12 @@
 
 if (!defined('ABSPATH')) exit;
 
+function enqueue_wp_components() {
+    wp_enqueue_script('wp-components');
+    wp_enqueue_script('react');
+    wp_enqueue_script('react-dom');
+}
+add_action('wp_enqueue_scripts', 'enqueue_wp_components');
 
 
 
