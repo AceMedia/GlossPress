@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from '@wordpress/element';
-import { FlexBlock, Card, CardHeader, CardBody, TextControl, ToggleControl, TextareaControl, PanelRow, Tooltip, IconButton, Flex } from '@wordpress/components';
+import { FlexBlock, Card, CardHeader, CardBody, TextControl, ToggleControl, TextareaControl, PanelRow, Tooltip, IconButton, Flex, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faClock, faEdit, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import { decodeHTMLEntities, formatRelativeTime, smoothScrollTo } from '../utils';
-import RelatedTagsAndCats from './RelatedTagsAndCats';
+import RelatedTagsAndCatsOptimized from './RelatedTagsAndCatsOptimized';
 
 // Debounce utility function
 function debounce(func, wait) {
@@ -21,6 +21,7 @@ function debounce(func, wait) {
 const Cards = ({
     displayedTerms,
     terms,
+    activeTerm,
     categories,
     tags,
     quickEdit,
@@ -35,7 +36,11 @@ const Cards = ({
     setMessage,
     setIsSaving,
     isSaving,
-    isAutoSaveEnabled
+    isAutoSaveEnabled,
+    isLoadingTerm,
+    loadSingleTerm,
+    closeActiveTerm,
+    updateActiveTerm
 }) => {
     const editorRef = useRef(null);
     const activeEditor = useRef(null); // Track the active editor instance
@@ -56,34 +61,20 @@ const Cards = ({
     
     const updateTerm = useCallback((termId, key, value, isEditorChange = false) => {
         console.log('updateTerm', termId, key, value, isEditorChange);
-        setTerms((prevTerms) => {
-            const termIndex = prevTerms.findIndex(term => term.id === termId);
-            if (termIndex === -1) return prevTerms;
-    
-            // Create a copy of the term
-            const updatedTerm = { ...prevTerms[termIndex] };
-            
-            // Special handling for tags and categories
-            if (key === 'tags' || key === 'categories') {
-                updatedTerm[key] = value.map(id => ({ id }));
-            } else {
-                updatedTerm[key] = value;
-            }
-    
-            const updatedTerms = [...prevTerms];
-            updatedTerms[termIndex] = updatedTerm;
-    
-            return updatedTerms;
-        });
-    
-        setModifiedTerms((prevModified) => new Set(prevModified).add(termId));
-        setUnsavedChanges(true);
-    
+        
+        // Only update if this is the active term
+        if (!activeTerm || activeTerm.id !== termId) {
+            console.warn('Attempted to update inactive term:', termId);
+            return;
+        }
+
+        updateActiveTerm(key, value);
+
         if (!isEditorChange) {
             focusedTermIdRef.current = termId;
             focusedFieldRef.current = key;
         }
-    }, [setTerms, setModifiedTerms, setUnsavedChanges]);
+    }, [activeTerm, updateActiveTerm]);
 
 
     const attachEditor = useCallback((term) => {
@@ -130,46 +121,40 @@ const Cards = ({
     
     
 
-    const toggleTermOpen = useCallback((termId) => {
-        const isCurrentlyOpen = terms.find((term) => term.id === termId)?.isOpen;
-
-        if (isCurrentlyOpen) {
-            setTerms((prevTerms) =>
-                prevTerms.map((term) =>
-                    term.id === termId ? { ...term, isOpen: false } : term
-                )
-            );
+    const toggleTermOpen = useCallback(async (termId) => {
+        // Check if this term is already active and open
+        if (activeTerm && activeTerm.id === termId && activeTerm.isOpen) {
+            closeActiveTerm();
             return;
         }
 
-        setTerms((prevTerms) =>
-            prevTerms.map((term) => ({ ...term, isOpen: false }))
-        );
-
-        setTimeout(() => {
-            if (termRefs.current[termId]) {
-                smoothScrollTo(termRefs.current[termId].offsetTop - 56, 1000);
-                setTimeout(() => {
-                    setTerms((prevTerms) =>
-                        prevTerms.map((term) =>
-                            term.id === termId ? { ...term, isOpen: true } : term
-                        )
-                    );
-                }, 10);
-            }
-        }, 0);
-
-
-
-        // Cleanup the editor instance if the current card is being closed
-        if (isCurrentlyOpen && activeEditor.current?.id === termId) {
-            if (activeEditor.current.instance) {
-                activeEditor.current.instance.destroy();
-                activeEditor.current = null;
-            }
+        // Close any currently open term first
+        if (activeTerm) {
+            closeActiveTerm();
         }
 
-    }, [terms, setTerms]);
+        // Load the new term with full data
+        try {
+            await loadSingleTerm(termId);
+            
+            // Scroll to the term after loading
+            setTimeout(() => {
+                if (termRefs.current[termId]) {
+                    smoothScrollTo(termRefs.current[termId].offsetTop - 56, 1000);
+                }
+            }, 100);
+        } catch (error) {
+            console.error('Error loading term:', error);
+            setMessage('Failed to load term data');
+            setTimeout(() => setMessage(''), 3000);
+        }
+
+        // Cleanup the editor instance if needed
+        if (activeEditor.current?.instance) {
+            activeEditor.current.instance.destroy();
+            activeEditor.current = null;
+        }
+    }, [activeTerm, loadSingleTerm, closeActiveTerm, setMessage]);
 
     
 
@@ -214,11 +199,9 @@ const Cards = ({
         }
     }, [terms, setTerms, setMessage, setIsSaving]);
 
-    const openTerm = useMemo(() => terms.find(term => term.isOpen), [terms]);
-
 useEffect(() => {
-    if (openTerm) {
-        attachEditor(openTerm);
+    if (activeTerm && activeTerm.isOpen) {
+        attachEditor(activeTerm);
     }
 
     return () => {
@@ -227,7 +210,7 @@ useEffect(() => {
             activeEditor.current = null;
         }
     };
-}, [openTerm, attachEditor]);
+}, [activeTerm, attachEditor]);
 
 const observeTextareaWithInput = (textareaElement, termId) => {
     if (!textareaElement) {

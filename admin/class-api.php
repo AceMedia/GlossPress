@@ -1,11 +1,26 @@
 <?php
 
 add_action('rest_api_init', function() {
-    // Fetch glossary terms
+    // Fetch glossary terms (now returns only summary data)
     register_rest_route('wp/v2', '/glossary', array(
         'methods' => 'GET',
         'callback' => 'get_glossary_terms',
         'permission_callback' => '__return_true'  // Public access for reading terms
+    ));
+
+    // Fetch single glossary term with full data
+    register_rest_route('wp/v2', '/glossary/(?P<id>\d+)', array(
+        'methods' => 'GET',
+        'callback' => 'get_single_glossary_term',
+        'permission_callback' => '__return_true',
+        'args' => array(
+            'id' => array(
+                'required' => true,
+                'validate_callback' => function ($param, $request, $key) {
+                    return is_numeric($param);
+                }
+            )
+        )
     ));
 
     // Save glossary term
@@ -13,8 +28,59 @@ add_action('rest_api_init', function() {
         'methods' => 'POST',
         'callback' => 'save_glossary_term',
         'permission_callback' => function () {
-            return current_user_can('manage_options');
+            return current_user_can('edit_posts');
         }
+    ));
+
+    // Update related terms for a glossary term
+    register_rest_route('wp/v2', '/glossary/(?P<id>\d+)/related', array(
+        'methods' => 'POST',
+        'callback' => 'update_glossary_term_related',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        },
+        'args' => array(
+            'id' => array(
+                'required' => true,
+                'validate_callback' => function ($param, $request, $key) {
+                    return is_numeric($param);
+                }
+            )
+        )
+    ));
+
+    // Update categories for a glossary term
+    register_rest_route('wp/v2', '/glossary/(?P<id>\d+)/categories', array(
+        'methods' => 'POST',
+        'callback' => 'update_glossary_term_categories',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        },
+        'args' => array(
+            'id' => array(
+                'required' => true,
+                'validate_callback' => function ($param, $request, $key) {
+                    return is_numeric($param);
+                }
+            )
+        )
+    ));
+
+    // Update tags for a glossary term
+    register_rest_route('wp/v2', '/glossary/(?P<id>\d+)/tags', array(
+        'methods' => 'POST',
+        'callback' => 'update_glossary_term_tags',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        },
+        'args' => array(
+            'id' => array(
+                'required' => true,
+                'validate_callback' => function ($param, $request, $key) {
+                    return is_numeric($param);
+                }
+            )
+        )
     ));
 
     // Delete glossary term
@@ -22,7 +88,7 @@ add_action('rest_api_init', function() {
         'methods' => 'DELETE',
         'callback' => 'delete_glossary_term',
         'permission_callback' => function () {
-            return current_user_can('manage_options');
+            return current_user_can('edit_posts');
         },
         'args' => array(
             'id' => array(
@@ -85,12 +151,42 @@ add_action('rest_api_init', function() {
         }
     ));
 
+    // Get logs
+    register_rest_route('wp/v2', '/logs', array(
+        'methods' => 'GET',
+        'callback' => 'get_logs',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts'); // Allow only editors and above
+        }
+    ));
 
+    // Clear logs
+    register_rest_route('wp/v2', '/logs', array(
+        'methods' => 'DELETE',
+        'callback' => 'clear_logs',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts'); // Allow only editors and above
+        }
+    ));
+
+    // Prefetch endpoint for tags and categories (first page only)
+    register_rest_route('wp/v2', '/glossary/prefetch-data', array(
+        'methods' => 'GET',
+        'callback' => 'get_prefetch_data',
+        'permission_callback' => '__return_true'  // Public access for prefetch data
+    ));
+
+    // Get related terms with titles for faster lookup
+    register_rest_route('wp/v2', '/glossary/related-terms-lookup', array(
+        'methods' => 'GET', 
+        'callback' => 'get_related_terms_lookup',
+        'permission_callback' => '__return_true'  // Public access for lookup data
+    ));
 });
 
-// Function to fetch glossary terms
+// Function to fetch glossary terms (summary data only for performance)
 function get_glossary_terms($request) {
-    $cached_terms = get_transient('acemedia_glossary_terms');
+    $cached_terms = get_transient('acemedia_glossary_terms_summary');
 
     if ($cached_terms !== false) {
         return new WP_REST_Response($cached_terms, 200);
@@ -102,41 +198,23 @@ function get_glossary_terms($request) {
     ));
 
     $response = array_map(function($term) {
-        $related_terms = get_post_meta($term->ID, 'related_terms', true);
-
-        // Fetch full category data
-        $categories = wp_get_post_terms($term->ID, 'category', array('fields' => 'all'));
-        $categories_formatted = array_map(function($category) {
-            return [
-                'id' => $category->term_id,
-                'slug' => $category->slug,
-                'title' => $category->name,
-            ];
-        }, $categories);
-
-        // Fetch full tag data
-        $tags = wp_get_post_terms($term->ID, 'post_tag', array('fields' => 'all'));
-        $tags_formatted = array_map(function($tag) {
-            return [
-                'id' => $tag->term_id,
-                'slug' => $tag->slug,
-                'title' => $tag->name,
-            ];
-        }, $tags);
+        // Get basic category and tag counts for filtering/display
+        $categories = wp_get_post_terms($term->ID, 'category', array('fields' => 'ids'));
+        $tags = wp_get_post_terms($term->ID, 'post_tag', array('fields' => 'ids'));
 
         return [
             'id' => $term->ID,
             'title' => get_the_title($term->ID),
-            'content' => $term->post_content,
             'date' => $term->post_date,
             'modified' => $term->post_modified,
-            'relatedTerms' => $related_terms ? array_map('intval', $related_terms) : [],
-            'categories' => $categories_formatted,
-            'tags' => $tags_formatted,
+            'categoryIds' => $categories ?: [],
+            'tagIds' => $tags ?: [],
+            'isOpen' => false,
+            'isLoaded' => false, // Flag to track if full data is loaded
         ];
     }, $terms);
 
-    set_transient('acemedia_glossary_terms', $response, HOUR_IN_SECONDS);
+    set_transient('acemedia_glossary_terms_summary', $response, HOUR_IN_SECONDS);
 
     return new WP_REST_Response($response, 200);
 }
@@ -177,8 +255,38 @@ function save_glossary_term($request) {
         return new WP_Error('term_creation_failed', 'Failed to create or update glossary term', array('status' => 500));
     }
 
-    // Update metadata
+    // Update metadata with bidirectional relationship handling
+    $current_related = get_post_meta($post_id, 'related_terms', true) ?: [];
+    
+    // Update the current term's related terms
     update_post_meta($post_id, 'related_terms', $related_terms);
+
+    // Handle bidirectional relationships
+    $added_relations = array_diff($related_terms, $current_related);
+    $removed_relations = array_diff($current_related, $related_terms);
+
+    // Add bidirectional relationships for new relations
+    foreach ($added_relations as $related_id) {
+        $related_term_related = get_post_meta($related_id, 'related_terms', true) ?: [];
+        if (!in_array($post_id, $related_term_related)) {
+            $related_term_related[] = $post_id;
+            update_post_meta($related_id, 'related_terms', $related_term_related);
+        }
+        // Clear cache for the related term
+        delete_transient("acemedia_glossary_term_{$related_id}");
+    }
+
+    // Remove bidirectional relationships for removed relations
+    foreach ($removed_relations as $related_id) {
+        $related_term_related = get_post_meta($related_id, 'related_terms', true) ?: [];
+        $key = array_search($post_id, $related_term_related);
+        if ($key !== false) {
+            unset($related_term_related[$key]);
+            update_post_meta($related_id, 'related_terms', array_values($related_term_related));
+        }
+        // Clear cache for the related term
+        delete_transient("acemedia_glossary_term_{$related_id}");
+    }
 
     // Update categories
     if (!empty($categories)) {
@@ -190,8 +298,12 @@ function save_glossary_term($request) {
         wp_set_post_terms($post_id, $tags, 'post_tag');
     }
 
-    // Clear transient cache
+    // Clear transient caches
     delete_transient('acemedia_glossary_terms');
+    delete_transient('acemedia_glossary_terms_summary');
+    delete_transient("acemedia_glossary_term_{$post_id}");
+    delete_transient('acemedia_glossary_prefetch_data');
+    delete_transient('acemedia_glossary_related_terms_lookup');
 
     return new WP_REST_Response(array('id' => $post_id), 201);
 }
@@ -212,6 +324,9 @@ function delete_glossary_term($request) {
     }
 
     delete_transient('acemedia_glossary_terms');
+    delete_transient('acemedia_glossary_terms_summary');
+    delete_transient('acemedia_glossary_prefetch_data');
+    delete_transient('acemedia_glossary_related_terms_lookup');
 
     return new WP_REST_Response(null, 204);
 }
@@ -462,295 +577,284 @@ function import_glossary_terms($request) {
 
 
 
-add_action('save_post_acemedia_glossary', function ($post_id, $post, $update) {
-    // Clear transient when a glossary term is saved via the WordPress admin.
-    delete_transient('acemedia_glossary_terms');
-}, 10, 3);
-
-add_action('deleted_post', function ($post_id) {
-    $post = get_post($post_id);
-    if ($post && $post->post_type === 'acemedia_glossary') {
-        // Clear transient when a glossary term is deleted via the WordPress admin.
-        delete_transient('acemedia_glossary_terms');
-    }
-});
-
-
-
-
-// Register a new REST API endpoint to fetch related posts.
-add_action('rest_api_init', function () {
-    register_rest_route('wp/v2', '/related-posts', array(
-        'methods' => 'GET',
-        'callback' => 'get_related_posts',
-        'permission_callback' => '__return_true', // Public access
-        'args' => array(
-            'categories' => array(
-                'required' => false,
-                'type' => 'string', // Accept as a string (comma-separated)
-                'validate_callback' => function ($param) {
-                    return is_string($param);
-                }
-            ),
-            'tags' => array(
-                'required' => false,
-                'type' => 'string', // Accept as a string (comma-separated)
-                'validate_callback' => function ($param) {
-                    return is_string($param);
-                }
-            ),
-            'per_page' => array(
-                'required' => false,
-                'default' => 3,
-                'type' => 'integer',
-                'validate_callback' => function ($param) {
-                    return $param > 0;
-                }
-            ),
-        )
-    ));
-});
-
-function get_related_posts($request) {
-    // Parse categories and tags from the request.
-    $categories = $request->get_param('categories') ? explode(',', $request->get_param('categories')) : [];
-    $tags = $request->get_param('tags') ? explode(',', $request->get_param('tags')) : [];
-    $per_page = $request->get_param('per_page');
-
-    // Exclude category ID 1
-    $categories = array_filter($categories, function ($category_id) {
-        return intval($category_id) !== 1;
-    });
-
-    // Generate a unique cache key based on input parameters
-    $cache_key = 'related_posts_' . md5(serialize([
-        'categories' => $categories,
-        'tags' => $tags,
-        'per_page' => $per_page,
-    ]));
-
-    // Check if cached data exists
-    $cached_response = get_transient($cache_key);
-    if ($cached_response !== false) {
-        return new WP_REST_Response($cached_response, 200);
+// Function to fetch a single glossary term with full data
+function get_single_glossary_term($request) {
+    $term_id = $request->get_param('id');
+    
+    $cached_term = get_transient("acemedia_glossary_term_{$term_id}");
+    if ($cached_term !== false) {
+        return new WP_REST_Response($cached_term, 200);
     }
 
-    $query_args = array(
-        'post_type' => 'post',
-        'posts_per_page' => $per_page,
-        'post_status' => 'publish',
-        'tax_query' => array('relation' => 'OR'),
-    );
-
-    if (!empty($categories)) {
-        $query_args['tax_query'][] = array(
-            'taxonomy' => 'category',
-            'field' => 'term_id',
-            'terms' => $categories,
-        );
+    $term = get_post($term_id);
+    
+    if (!$term || $term->post_type !== 'acemedia_glossary') {
+        return new WP_Error('term_not_found', 'Glossary term not found', array('status' => 404));
     }
 
-    if (!empty($tags)) {
-        $query_args['tax_query'][] = array(
-            'taxonomy' => 'post_tag',
-            'field' => 'term_id',
-            'terms' => $tags,
-        );
-    }
+    $related_terms = get_post_meta($term_id, 'related_terms', true);
 
-    $query = new WP_Query($query_args);
-    $posts = $query->posts;
+    // Fetch full category data
+    $categories = wp_get_post_terms($term_id, 'category', array('fields' => 'all'));
+    $categories_formatted = array_map(function($category) {
+        return [
+            'id' => $category->term_id,
+            'slug' => $category->slug,
+            'title' => $category->name,
+        ];
+    }, $categories);
 
-    $response = array_map(function ($post) {
-        return array(
-            'id' => $post->ID,
-            'title' => get_the_title($post),
-            'excerpt' => get_the_excerpt($post),
-            'link' => get_permalink($post),
-        );
-    }, $posts);
+    // Fetch full tag data
+    $tags = wp_get_post_terms($term_id, 'post_tag', array('fields' => 'all'));
+    $tags_formatted = array_map(function($tag) {
+        return [
+            'id' => $tag->term_id,
+            'slug' => $tag->slug,
+            'title' => $tag->name,
+        ];
+    }, $tags);
 
-    // Save the response to a transient
-    set_transient($cache_key, $response, HOUR_IN_SECONDS);
+    $response = [
+        'id' => $term->ID,
+        'title' => get_the_title($term->ID),
+        'content' => $term->post_content,
+        'date' => $term->post_date,
+        'modified' => $term->post_modified,
+        'relatedTerms' => $related_terms ? array_map('intval', $related_terms) : [],
+        'categories' => $categories_formatted,
+        'tags' => $tags_formatted,
+        'isOpen' => false,
+        'isLoaded' => true,
+    ];
+
+    set_transient("acemedia_glossary_term_{$term_id}", $response, HOUR_IN_SECONDS);
 
     return new WP_REST_Response($response, 200);
 }
 
+// Function to update related terms with bidirectional relationships
+function update_glossary_term_related($request) {
+    $term_id = $request->get_param('id');
+    $data = $request->get_json_params();
+    $related_term_ids = isset($data['relatedTerms']) ? array_map('intval', $data['relatedTerms']) : [];
 
-
-function clear_related_posts_cache($post_id) {
-    // Only clear cache for published posts.
-    if (get_post_status($post_id) !== 'publish') {
-        return;
+    // Verify the term exists
+    $term = get_post($term_id);
+    if (!$term || $term->post_type !== 'acemedia_glossary') {
+        return new WP_Error('term_not_found', 'Glossary term not found', array('status' => 404));
     }
 
-    global $wpdb;
+    // Get current related terms to determine what changed
+    $current_related = get_post_meta($term_id, 'related_terms', true) ?: [];
+    
+    // Update the current term's related terms
+    update_post_meta($term_id, 'related_terms', $related_term_ids);
 
-    // Delete all related posts transients
-    $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_related_posts_%'");
-}
-add_action('save_post', 'clear_related_posts_cache');
-add_action('delete_post', 'clear_related_posts_cache');
+    // Handle bidirectional relationships
+    $added_relations = array_diff($related_term_ids, $current_related);
+    $removed_relations = array_diff($current_related, $related_term_ids);
 
-
-
-
-// Function to add logs
-function acemedia_add_to_logs($message) {
-    $current_logs = get_option('acemedia_import_logs', '');
-    $timestamp = current_time('mysql');
-    $new_log = "[{$timestamp}] {$message}\n";
-    $updated_logs = $current_logs . $new_log;
-    update_option('acemedia_import_logs', $updated_logs);
-}
-
-
-
-add_action('rest_api_init', function () {
-    register_rest_route('wp/v2', '/logs', array(
-        'methods' => 'GET',
-        'callback' => function() {
-            return new WP_REST_Response(get_option('acemedia_import_logs', ''), 200);
-        },
-        'permission_callback' => function () {
-            return current_user_can('edit_posts'); // Allow editors and above
+    // Add bidirectional relationships for new relations
+    foreach ($added_relations as $related_id) {
+        $related_terms = get_post_meta($related_id, 'related_terms', true) ?: [];
+        if (!in_array($term_id, $related_terms)) {
+            $related_terms[] = $term_id;
+            update_post_meta($related_id, 'related_terms', $related_terms);
         }
-    ));
-});
-
-add_action('rest_api_init', function () {
-    register_rest_route('wp/v2', '/logs/clear', array(
-        'methods' => 'POST',
-        'callback' => function() {
-            update_option('acemedia_import_logs', '');
-            return new WP_REST_Response('Logs cleared.', 200);
-        },
-        'permission_callback' => function () {
-            return current_user_can('edit_posts'); // Allow editors and above
-        }
-    ));
-});
-
-
-function get_auto_highlight_option() {
-    $option_value = get_option('auto_highlight', 'false'); // Default to 'false'
-    return new WP_REST_Response(array('value' => $option_value === 'true'), 200); // Return as boolean
-}
-
-
-// Function to update the Auto Highlight option
-function update_auto_highlight_option(WP_REST_Request $request) {
-    $value = $request->get_param('value') === 'true' ? 'true' : 'false'; // Sanitize input
-    update_option('auto_highlight', $value); // Update option
-    return new WP_REST_Response(array('success' => true, 'value' => $value === 'true'), 200); // Respond with success
-}
-
-
-
-function get_custom_css() {
-    $custom_css = get_option('acemedia_custom_css', ''); // Default to an empty string
-    return new WP_REST_Response(array('css' => $custom_css), 200);
-}
-
-function save_custom_css(WP_REST_Request $request) {
-    $css = $request->get_param('css');
-
-    if (!is_string($css)) {
-        return new WP_Error('invalid_data', 'CSS must be a string.', array('status' => 400));
+        // Clear cache for the related term
+        delete_transient("acemedia_glossary_term_{$related_id}");
     }
 
-    // Sanitize and save the CSS
-    $sanitized_css = sanitize_textarea_field($css);
-    update_option('acemedia_custom_css', $sanitized_css);
+    // Remove bidirectional relationships for removed relations
+    foreach ($removed_relations as $related_id) {
+        $related_terms = get_post_meta($related_id, 'related_terms', true) ?: [];
+        $key = array_search($term_id, $related_terms);
+        if ($key !== false) {
+            unset($related_terms[$key]);
+            update_post_meta($related_id, 'related_terms', array_values($related_terms));
+        }
+        // Clear cache for the related term
+        delete_transient("acemedia_glossary_term_{$related_id}");
+    }
 
-    // Return a proper success response
-    return rest_ensure_response(array(
-        'success' => true,
-        'message' => 'Custom CSS saved successfully.',
-    ));
+    // Clear caches
+    delete_transient("acemedia_glossary_term_{$term_id}");
+    delete_transient('acemedia_glossary_terms_summary');
+    delete_transient('acemedia_glossary_related_terms_lookup');
+
+    return new WP_REST_Response(['success' => true, 'relatedTerms' => $related_term_ids], 200);
 }
 
-add_action('rest_api_init', function () {
-    // Update a specific glossary term (categories and tags)
-    register_rest_route('wp/v2', '/glossary/(?P<id>\d+)', array(
-        'methods' => 'POST',
-        'callback' => 'update_glossary_categories_tags',
-        'permission_callback' => function () {
-            return current_user_can('manage_options'); // Restrict to admins
-        },
-        'args' => array(
-            'id' => array(
-                'required' => true,
-                'validate_callback' => function ($param) {
-                    return is_numeric($param);
-                },
-            ),
-        ),
-    ));
-});
+// Function to update categories for a glossary term
+function update_glossary_term_categories($request) {
+    $term_id = $request->get_param('id');
+    $data = $request->get_json_params();
+    $category_ids = isset($data['categories']) ? array_map('intval', $data['categories']) : [];
 
-function update_glossary_categories_tags($request) {
-    $term_id = intval($request['id']);
-    $categories = $request->get_param('categories');
-    $tags = $request->get_param('tags');
-
-    // Check if the glossary term exists
+    // Verify the term exists
     $term = get_post($term_id);
     if (!$term || $term->post_type !== 'acemedia_glossary') {
         return new WP_Error('term_not_found', 'Glossary term not found', array('status' => 404));
     }
 
     // Update categories
-    if (is_array($categories)) {
-        wp_set_post_terms($term_id, $categories, 'category');
+    wp_set_post_terms($term_id, $category_ids, 'category');
+
+    // Clear caches
+    delete_transient("acemedia_glossary_term_{$term_id}");
+    delete_transient('acemedia_glossary_terms_summary');
+    delete_transient('acemedia_glossary_prefetch_data');
+
+    return new WP_REST_Response(['success' => true, 'categories' => $category_ids], 200);
+}
+
+// Function to update tags for a glossary term
+function update_glossary_term_tags($request) {
+    $term_id = $request->get_param('id');
+    $data = $request->get_json_params();
+    $tag_ids = isset($data['tags']) ? array_map('intval', $data['tags']) : [];
+
+    // Verify the term exists
+    $term = get_post($term_id);
+    if (!$term || $term->post_type !== 'acemedia_glossary') {
+        return new WP_Error('term_not_found', 'Glossary term not found', array('status' => 404));
     }
 
     // Update tags
-    if (is_array($tags)) {
-        wp_set_post_terms($term_id, $tags, 'post_tag');
-    }
+    wp_set_post_terms($term_id, $tag_ids, 'post_tag');
 
-    // Clear cache if applicable
-    delete_transient('acemedia_glossary_terms');
+    // Clear caches
+    delete_transient("acemedia_glossary_term_{$term_id}");
+    delete_transient('acemedia_glossary_terms_summary');
+    delete_transient('acemedia_glossary_prefetch_data');
 
-    return new WP_REST_Response(array(
-        'message' => 'Categories and tags updated successfully',
-        'id' => $term_id,
-    ), 200);
+    return new WP_REST_Response(['success' => true, 'tags' => $tag_ids], 200);
 }
 
+// Function to get auto highlight option
+function get_auto_highlight_option($request) {
+    $auto_highlight = get_option('acemedia_glossary_auto_highlight', false);
+    return new WP_REST_Response(['value' => $auto_highlight === 'true' || $auto_highlight === true], 200);
+}
 
-add_action('rest_api_init', function () {
-    // Bulk delete glossary terms
-    register_rest_route('wp/v2', '/glossary/bulk-delete', array(
-        'methods' => 'POST',
-        'callback' => 'bulk_delete_glossary_terms',
-        'permission_callback' => function () {
-            return current_user_can('manage_options'); // Restrict to admins
-        }
+// Function to update auto highlight option
+function update_auto_highlight_option($request) {
+    $data = $request->get_json_params();
+    $value = isset($data['value']) ? $data['value'] : false;
+    
+    // Convert to string for consistent storage
+    $stored_value = $value ? 'true' : 'false';
+    update_option('acemedia_glossary_auto_highlight', $stored_value);
+    
+    return new WP_REST_Response(['success' => true, 'value' => $value], 200);
+}
+
+// Function to get custom CSS
+function get_custom_css($request) {
+    $custom_css = get_option('acemedia_glossary_custom_css', '');
+    return new WP_REST_Response(['css' => $custom_css], 200);
+}
+
+// Function to save custom CSS
+function save_custom_css($request) {
+    $data = $request->get_json_params();
+    $css = isset($data['css']) ? sanitize_textarea_field($data['css']) : '';
+    
+    update_option('acemedia_glossary_custom_css', $css);
+    
+    return new WP_REST_Response(['success' => true, 'css' => $css], 200);
+}
+
+// Function to get logs (if you have a logging system)
+function get_logs($request) {
+    $logs = get_option('acemedia_glossary_logs', '');
+    return new WP_REST_Response(['logs' => $logs], 200);
+}
+
+// Function to clear logs
+function clear_logs($request) {
+    update_option('acemedia_glossary_logs', '');
+    return new WP_REST_Response(['success' => true], 200);
+}
+
+// Function to prefetch initial data for tags and categories
+function get_prefetch_data($request) {
+    $cached_data = get_transient('acemedia_glossary_prefetch_data');
+    
+    if ($cached_data !== false) {
+        return new WP_REST_Response($cached_data, 200);
+    }
+
+    // Get first 10 categories
+    $categories = get_terms(array(
+        'taxonomy' => 'category',
+        'hide_empty' => false,
+        'number' => 10,
+        'orderby' => 'name',
+        'order' => 'ASC'
     ));
-});
 
-function bulk_delete_glossary_terms(WP_REST_Request $request) {
-    $ids = $request->get_param('ids');
+    $categories_formatted = array_map(function($category) {
+        return [
+            'id' => $category->term_id,
+            'name' => $category->name,
+            'slug' => $category->slug,
+        ];
+    }, $categories);
 
-    if (!is_array($ids) || empty($ids)) {
-        return new WP_Error('invalid_request', 'Invalid or missing IDs.', array('status' => 400));
+    // Get first 10 tags
+    $tags = get_terms(array(
+        'taxonomy' => 'post_tag',
+        'hide_empty' => false,
+        'number' => 10,
+        'orderby' => 'name', 
+        'order' => 'ASC'
+    ));
+
+    $tags_formatted = array_map(function($tag) {
+        return [
+            'id' => $tag->term_id,
+            'name' => $tag->name,
+            'slug' => $tag->slug,
+        ];
+    }, $tags);
+
+    // Get total counts for "has more" logic
+    $total_categories = wp_count_terms('category');
+    $total_tags = wp_count_terms('post_tag');
+
+    $response = [
+        'categories' => $categories_formatted,
+        'tags' => $tags_formatted,
+        'hasMoreCategories' => $total_categories > 10,
+        'hasMoreTags' => $total_tags > 10
+    ];
+
+    set_transient('acemedia_glossary_prefetch_data', $response, HOUR_IN_SECONDS);
+
+    return new WP_REST_Response($response, 200);
+}
+
+// Function to get related terms lookup data (id -> title mapping)
+function get_related_terms_lookup($request) {
+    $cached_lookup = get_transient('acemedia_glossary_related_terms_lookup');
+    
+    if ($cached_lookup !== false) {
+        return new WP_REST_Response($cached_lookup, 200);
     }
 
-    $deleted_ids = [];
-    foreach ($ids as $id) {
-        $term = get_post(intval($id));
-        if ($term && $term->post_type === 'acemedia_glossary') {
-            $result = wp_delete_post($id, true);
-            if ($result) {
-                $deleted_ids[] = $id;
-            }
-        }
+    $terms = get_posts(array(
+        'post_type' => 'acemedia_glossary',
+        'numberposts' => -1,
+        'fields' => 'ids'
+    ));
+
+    $lookup = [];
+    foreach ($terms as $term_id) {
+        $lookup[$term_id] = get_the_title($term_id);
     }
 
-    // Clear transient cache
-    delete_transient('acemedia_glossary_terms');
+    set_transient('acemedia_glossary_related_terms_lookup', $lookup, HOUR_IN_SECONDS);
 
-    return new WP_REST_Response($deleted_ids, 200);
+    return new WP_REST_Response($lookup, 200);
 }

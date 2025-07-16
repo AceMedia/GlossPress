@@ -27,10 +27,6 @@ export const debounce = (func, delay) => {
     };
 };
 
-
-
-
-
 /**
  * Smoothly scroll to a specific vertical position.
  * @param {number} targetY - The target vertical position to scroll to.
@@ -161,9 +157,105 @@ export const saveCss = async (css) => {
     }
 };
 
+/**
+ * Fetch a single glossary term with full data.
+ * @param {number} termId - The ID of the term to fetch.
+ * @returns {Promise<object>} - The full term data.
+ */
+export const fetchSingleTerm = async (termId) => {
+    try {
+        const response = await fetchFromAPI(`/wp-json/wp/v2/glossary/${termId}`);
+        return response;
+    } catch (error) {
+        console.error('Error fetching single term:', error);
+        throw error;
+    }
+};
 
+/**
+ * Update related terms for a glossary term.
+ * @param {number} termId - The ID of the term to update.
+ * @param {Array<number>} relatedTermIds - Array of related term IDs.
+ * @returns {Promise<object>} - Response data.
+ */
+export const updateRelatedTerms = async (termId, relatedTermIds) => {
+    try {
+        const response = await fetchFromAPI(
+            `/wp-json/wp/v2/glossary/${termId}/related`,
+            'POST',
+            { relatedTerms: relatedTermIds }
+        );
+        return response;
+    } catch (error) {
+        console.error('Error updating related terms:', error);
+        throw error;
+    }
+};
 
+/**
+ * Update categories for a glossary term.
+ * @param {number} termId - The ID of the term to update.
+ * @param {Array<number>} categoryIds - Array of category IDs.
+ * @returns {Promise<object>} - Response data.
+ */
+export const updateTermCategories = async (termId, categoryIds) => {
+    try {
+        const response = await fetchFromAPI(
+            `/wp-json/wp/v2/glossary/${termId}/categories`,
+            'POST',
+            { categories: categoryIds }
+        );
+        return response;
+    } catch (error) {
+        console.error('Error updating categories:', error);
+        throw error;
+    }
+};
 
+/**
+ * Update tags for a glossary term.
+ * @param {number} termId - ID of the glossary term.
+ * @param {Array} tagIds - Array of tag IDs to associate with the term.
+ * @returns {Promise} - Promise representing the API request.
+ */
+export const updateTermTags = async (termId, tagIds) => {
+    try {
+        return await fetchFromAPI(
+            `/wp-json/wp/v2/glossary/${termId}/tags`,
+            'POST',
+            { tags: tagIds }
+        );
+    } catch (error) {
+        console.error('Error updating tags:', error);
+        throw error;
+    }
+};
+
+/**
+ * Prefetch initial data for tags and categories to speed up card rendering.
+ * @returns {Promise} - Promise representing the API request.
+ */
+export const fetchPrefetchData = async () => {
+    try {
+        return await fetchFromAPI('/wp-json/wp/v2/glossary/prefetch-data');
+    } catch (error) {
+        console.error('Error fetching prefetch data:', error);
+        throw error;
+    }
+};
+
+/**
+ * Get related terms lookup data (id -> title mapping) for faster rendering.
+ * @returns {Promise} - Promise representing the API request.
+ */
+export const fetchRelatedTermsLookup = async () => {
+    try {
+        return await fetchFromAPI('/wp-json/wp/v2/glossary/related-terms-lookup');
+    } catch (error) {
+        console.error('Error fetching related terms lookup:', error);
+        throw error;
+    }
+};
 
 /**
  * Format relative time from a timestamp.
