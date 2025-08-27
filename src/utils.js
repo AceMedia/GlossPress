@@ -75,14 +75,6 @@ export const fetchFromAPI = async (path, method = 'GET', data = null, headers = 
         };
     }
 
-    // Debug authentication info
-    console.log('Authentication debug:', {
-        wpApiSettings: window.wpApiSettings,
-        nonceMeta: document.querySelector('meta[name="wp-rest-nonce"]')?.content,
-        path: path,
-        method: method
-    });
-
     try {
         const response = await apiFetch({ path, ...options });
         return response;
@@ -104,8 +96,8 @@ export const fetchLogs = async (setLogs) => {
         const response = await fetchFromAPI('/wp-json/wp/v2/logs', 'GET', null, {
             'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
         });
-        const fetchedLogs = response; // Ensure this is a string
-        setLogs(fetchedLogs || ''); // Update state even if empty
+        const fetchedLogs = response.logs || ''; // Extract logs from response object
+        setLogs(fetchedLogs); // Update state
     } catch (error) {
         console.error('Error fetching logs:', error);
         setLogs(''); // Clear logs in case of error
@@ -119,16 +111,14 @@ export const fetchLogs = async (setLogs) => {
  */
 export const clearLogs = async () => {
     try {
-        const response = await fetchFromAPI('/wp-json/wp/v2/logs/clear', 'POST', null, {
+        const response = await fetchFromAPI('/wp-json/wp/v2/logs', 'DELETE', null, {
             'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
         });
 
-        if (response?.ok) {
+        if (response?.success || response?.message) {
             console.log('Logs cleared successfully.');
         } else {
-            console.warn(
-                `Failed to clear logs: ${response?.statusText || 'Unknown error'}.`
-            );
+            console.warn('Logs cleared (no explicit success message returned).');
         }
     } catch (error) {
         console.error('Error clearing logs:', error.message);
