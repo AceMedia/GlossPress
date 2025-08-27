@@ -403,6 +403,7 @@ function get_glossary_terms($request) {
             'modified' => $term->post_modified,
             'categoryIds' => $categories ?: [],
             'tagIds' => $tags ?: [],
+            'autoHighlight' => (bool) get_post_meta($term->ID, 'auto_highlight', true),
             'isOpen' => false,
             'isLoaded' => false, // Flag to track if full data is loaded
         ];
@@ -425,6 +426,7 @@ function save_glossary_term($request) {
     $related_terms = isset($data['relatedTerms']) && is_array($data['relatedTerms']) ? array_map('intval', $data['relatedTerms']) : [];
     $categories = isset($data['categories']) ? array_map('intval', $data['categories']) : [];
     $tags = isset($data['tags']) ? array_map('intval', $data['tags']) : [];
+    $auto_highlight = isset($data['autoHighlight']) ? (bool) $data['autoHighlight'] : false;
 
     if (empty($title)) {
         return new WP_Error('missing_title', 'The title is required', array('status' => 400));
@@ -454,6 +456,9 @@ function save_glossary_term($request) {
     
     // Update the current term's related terms
     update_post_meta($post_id, 'related_terms', $related_terms);
+    
+    // Save auto-highlight setting
+    update_post_meta($post_id, 'auto_highlight', $auto_highlight);
 
     // Handle bidirectional relationships
     $added_relations = array_diff($related_terms, $current_related);
@@ -817,6 +822,7 @@ function get_single_glossary_term($request) {
         'relatedTerms' => $related_terms ? array_map('intval', $related_terms) : [],
         'categories' => $categories_formatted,
         'tags' => $tags_formatted,
+        'autoHighlight' => (bool) get_post_meta($term->ID, 'auto_highlight', true),
         'isOpen' => false,
         'isLoaded' => true,
     ];

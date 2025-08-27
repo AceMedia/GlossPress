@@ -135,6 +135,7 @@ const GlossaryAdminApp = () => {
                 relatedTerms: activeTerm.relatedTerms || [],
                 categories: activeTerm.categories ? activeTerm.categories.map((cat) => typeof cat === 'object' ? cat.id : cat) : [],
                 tags: activeTerm.tags ? activeTerm.tags.map((tag) => typeof tag === 'object' ? tag.id : tag) : [],
+                autoHighlight: activeTerm.autoHighlight || false,
             };
             console.log('Saving term data:', termData);
             termsToSave.push(termData);

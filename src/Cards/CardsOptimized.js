@@ -325,7 +325,23 @@ const CardsOptimized = ({
                                 
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                         <div>
-                                            <h2>{decodeHTMLEntities(term.title) || __('New Term', 'acemedia-glossary')}</h2>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <h2>{decodeHTMLEntities(term.title) || __('New Term', 'acemedia-glossary')}</h2>
+                                                {term.autoHighlight && (
+                                                    <Tooltip text={__('Auto-highlight enabled', 'acemedia-glossary')}>
+                                                        <span style={{ 
+                                                            fontSize: '10px', 
+                                                            background: '#007cba', 
+                                                            color: 'white', 
+                                                            padding: '2px 6px', 
+                                                            borderRadius: '3px',
+                                                            fontWeight: 'bold'
+                                                        }}>
+                                                            AUTO
+                                                        </span>
+                                                    </Tooltip>
+                                                )}
+                                            </div>
                                             <div className="updated-times" style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}>
                                                 <Tooltip text={`Created at ${new Date(term.date).toLocaleDateString()}`}>
                                                     <p><strong>Created:</strong> {formatRelativeTime(term.date)}</p>
@@ -402,6 +418,16 @@ const CardsOptimized = ({
                                         rows={8}
                                         disabled={activeTerm.isLoading}
                                     />
+
+                                    <PanelRow>
+                                        <ToggleControl
+                                            label={__('Auto-highlight this term', 'acemedia-glossary')}
+                                            help={__('When enabled, this term will be automatically highlighted with tooltips in your content.', 'acemedia-glossary')}
+                                            checked={activeTerm.autoHighlight || false}
+                                            onChange={(value) => updateActiveTerm('autoHighlight', value)}
+                                            disabled={activeTerm.isLoading}
+                                        />
+                                    </PanelRow>
 
                                     <RelatedTagsAndCatsOptimized
                                         term={activeTerm}

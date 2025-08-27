@@ -44,6 +44,7 @@ class AceMediaGlossary {
         require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-shortcode.php';
         require_once ACEMEDIA_GLOSSARY_PATH . 'admin/class-admin.php';
         require_once ACEMEDIA_GLOSSARY_PATH . 'admin/class-api.php';
+        require_once ACEMEDIA_GLOSSARY_PATH . 'includes/migration-auto-highlight.php';
     }
 
     private function initHooks() {

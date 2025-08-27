@@ -83,6 +83,7 @@ class AceMediaGlossary_Shortcode {
                 'tags' => is_array($tags) ? array_map(function($tag) {
                     return array('id' => $tag->term_id, 'name' => $tag->name);
                 }, $tags) : array(),
+                'autoHighlight' => (bool) get_post_meta($term->ID, 'auto_highlight', true),
             );
         }
 
@@ -208,13 +209,22 @@ function highlight_glossary_terms($content) {
         return $content; // No glossary terms found, return content unchanged
     }
 
-    // Extract titles and content (definitions) from WP_Post objects
-    $glossary_data = array_map(function ($post) {
-        return [
-            'title' => $post->post_title,
-            'definition' => wp_strip_all_tags($post->post_content), // Strip HTML from definition for tooltip
-        ];
-    }, $glossary_posts);
+    // Extract titles and content (definitions) from WP_Post objects, but only for terms with auto_highlight enabled
+    $glossary_data = array();
+    foreach ($glossary_posts as $post) {
+        $auto_highlight = (bool) get_post_meta($post->ID, 'auto_highlight', true);
+        if ($auto_highlight) {
+            $glossary_data[] = [
+                'title' => $post->post_title,
+                'definition' => wp_strip_all_tags($post->post_content), // Strip HTML from definition for tooltip
+            ];
+        }
+    }
+    
+    // If no terms are enabled for auto-highlighting, return content unchanged
+    if (empty($glossary_data)) {
+        return $content;
+    }
 
     // Sort glossary terms by length in descending order to prioritize longer terms
     usort($glossary_data, function ($a, $b) {
