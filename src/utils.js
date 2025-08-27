@@ -75,11 +75,20 @@ export const fetchFromAPI = async (path, method = 'GET', data = null, headers = 
         };
     }
 
+    // Debug authentication info
+    console.log('Authentication debug:', {
+        wpApiSettings: window.wpApiSettings,
+        nonceMeta: document.querySelector('meta[name="wp-rest-nonce"]')?.content,
+        path: path,
+        method: method
+    });
+
     try {
         const response = await apiFetch({ path, ...options });
         return response;
     } catch (error) {
         console.error(`Error fetching from API (${path}):`, error.message);
+        console.error('Full error object:', error);
         throw error;
     }
 };
@@ -176,15 +185,30 @@ export const fetchSingleTerm = async (termId) => {
  * Update related terms for a glossary term.
  * @param {number} termId - The ID of the term to update.
  * @param {Array<number>} relatedTermIds - Array of related term IDs.
+ * @param {object} termsLookup - Optional lookup object to get term titles for better messaging.
  * @returns {Promise<object>} - Response data.
  */
-export const updateRelatedTerms = async (termId, relatedTermIds) => {
+export const updateRelatedTerms = async (termId, relatedTermIds, termsLookup = {}) => {
     try {
         const response = await fetchFromAPI(
             `/wp-json/wp/v2/glossary/${termId}/related`,
             'POST',
             { relatedTerms: relatedTermIds }
         );
+        
+        // Enhanced response with term information for better messaging
+        if (termsLookup && Object.keys(termsLookup).length > 0) {
+            const currentTermTitle = termsLookup[termId] || `Term ${termId}`;
+            const relatedTermTitles = relatedTermIds.map(id => termsLookup[id] || `Term ${id}`);
+            
+            response.termInfo = {
+                currentTerm: currentTermTitle,
+                relatedTerms: relatedTermTitles,
+                currentTermId: termId,
+                relatedTermIds: relatedTermIds
+            };
+        }
+        
         return response;
     } catch (error) {
         console.error('Error updating related terms:', error);
@@ -196,18 +220,33 @@ export const updateRelatedTerms = async (termId, relatedTermIds) => {
  * Update categories for a glossary term.
  * @param {number} termId - The ID of the term to update.
  * @param {Array<number>} categoryIds - Array of category IDs.
+ * @param {boolean} isAutosave - Whether this is an autosave operation.
  * @returns {Promise<object>} - Response data.
  */
-export const updateTermCategories = async (termId, categoryIds) => {
+export const updateTermCategories = async (termId, categoryIds, isAutosave = false) => {
     try {
+        // Use different endpoint for autosave to avoid conflicts
+        const endpoint = isAutosave 
+            ? `/wp-json/wp/v2/glossary/${termId}/categories/autosave`
+            : `/wp-json/wp/v2/glossary/${termId}/categories`;
+            
         const response = await fetchFromAPI(
-            `/wp-json/wp/v2/glossary/${termId}/categories`,
+            endpoint,
             'POST',
             { categories: categoryIds }
         );
         return response;
     } catch (error) {
         console.error('Error updating categories:', error);
+        
+        // Enhanced error handling with more details
+        if (error.data) {
+            const enhancedError = new Error(error.data.message || 'Failed to update categories');
+            enhancedError.data = error.data;
+            enhancedError.status = error.status;
+            throw enhancedError;
+        }
+        
         throw error;
     }
 };
@@ -216,17 +255,33 @@ export const updateTermCategories = async (termId, categoryIds) => {
  * Update tags for a glossary term.
  * @param {number} termId - ID of the glossary term.
  * @param {Array} tagIds - Array of tag IDs to associate with the term.
+ * @param {boolean} isAutosave - Whether this is an autosave operation.
  * @returns {Promise} - Promise representing the API request.
  */
-export const updateTermTags = async (termId, tagIds) => {
+export const updateTermTags = async (termId, tagIds, isAutosave = false) => {
     try {
-        return await fetchFromAPI(
-            `/wp-json/wp/v2/glossary/${termId}/tags`,
+        // Use different endpoint for autosave to avoid conflicts
+        const endpoint = isAutosave 
+            ? `/wp-json/wp/v2/glossary/${termId}/tags/autosave`
+            : `/wp-json/wp/v2/glossary/${termId}/tags`;
+            
+        const response = await fetchFromAPI(
+            endpoint,
             'POST',
             { tags: tagIds }
         );
+        return response;
     } catch (error) {
         console.error('Error updating tags:', error);
+        
+        // Enhanced error handling with more details
+        if (error.data) {
+            const enhancedError = new Error(error.data.message || 'Failed to update tags');
+            enhancedError.data = error.data;
+            enhancedError.status = error.status;
+            throw enhancedError;
+        }
+        
         throw error;
     }
 };

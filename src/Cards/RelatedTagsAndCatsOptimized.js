@@ -59,6 +59,23 @@ const RelatedTagsAndCatsOptimized = ({
                 id: parseInt(id),
                 title
             }));
+            
+            // Sort terms: # first (alphabetically), then all others alphabetically
+            termsList.sort((a, b) => {
+                const aIsHash = a.title.startsWith('#');
+                const bIsHash = b.title.startsWith('#');
+                
+                // If one starts with # and the other doesn't
+                if (aIsHash && !bIsHash) return -1;
+                if (!aIsHash && bIsHash) return 1;
+                
+                // Both have same prefix type, sort alphabetically (case-insensitive)
+                return a.title.localeCompare(b.title, undefined, { 
+                    sensitivity: 'base',
+                    numeric: true 
+                });
+            });
+            
             setAvailableTerms(termsList);
         }
     }, [relatedTermsLookup]);
@@ -68,23 +85,66 @@ const RelatedTagsAndCatsOptimized = ({
         if (isAutoSaveEnabled && !isSaving) {
             // Auto-save enabled: save immediately to API
             try {
+                let response;
                 switch (type) {
                     case 'categories':
-                        await updateTermCategories(term.id, value);
+                        response = await updateTermCategories(term.id, value, true); // Pass autosave flag
                         break;
                     case 'tags':
-                        await updateTermTags(term.id, value);
+                        response = await updateTermTags(term.id, value, true); // Pass autosave flag
                         break;
                     case 'related':
-                        await updateRelatedTerms(term.id, value);
+                        response = await updateRelatedTerms(term.id, value, relatedTermsLookup);
                         break;
                 }
-                setMessage(`${type} updated successfully`);
+                
+                // Handle autosave response differently
+                if (response.autosave) {
+                    // Enhanced messaging for related terms
+                    if (type === 'related' && response.termInfo) {
+                        const { currentTerm, relatedTerms } = response.termInfo;
+                        if (relatedTerms.length > 0) {
+                            const termsList = relatedTerms.join(', ');
+                            setMessage(`${currentTerm} now related to: ${termsList} (autosave)`);
+                        } else {
+                            setMessage(`All related terms removed from ${currentTerm} (autosave)`);
+                        }
+                    } else {
+                        setMessage(`${type} saved (autosave)`);
+                    }
+                } else {
+                    // Enhanced messaging for related terms
+                    if (type === 'related' && response.termInfo) {
+                        const { currentTerm, relatedTerms } = response.termInfo;
+                        if (relatedTerms.length > 0) {
+                            const termsList = relatedTerms.join(', ');
+                            setMessage(`${currentTerm} now related to: ${termsList}`);
+                        } else {
+                            setMessage(`All related terms removed from ${currentTerm}`);
+                        }
+                    } else {
+                        setMessage(`${type} updated successfully`);
+                    }
+                }
                 setTimeout(() => setMessage(''), 2000);
+                
+                // Log debug information if available
+                if (response?.debug) {
+                    console.log(`Debug info for ${type} update:`, response.debug);
+                }
             } catch (error) {
                 console.error(`Error updating ${type}:`, error);
-                setMessage(`Error updating ${type}`);
-                setTimeout(() => setMessage(''), 3000);
+                
+                // More detailed error messaging
+                let errorMessage = `Error updating ${type}`;
+                if (error.message) {
+                    errorMessage += `: ${error.message}`;
+                } else if (error.data?.message) {
+                    errorMessage += `: ${error.data.message}`;
+                }
+                
+                setMessage(errorMessage);
+                setTimeout(() => setMessage(''), 5000); // Show error longer
             }
         } else {
             // Auto-save disabled: update local state only (no API calls)
@@ -259,6 +319,23 @@ const RelatedTagsAndCatsOptimized = ({
                     id: parseInt(id),
                     title
                 }));
+            
+            // Sort terms: # first (alphabetically), then all others alphabetically
+            termsList.sort((a, b) => {
+                const aIsHash = a.title.startsWith('#');
+                const bIsHash = b.title.startsWith('#');
+                
+                // If one starts with # and the other doesn't
+                if (aIsHash && !bIsHash) return -1;
+                if (!aIsHash && bIsHash) return 1;
+                
+                // Both have same prefix type, sort alphabetically (case-insensitive)
+                return a.title.localeCompare(b.title, undefined, { 
+                    sensitivity: 'base',
+                    numeric: true 
+                });
+            });
+            
             setAvailableTerms(termsList);
             return;
         }
@@ -271,8 +348,26 @@ const RelatedTagsAndCatsOptimized = ({
                 },
             });
             const data = await response.json();
-            // Filter out the current term
-            setAvailableTerms(data.filter(t => t.id !== term?.id));
+            // Filter out the current term and sort
+            const filteredTerms = data.filter(t => t.id !== term?.id);
+            
+            // Sort the fallback data too
+            filteredTerms.sort((a, b) => {
+                const aTitle = a.title?.rendered || a.title;
+                const bTitle = b.title?.rendered || b.title;
+                const aIsHash = aTitle.startsWith('#');
+                const bIsHash = bTitle.startsWith('#');
+                
+                if (aIsHash && !bIsHash) return -1;
+                if (!aIsHash && bIsHash) return 1;
+                
+                return aTitle.localeCompare(bTitle, undefined, { 
+                    sensitivity: 'base',
+                    numeric: true 
+                });
+            });
+            
+            setAvailableTerms(filteredTerms);
         } catch (error) {
             console.error('Error fetching available terms:', error);
         }

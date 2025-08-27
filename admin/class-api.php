@@ -36,8 +36,52 @@ add_action('rest_api_init', function() {
     register_rest_route('wp/v2', '/glossary/(?P<id>\d+)/related', array(
         'methods' => 'POST',
         'callback' => 'update_glossary_term_related',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
+        'permission_callback' => function ($request) {
+            // Check multiple authentication methods for autosave compatibility
+            $is_logged_in = is_user_logged_in();
+            $current_user_id = get_current_user_id();
+            
+            // Log initial authentication state
+            error_log("GlossPress Related: Initial auth check - Logged in: " . ($is_logged_in ? 'YES' : 'NO') . ", User ID: {$current_user_id}");
+            
+            // If standard auth works, use it
+            if ($is_logged_in && $current_user_id > 0) {
+                error_log("GlossPress Related: Standard authentication successful");
+                return true;
+            }
+            
+            // Try alternative authentication for autosave context
+            // Check if we have WordPress admin cookies
+            $auth_cookie = isset($_COOKIE[LOGGED_IN_COOKIE]) ? $_COOKIE[LOGGED_IN_COOKIE] : null;
+            if ($auth_cookie) {
+                $user_id = wp_validate_auth_cookie($auth_cookie, 'logged_in');
+                if ($user_id) {
+                    error_log("GlossPress Related: Alternative auth successful - User ID: {$user_id}");
+                    
+                    // Set the current user for this request
+                    wp_set_current_user($user_id);
+                    
+                    // Check if this user can edit posts
+                    if (current_user_can('edit_posts')) {
+                        return true;
+                    }
+                }
+            }
+            
+            // Check for admin cookies as another fallback
+            if (isset($_COOKIE[AUTH_COOKIE])) {
+                $user_id = wp_validate_auth_cookie($_COOKIE[AUTH_COOKIE], 'auth');
+                if ($user_id) {
+                    error_log("GlossPress Related: Admin cookie auth successful - User ID: {$user_id}");
+                    wp_set_current_user($user_id);
+                    if (current_user_can('edit_posts')) {
+                        return true;
+                    }
+                }
+            }
+            
+            error_log("GlossPress Related: All authentication methods failed");
+            return new WP_Error('not_logged_in', 'You must be logged in.', array('status' => 401));
         },
         'args' => array(
             'id' => array(
@@ -53,7 +97,89 @@ add_action('rest_api_init', function() {
     register_rest_route('wp/v2', '/glossary/(?P<id>\d+)/categories', array(
         'methods' => 'POST',
         'callback' => 'update_glossary_term_categories',
-        'permission_callback' => function () {
+        'permission_callback' => function ($request) {
+            // Check multiple authentication methods for autosave compatibility
+            $is_logged_in = is_user_logged_in();
+            $current_user_id = get_current_user_id();
+            
+            // Log initial authentication state
+            error_log("GlossPress: Initial auth check - Logged in: " . ($is_logged_in ? 'YES' : 'NO') . ", User ID: {$current_user_id}");
+            
+            // If standard auth works, use it
+            if ($is_logged_in && $current_user_id > 0) {
+                error_log("GlossPress: Standard authentication successful");
+                return true;
+            }
+            
+            // Try alternative authentication for autosave context
+            // Check if we have WordPress admin cookies
+            $auth_cookie = isset($_COOKIE[LOGGED_IN_COOKIE]) ? $_COOKIE[LOGGED_IN_COOKIE] : null;
+            if ($auth_cookie) {
+                $user_id = wp_validate_auth_cookie($auth_cookie, 'logged_in');
+                if ($user_id) {
+                    error_log("GlossPress: Alternative auth successful - User ID: {$user_id}");
+                    
+                    // Set the current user for this request
+                    wp_set_current_user($user_id);
+                    
+                    // Check if this user can edit posts
+                    if (current_user_can('edit_posts')) {
+                        return true;
+                    }
+                }
+            }
+            
+            // Check for admin cookies as another fallback
+            if (isset($_COOKIE[AUTH_COOKIE])) {
+                $user_id = wp_validate_auth_cookie($_COOKIE[AUTH_COOKIE], 'auth');
+                if ($user_id) {
+                    error_log("GlossPress: Admin cookie auth successful - User ID: {$user_id}");
+                    wp_set_current_user($user_id);
+                    if (current_user_can('edit_posts')) {
+                        return true;
+                    }
+                }
+            }
+            
+            error_log("GlossPress: All authentication methods failed");
+            return new WP_Error('not_logged_in', 'You must be logged in.', array('status' => 401));
+        },
+        'args' => array(
+            'id' => array(
+                'required' => true,
+                'validate_callback' => function ($param, $request, $key) {
+                    return is_numeric($param);
+                }
+            )
+        )
+    ));
+
+    // Alternative endpoint for autosave context
+    register_rest_route('wp/v2', '/glossary/(?P<id>\d+)/categories/autosave', array(
+        'methods' => 'POST',
+        'callback' => 'update_glossary_term_categories_autosave',
+        'permission_callback' => function ($request) {
+            // More permissive permission check that works during autosave
+            $term_id = $request->get_param('id');
+            
+            // Check if user is logged in
+            if (!is_user_logged_in()) {
+                return false;
+            }
+            
+            // Check if user can edit posts in general
+            if (!current_user_can('edit_posts')) {
+                return false;
+            }
+            
+            // Check if the specific post exists and user can edit it
+            if ($term_id) {
+                $post = get_post($term_id);
+                if ($post && current_user_can('edit_post', $term_id)) {
+                    return true;
+                }
+            }
+            
             return current_user_can('edit_posts');
         },
         'args' => array(
@@ -70,7 +196,28 @@ add_action('rest_api_init', function() {
     register_rest_route('wp/v2', '/glossary/(?P<id>\d+)/tags', array(
         'methods' => 'POST',
         'callback' => 'update_glossary_term_tags',
-        'permission_callback' => function () {
+        'permission_callback' => function ($request) {
+            // More permissive permission check that works during autosave
+            $term_id = $request->get_param('id');
+            
+            // Check if user is logged in
+            if (!is_user_logged_in()) {
+                return false;
+            }
+            
+            // Check if user can edit posts in general
+            if (!current_user_can('edit_posts')) {
+                return false;
+            }
+            
+            // Check if the specific post exists and user can edit it
+            if ($term_id) {
+                $post = get_post($term_id);
+                if ($post && current_user_can('edit_post', $term_id)) {
+                    return true;
+                }
+            }
+            
             return current_user_can('edit_posts');
         },
         'args' => array(
@@ -81,6 +228,53 @@ add_action('rest_api_init', function() {
                 }
             )
         )
+    ));
+
+    // Alternative endpoint for autosave context
+    register_rest_route('wp/v2', '/glossary/(?P<id>\d+)/tags/autosave', array(
+        'methods' => 'POST',
+        'callback' => 'update_glossary_term_tags_autosave',
+        'permission_callback' => function ($request) {
+            // More permissive permission check that works during autosave
+            $term_id = $request->get_param('id');
+            
+            // Check if user is logged in
+            if (!is_user_logged_in()) {
+                return false;
+            }
+            
+            // Check if user can edit posts in general
+            if (!current_user_can('edit_posts')) {
+                return false;
+            }
+            
+            // Check if the specific post exists and user can edit it
+            if ($term_id) {
+                $post = get_post($term_id);
+                if ($post && current_user_can('edit_post', $term_id)) {
+                    return true;
+                }
+            }
+            
+            return current_user_can('edit_posts');
+        },
+        'args' => array(
+            'id' => array(
+                'required' => true,
+                'validate_callback' => function ($param, $request, $key) {
+                    return is_numeric($param);
+                }
+            )
+        )
+    ));
+
+    // Diagnostic endpoint to check autosave status
+    register_rest_route('wp/v2', '/glossary/diagnostic', array(
+        'methods' => 'GET',
+        'callback' => 'get_glossary_diagnostic',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        }
     ));
 
     // Delete glossary term
@@ -691,21 +885,75 @@ function update_glossary_term_categories($request) {
     $data = $request->get_json_params();
     $category_ids = isset($data['categories']) ? array_map('intval', $data['categories']) : [];
 
+    // Log the request for debugging
+    error_log("GlossPress: update_glossary_term_categories called - Term ID: {$term_id}, Categories: " . json_encode($category_ids));
+
     // Verify the term exists
     $term = get_post($term_id);
     if (!$term || $term->post_type !== 'acemedia_glossary') {
+        error_log("GlossPress: Term not found or wrong type - Term ID: {$term_id}");
         return new WP_Error('term_not_found', 'Glossary term not found', array('status' => 404));
     }
 
-    // Update categories
-    wp_set_post_terms($term_id, $category_ids, 'category');
+    // Check if we're in an autosave context and handle it appropriately
+    $is_autosave = defined('DOING_AUTOSAVE') && DOING_AUTOSAVE;
+    $is_ajax = defined('DOING_AJAX') && DOING_AJAX;
+    
+    error_log("GlossPress: Context - Autosave: " . ($is_autosave ? 'YES' : 'NO') . ", AJAX: " . ($is_ajax ? 'YES' : 'NO'));
+    
+    // Additional permission check for autosave context
+    if ($is_autosave) {
+        if (!current_user_can('edit_post', $term_id)) {
+            error_log("GlossPress: Insufficient permissions during autosave for term {$term_id}");
+            return new WP_Error('insufficient_permissions', 'Insufficient permissions to update categories during autosave', array('status' => 403));
+        }
+    }
+
+    // Validate category IDs exist
+    if (!empty($category_ids)) {
+        foreach ($category_ids as $cat_id) {
+            if (!term_exists($cat_id, 'category')) {
+                error_log("GlossPress: Invalid category ID: {$cat_id}");
+                return new WP_Error('invalid_category', "Category with ID {$cat_id} does not exist", array('status' => 400));
+            }
+        }
+    }
+
+    // Update categories with error handling
+    $result = wp_set_post_terms($term_id, $category_ids, 'category');
+    
+    error_log("GlossPress: wp_set_post_terms result: " . json_encode($result));
+    
+    if (is_wp_error($result)) {
+        error_log("GlossPress: wp_set_post_terms error: " . $result->get_error_message());
+        return new WP_Error('update_failed', 'Failed to update categories: ' . $result->get_error_message(), array('status' => 500));
+    }
+    
+    if ($result === false) {
+        error_log("GlossPress: wp_set_post_terms returned false");
+        return new WP_Error('update_failed', 'Failed to update categories: wp_set_post_terms returned false', array('status' => 500));
+    }
 
     // Clear caches
     delete_transient("acemedia_glossary_term_{$term_id}");
     delete_transient('acemedia_glossary_terms_summary');
     delete_transient('acemedia_glossary_prefetch_data');
 
-    return new WP_REST_Response(['success' => true, 'categories' => $category_ids], 200);
+    error_log("GlossPress: Categories updated successfully for term {$term_id}");
+
+    // Return success with debug info if needed
+    $response_data = [
+        'success' => true, 
+        'categories' => $category_ids,
+        'debug' => [
+            'is_autosave' => $is_autosave,
+            'is_ajax' => $is_ajax,
+            'term_id' => $term_id,
+            'result' => $result
+        ]
+    ];
+
+    return new WP_REST_Response($response_data, 200);
 }
 
 // Function to update tags for a glossary term
@@ -720,15 +968,53 @@ function update_glossary_term_tags($request) {
         return new WP_Error('term_not_found', 'Glossary term not found', array('status' => 404));
     }
 
-    // Update tags
-    wp_set_post_terms($term_id, $tag_ids, 'post_tag');
+    // Check if we're in an autosave context and handle it appropriately
+    $is_autosave = defined('DOING_AUTOSAVE') && DOING_AUTOSAVE;
+    
+    // Additional permission check for autosave context
+    if ($is_autosave) {
+        if (!current_user_can('edit_post', $term_id)) {
+            return new WP_Error('insufficient_permissions', 'Insufficient permissions to update tags during autosave', array('status' => 403));
+        }
+    }
+
+    // Validate tag IDs exist
+    if (!empty($tag_ids)) {
+        foreach ($tag_ids as $tag_id) {
+            if (!term_exists($tag_id, 'post_tag')) {
+                return new WP_Error('invalid_tag', "Tag with ID {$tag_id} does not exist", array('status' => 400));
+            }
+        }
+    }
+
+    // Update tags with error handling
+    $result = wp_set_post_terms($term_id, $tag_ids, 'post_tag');
+    
+    if (is_wp_error($result)) {
+        return new WP_Error('update_failed', 'Failed to update tags: ' . $result->get_error_message(), array('status' => 500));
+    }
+    
+    if ($result === false) {
+        return new WP_Error('update_failed', 'Failed to update tags: wp_set_post_terms returned false', array('status' => 500));
+    }
 
     // Clear caches
     delete_transient("acemedia_glossary_term_{$term_id}");
     delete_transient('acemedia_glossary_terms_summary');
     delete_transient('acemedia_glossary_prefetch_data');
 
-    return new WP_REST_Response(['success' => true, 'tags' => $tag_ids], 200);
+    // Return success with debug info if needed
+    $response_data = [
+        'success' => true, 
+        'tags' => $tag_ids,
+        'debug' => [
+            'is_autosave' => $is_autosave,
+            'term_id' => $term_id,
+            'result' => $result
+        ]
+    ];
+
+    return new WP_REST_Response($response_data, 200);
 }
 
 // Function to get auto highlight option
@@ -854,7 +1140,165 @@ function get_related_terms_lookup($request) {
         $lookup[$term_id] = get_the_title($term_id);
     }
 
+    // Sort by title: # terms first (alphabetically), then all others alphabetically
+    uasort($lookup, function($a, $b) {
+        $a_is_hash = strpos($a, '#') === 0;
+        $b_is_hash = strpos($b, '#') === 0;
+        
+        // If one starts with # and the other doesn't
+        if ($a_is_hash && !$b_is_hash) return -1;
+        if (!$a_is_hash && $b_is_hash) return 1;
+        
+        // Both have same prefix type, sort alphabetically (case-insensitive)
+        return strcasecmp($a, $b);
+    });
+
     set_transient('acemedia_glossary_related_terms_lookup', $lookup, HOUR_IN_SECONDS);
 
     return new WP_REST_Response($lookup, 200);
+}
+
+// Autosave-specific function to update categories for a glossary term
+function update_glossary_term_categories_autosave($request) {
+    $term_id = $request->get_param('id');
+    $data = $request->get_json_params();
+    $category_ids = isset($data['categories']) ? array_map('intval', $data['categories']) : [];
+
+    // Verify the term exists
+    $term = get_post($term_id);
+    if (!$term || $term->post_type !== 'acemedia_glossary') {
+        return new WP_Error('term_not_found', 'Glossary term not found', array('status' => 404));
+    }
+
+    // For autosave context, we use a different approach
+    // Store as temporary meta that can be restored later or ignored
+    $meta_key = '_temp_autosave_categories';
+    
+    // Store the categories as meta data instead of directly updating terms
+    $result = update_post_meta($term_id, $meta_key, $category_ids);
+    
+    if ($result === false) {
+        return new WP_Error('autosave_failed', 'Failed to save categories during autosave', array('status' => 500));
+    }
+
+    // Also store timestamp for cleanup
+    update_post_meta($term_id, '_temp_autosave_categories_timestamp', time());
+
+    return new WP_REST_Response([
+        'success' => true, 
+        'categories' => $category_ids,
+        'autosave' => true,
+        'meta_key' => $meta_key
+    ], 200);
+}
+
+// Autosave-specific function to update tags for a glossary term
+function update_glossary_term_tags_autosave($request) {
+    $term_id = $request->get_param('id');
+    $data = $request->get_json_params();
+    $tag_ids = isset($data['tags']) ? array_map('intval', $data['tags']) : [];
+
+    // Verify the term exists
+    $term = get_post($term_id);
+    if (!$term || $term->post_type !== 'acemedia_glossary') {
+        return new WP_Error('term_not_found', 'Glossary term not found', array('status' => 404));
+    }
+
+    // For autosave context, we use a different approach
+    // Store as temporary meta that can be restored later or ignored
+    $meta_key = '_temp_autosave_tags';
+    
+    // Store the tags as meta data instead of directly updating terms
+    $result = update_post_meta($term_id, $meta_key, $tag_ids);
+    
+    if ($result === false) {
+        return new WP_Error('autosave_failed', 'Failed to save tags during autosave', array('status' => 500));
+    }
+
+    // Also store timestamp for cleanup
+    update_post_meta($term_id, '_temp_autosave_tags_timestamp', time());
+
+    return new WP_REST_Response([
+        'success' => true, 
+        'tags' => $tag_ids,
+        'autosave' => true,
+        'meta_key' => $meta_key
+    ], 200);
+}
+
+// Cleanup old autosave temporary data
+add_action('wp_loaded', 'cleanup_old_autosave_data');
+
+function cleanup_old_autosave_data() {
+    // Only run this occasionally (every hour)
+    if (get_transient('acemedia_glossary_cleanup_ran')) {
+        return;
+    }
+    
+    // Set transient to prevent running too frequently
+    set_transient('acemedia_glossary_cleanup_ran', true, HOUR_IN_SECONDS);
+    
+    global $wpdb;
+    
+    // Clean up autosave data older than 24 hours
+    $cutoff_time = time() - (24 * HOUR_IN_SECONDS);
+    
+    // Find posts with old autosave timestamps
+    $posts_to_clean = $wpdb->get_results($wpdb->prepare("
+        SELECT post_id 
+        FROM {$wpdb->postmeta} 
+        WHERE meta_key IN ('_temp_autosave_categories_timestamp', '_temp_autosave_tags_timestamp')
+        AND meta_value < %d
+    ", $cutoff_time));
+    
+    foreach ($posts_to_clean as $post) {
+        delete_post_meta($post->post_id, '_temp_autosave_categories');
+        delete_post_meta($post->post_id, '_temp_autosave_categories_timestamp');
+        delete_post_meta($post->post_id, '_temp_autosave_tags');
+        delete_post_meta($post->post_id, '_temp_autosave_tags_timestamp');
+    }
+}
+
+// Hook to apply autosave data when post is actually saved
+add_action('save_post', 'apply_autosave_data_on_save');
+
+function apply_autosave_data_on_save($post_id) {
+    // Only apply to glossary terms
+    if (get_post_type($post_id) !== 'acemedia_glossary') {
+        return;
+    }
+    
+    // Check if we have temporary autosave data to apply
+    $temp_categories = get_post_meta($post_id, '_temp_autosave_categories', true);
+    $temp_tags = get_post_meta($post_id, '_temp_autosave_tags', true);
+    
+    if ($temp_categories !== false && is_array($temp_categories)) {
+        wp_set_post_terms($post_id, $temp_categories, 'category');
+        delete_post_meta($post_id, '_temp_autosave_categories');
+        delete_post_meta($post_id, '_temp_autosave_categories_timestamp');
+    }
+    
+    if ($temp_tags !== false && is_array($temp_tags)) {
+        wp_set_post_terms($post_id, $temp_tags, 'post_tag');
+        delete_post_meta($post_id, '_temp_autosave_tags');
+        delete_post_meta($post_id, '_temp_autosave_tags_timestamp');
+    }
+}
+
+// Diagnostic function to help debug autosave issues
+function get_glossary_diagnostic($request) {
+    $diagnostic_info = [
+        'is_autosave' => defined('DOING_AUTOSAVE') && DOING_AUTOSAVE,
+        'is_ajax' => defined('DOING_AJAX') && DOING_AJAX,
+        'current_user_id' => get_current_user_id(),
+        'current_user_can_edit_posts' => current_user_can('edit_posts'),
+        'php_version' => PHP_VERSION,
+        'wordpress_version' => get_bloginfo('version'),
+        'time' => time(),
+        'wp_debug' => defined('WP_DEBUG') && WP_DEBUG,
+        'request_method' => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown'
+    ];
+    
+    return new WP_REST_Response($diagnostic_info, 200);
 }
