@@ -93,7 +93,7 @@ class AceMediaGlossary_Shortcode {
                 'restUrl' => esc_url(rest_url('wp/v2/glossary')),
                 'nonce'   => wp_create_nonce('wp_rest'),
                 'sort'    => esc_attr($atts['sort']),
-                'autoHighlight' => get_option('auto_highlight', 'false') === 'true',
+                'autoHighlight' => get_option('acemedia_glossary_auto_highlight', 'false') === 'true',
                 'preloadedTerms' => $preloaded_terms, // Add preloaded terms data
             )
         );
@@ -191,8 +191,8 @@ class AceMediaGlossary_Shortcode {
 
 
 function highlight_glossary_terms($content) {
-    // Check if auto_highlight is enabled
-    $auto_highlight_enabled = get_option('auto_highlight', 'false') === 'true';
+    // Check if auto_highlight is enabled (correct option name)
+    $auto_highlight_enabled = get_option('acemedia_glossary_auto_highlight', 'false') === 'true';
 
     if (!$auto_highlight_enabled || !is_singular() || is_front_page() || is_archive()) {
         return $content; // Skip processing if auto_highlight is disabled
@@ -212,7 +212,7 @@ function highlight_glossary_terms($content) {
     $glossary_data = array_map(function ($post) {
         return [
             'title' => $post->post_title,
-            'definition' => $post->post_content,
+            'definition' => wp_strip_all_tags($post->post_content), // Strip HTML from definition for tooltip
         ];
     }, $glossary_posts);
 
@@ -221,32 +221,49 @@ function highlight_glossary_terms($content) {
         return strlen($b['title']) - strlen($a['title']);
     });
 
-    // Build a regex pattern to match glossary terms
-    $patterns = array_map(function ($term) {
-        return '\b' . preg_quote($term['title'], '/') . '\b'; // Escape term for regex and add word boundaries
-    }, $glossary_data);
-
-    // Join all patterns into a single regex
-    $regex = '/' . implode('|', $patterns) . '/i';
-
-    // Replace matched terms with highlighted HTML and tooltip integration
-    $content = preg_replace_callback($regex, function ($matches) use ($glossary_data) {
-        $matched_term = strtolower($matches[0]);
-
-        // Find the corresponding glossary term definition
-        foreach ($glossary_data as $term) {
-            if (strtolower($term['title']) === $matched_term) {
-                $definition = esc_attr($term['definition']); // Sanitize definition
-                $title = esc_html($term['title']); // Sanitize title
-                return "<span class='highlight' data-tooltip='{$definition}'>{$title}</span>";
-            }
+    // Create a safe highlighting function that only affects plain text
+    $hasHighlights = false;
+    
+    foreach ($glossary_data as $term) {
+        $term_title = $term['title'];
+        $term_definition = esc_attr($term['definition']);
+        
+        // Skip if already highlighted to prevent double highlighting
+        if (strpos($content, 'data-tooltip=\'' . $term_definition . '\'') !== false) {
+            continue;
         }
-
-        return $matches[0];
-    }, $content);
-
+        
+        // Only highlight if the term appears as standalone text, not within HTML attributes or tags
+        // This is a very conservative approach that only matches text between > and < characters
+        $safe_pattern = '/(?<=>)([^<]*?)(\b' . preg_quote($term_title, '/') . '\b)([^<]*?)(?=<)/i';
+        
+        $replacement_count = 0;
+        $content = preg_replace_callback($safe_pattern, function($matches) use ($term_title, $term_definition, &$hasHighlights, &$replacement_count) {
+            // Only allow one replacement to avoid multiple highlights of the same term
+            if ($replacement_count > 0) {
+                return $matches[0];
+            }
+            
+            $before_text = $matches[1];
+            $matched_term = $matches[2];
+            $after_text = $matches[3];
+            
+            // Additional safety: don't highlight if the surrounding text suggests we're in an attribute
+            if (strpos($before_text, '"') !== false || strpos($after_text, '"') !== false ||
+                strpos($before_text, '=') !== false || strpos($after_text, '=') !== false ||
+                strpos($before_text, 'glossary-highlight') !== false) {
+                return $matches[0];
+            }
+            
+            $replacement_count++;
+            $hasHighlights = true;
+            $highlighted = "<span class='glossary-highlight' data-tooltip='{$term_definition}'>" . esc_html($matched_term) . "</span>";
+            return $before_text . $highlighted . $after_text;
+        }, $content);
+    }
+    
     // Enqueue the tooltip script and styles if matches were found
-    if (preg_match($regex, $content)) {
+    if ($hasHighlights) {
         add_action('wp_enqueue_scripts', function () {
             wp_enqueue_style(
                 'wp-components',
