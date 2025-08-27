@@ -1,8 +1,33 @@
-p {
-    span.highlight {
-        border-bottom: 1px dashed;
+p, div, li {
+    span.glossary-highlight {
+        border-bottom: 1px dotted #666;
+        cursor: help;
+        position: relative;
+        
+        &::after {
+            content: "ⓘ";
+            font-size: 0.8em;
+            margin-left: 2px;
+            opacity: 0.7;
+            vertical-align: super;
+            font-weight: normal;
+        }
     }
 }
 
-
-div.components-tooltip { width: 98vw; max-width: 420px; padding: 1em; font-size: .8em; }
+div.components-tooltip { 
+    width: 98vw; 
+    max-width: 420px; 
+    padding: 1em; 
+    font-size: .8em; 
+    z-index: 999999;
+    background: #333;
+    color: #fff;
+    border-radius: 4px;
+    text-align: left;
+    
+    span {
+        text-align: left;
+        display: block;
+    }
+}

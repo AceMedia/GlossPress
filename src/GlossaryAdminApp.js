@@ -21,11 +21,17 @@ import {
     clearLogs, 
     saveCss, 
     fetchFromAPI,
-    setupDragAndDrop
+    setupDragAndDrop,
+    fetchSingleTerm,
+    updateRelatedTerms,
+    updateTermCategories,
+    updateTermTags,
+    fetchPrefetchData,
+    fetchRelatedTermsLookup
 } from './utils';
 
 import Modals from './Modals';
-import Cards from './Cards/Cards';
+import CardsOptimized from './Cards/CardsOptimized';
 
 
 
@@ -33,12 +39,14 @@ const DEBOUNCE_DELAY = 2000;
 
 const GlossaryAdminApp = () => {
     const [terms, setTerms] = useState([]);
+    const [activeTerm, setActiveTerm] = useState(null); // Currently loaded full term data
     const [modifiedTerms, setModifiedTerms] = useState(new Set());
     const [categories, setCategories] = useState([]);
     const [tags, setTags] = useState([]);
     const [message, setMessage] = useState('');
     const [sortOption, setSortOption] = useState('alphabetical');
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoadingTerm, setIsLoadingTerm] = useState(false);
     const [unsavedChanges, setUnsavedChanges] = useState(false);
     const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
     const [loadTime, setLoadTime] = useState(null);
@@ -60,6 +68,13 @@ const GlossaryAdminApp = () => {
     const [categoryFilter, setCategoryFilter] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCssModalOpen, setIsCssModalOpen] = useState(false); // State for the CSS modal
+    
+    // Prefetched data for faster card rendering
+    const [prefetchedCategories, setPrefetchedCategories] = useState([]);
+    const [prefetchedTags, setPrefetchedTags] = useState([]);
+    const [relatedTermsLookup, setRelatedTermsLookup] = useState({});
+    const [hasMorePrefetchedCategories, setHasMorePrefetchedCategories] = useState(true);
+    const [hasMorePrefetchedTags, setHasMorePrefetchedTags] = useState(true);
 
     // Fetch the initial value from wp_option on component mount
     useEffect(() => {
@@ -68,6 +83,28 @@ const GlossaryAdminApp = () => {
                 setAutoHighlight(data.value === true); // Convert response value to boolean
             })
             .catch((error) => console.error('Error fetching auto_highlight option:', error));
+    }, []);
+
+    // Prefetch data for faster card rendering
+    useEffect(() => {
+        const prefetchData = async () => {
+            try {
+                // Prefetch categories and tags
+                const prefetchResponse = await fetchPrefetchData();
+                setPrefetchedCategories(prefetchResponse.categories || []);
+                setPrefetchedTags(prefetchResponse.tags || []);
+                setHasMorePrefetchedCategories(prefetchResponse.hasMoreCategories || false);
+                setHasMorePrefetchedTags(prefetchResponse.hasMoreTags || false);
+
+                // Prefetch related terms lookup
+                const lookupResponse = await fetchRelatedTermsLookup();
+                setRelatedTermsLookup(lookupResponse || {});
+            } catch (error) {
+                console.error('Error prefetching data:', error);
+            }
+        };
+
+        prefetchData();
     }, []);
 
     const saveAutoHighlightOption = (isEnabled) => {
@@ -85,33 +122,64 @@ const GlossaryAdminApp = () => {
         if (!unsavedChanges || isSavingRef.current) return;
     
         setIsSaving(true);
+        isSavingRef.current = true;
     
-        const termsToSave = terms.filter((term) => modifiedTerms.has(term.id)).map((term) => ({
-            ...term,
-            categories: term.categories.map((cat) => cat.id), // Send only category IDs
-            tags: term.tags.map((tag) => tag.id), // Send only tag IDs
-            modified: new Date().toISOString(),
-        }));
-        
-    
+        // Only save the active term if it exists and has been modified
+        const termsToSave = [];
+        if (activeTerm && modifiedTerms.has(activeTerm.id)) {
+            // Format the data to match API expectations
+            const termData = {
+                id: activeTerm.id,
+                title: activeTerm.title,
+                content: activeTerm.content || '',
+                relatedTerms: activeTerm.relatedTerms || [],
+                categories: activeTerm.categories ? activeTerm.categories.map((cat) => typeof cat === 'object' ? cat.id : cat) : [],
+                tags: activeTerm.tags ? activeTerm.tags.map((tag) => typeof tag === 'object' ? tag.id : tag) : [],
+                autoHighlight: activeTerm.autoHighlight || false,
+            };
+            console.log('Saving term data:', termData);
+            termsToSave.push(termData);
+        }
+
+        if (termsToSave.length === 0) {
+            setIsSaving(false);
+            isSavingRef.current = false;
+            return;
+        }
+
         const startTime = performance.now();
-    
         const savePromises = termsToSave.map((term) =>
             apiFetch({
                 path: '/wp-json/wp/v2/glossary',
                 method: 'POST',
-                data: { ...term, modified: new Date().toISOString() },
+                data: term,
                 headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
             })
         );
     
         Promise.all(savePromises)
-    .then(() => {
+    .then((responses) => {
         const endTime = performance.now();
         const responseTime = Math.round(endTime - startTime);
 
+        // Update the activeTerm with the saved data
+        if (activeTerm && responses.length > 0) {
+            const savedId = responses[0].id;
+            setActiveTerm(prev => ({ ...prev, modified: new Date().toISOString() }));
+            
+            // Update the term in the terms list
+            setTerms(prevTerms => 
+                prevTerms.map(term => 
+                    term.id === savedId 
+                        ? { ...term, title: activeTerm.title, modified: new Date().toISOString() }
+                        : term
+                )
+            );
+        }
+
         setModifiedTerms(new Set());
         setUnsavedChanges(false);
+        isSavingRef.current = false;
 
         const successMessage = isAutoSave 
             ? `Auto-saved successfully! (${responseTime}ms)`
@@ -124,11 +192,12 @@ const GlossaryAdminApp = () => {
         console.error('Error saving terms:', error);
         setMessage('Error saving changes');
         setTimeout(() => setMessage(''), 3000); // Clear the error message
+        isSavingRef.current = false;
     })
     .finally(() => {
         setIsSaving(false);
     });
-    }, [terms, modifiedTerms, unsavedChanges]);
+    }, [activeTerm, modifiedTerms, unsavedChanges]);
 
 
 
@@ -140,7 +209,7 @@ const GlossaryAdminApp = () => {
 
 
 
-    // Fetch glossary terms, categories, and tags once on component mount
+    // Fetch glossary terms (summary data only), categories, and tags once on component mount
     useEffect(() => {
         const startTime = performance.now();
     
@@ -148,21 +217,7 @@ const GlossaryAdminApp = () => {
             .then((data) => {
                 const endTime = performance.now();
                 setLoadTime(endTime - startTime);
-                setTerms(data.map(term => ({
-                    ...term,
-                    relatedTerms: term.relatedTerms || [],
-                    categories: term.categories.map(cat => ({
-                        id: cat.id,
-                        slug: cat.slug,
-                        title: cat.title,
-                    })) || [],
-                    tags: term.tags.map(tag => ({
-                        id: tag.id,
-                        slug: tag.slug,
-                        title: tag.title,
-                    })) || [],
-                    isOpen: false,
-                })));
+                setTerms(data); // Data now includes only summary information
             })
             .catch((error) => {
                 console.error('Error loading terms:', error);
@@ -299,24 +354,23 @@ useEffect(() => {
     
         let filteredTerms = terms;
     
-        // Apply search query filtering
+        // Apply search query filtering (only on title since content is not loaded)
         if (debouncedSearchQuery) {
             filteredTerms = filteredTerms.filter((term) =>
-                term.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                term.content.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+                term.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
             );
         }
     
-        // Apply tag and category filtering
+        // Apply tag and category filtering using IDs
         if (tagFilter.length > 0) {
             filteredTerms = filteredTerms.filter((term) =>
-                term.tags.some((tag) => tagFilter.includes(tag.id)) // Compare tag.id to tagFilter
+                term.tagIds && term.tagIds.some((tagId) => tagFilter.includes(tagId))
             );
         }
     
         if (categoryFilter.length > 0) {
             filteredTerms = filteredTerms.filter((term) =>
-                term.categories.some((cat) => categoryFilter.includes(cat.id)) // Compare cat.id to categoryFilter
+                term.categoryIds && term.categoryIds.some((catId) => categoryFilter.includes(catId))
             );
         }
     
@@ -327,7 +381,7 @@ useEffect(() => {
             } else if (sortOption === 'created') {
                 return new Date(a.date) - new Date(b.date);
             } else if (sortOption === 'updated') {
-                return new Date(a.modified) - new Date(b.modified);
+                return new Date(b.modified) - new Date(a.modified);
             }
             return 0;
         });
@@ -416,12 +470,52 @@ const deleteSelectedTerms = async () => {
     }
 };
 
+// Function to remove a single term
+const removeTerm = async (termId) => {
+    setIsSaving(true);
+
+    try {
+        const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/${termId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(__('Failed to delete term.', 'acemedia-glossary'));
+        }
+
+        // Update terms after successful deletion
+        setTerms((prevTerms) => {
+            const updatedTerms = prevTerms.filter((term) => term.id !== termId);
+            
+            // Check if terms are empty and reset Quick Edit if true
+            if (updatedTerms.length === 0) {
+                setQuickEdit('false');
+            }
+
+            return updatedTerms;
+        });
+
+        // Close the active term if it was the one deleted
+        if (activeTerm && activeTerm.id === termId) {
+            closeActiveTerm();
+        }
+
+        setMessage(__('Term deleted successfully.', 'acemedia-glossary'));
+    } catch (error) {
+        console.error('Error deleting term:', error);
+        setMessage(__('Failed to delete term. Please try again.', 'acemedia-glossary'));
+    } finally {
+        setIsSaving(false);
+        setTimeout(() => setMessage(''), 3000);
+    }
+};
 
 
-
-    
-    
-    const openModalForNewTerm = () => {
+const openModalForNewTerm = () => {
         setIsModalOpen(true);
         setNewTermData({
             id: Date.now(), // Temporary ID for the new term
@@ -442,6 +536,82 @@ useEffect(() => {
     fetchLogs(setLogs);
 }, []);
     
+    
+    // Function to load a single term with full data
+    const loadSingleTerm = useCallback(async (termId) => {
+        if (activeTerm && activeTerm.id === termId) {
+            return activeTerm; // Already loaded
+        }
+
+        setIsLoadingTerm(true);
+        try {
+            const termData = await fetchSingleTerm(termId);
+            
+            // Ensure the term is marked as open when we set it as active
+            const activeTermData = {
+                ...termData,
+                isOpen: true,
+                isLoaded: true
+            };
+            
+            setActiveTerm(activeTermData);
+            
+            // Update the terms list to mark this term as loaded and open
+            setTerms(prevTerms => 
+                prevTerms.map(term => ({
+                    ...term,
+                    isOpen: term.id === termId,
+                    isLoaded: term.id === termId ? true : term.isLoaded
+                }))
+            );
+            
+            return activeTermData;
+        } catch (error) {
+            console.error('Error loading term:', error);
+            setMessage('Error loading term data');
+            setTimeout(() => setMessage(''), 3000);
+            return null;
+        } finally {
+            setIsLoadingTerm(false);
+        }
+    }, [activeTerm]);
+
+    // Function to close the active term
+    const closeActiveTerm = useCallback(() => {
+        setActiveTerm(null);
+        setTerms(prevTerms => 
+            prevTerms.map(term => ({ ...term, isOpen: false }))
+        );
+    }, []);
+
+    // Function to update active term data
+    const updateActiveTerm = useCallback((key, value) => {
+        if (!activeTerm) return;
+        
+        console.log('updateActiveTerm called:', { key, value, termId: activeTerm.id });
+        setActiveTerm(prev => ({ ...prev, [key]: value }));
+        setModifiedTerms(prev => new Set([...prev, activeTerm.id]));
+        setUnsavedChanges(true);
+    }, [activeTerm]);
+
+    // Separate optimized function for title sync to avoid re-rendering all terms
+    const updateActiveTermTitle = useCallback((title) => {
+        if (!activeTerm) return;
+        
+        setActiveTerm(prev => ({ ...prev, title }));
+        setModifiedTerms(prev => new Set([...prev, activeTerm.id]));
+        setUnsavedChanges(true);
+        
+        // Update title in terms list more efficiently
+        setTerms(prevTerms => {
+            const termIndex = prevTerms.findIndex(term => term.id === activeTerm.id);
+            if (termIndex === -1) return prevTerms;
+            
+            const newTerms = [...prevTerms];
+            newTerms[termIndex] = { ...newTerms[termIndex], title };
+            return newTerms;
+        });
+    }, [activeTerm]);
     
     return (
         <>
@@ -481,10 +651,12 @@ useEffect(() => {
 
 
 
-<Cards
+<CardsOptimized
     displayedTerms={displayedTerms}
     loadTime={loadTime}
     terms={terms}
+    activeTerm={activeTerm}
+    setActiveTerm={setActiveTerm}
     categories={categories}
     tags={tags}
     sortOption={sortOption}
@@ -492,15 +664,25 @@ useEffect(() => {
     quickEdit={quickEdit}
     selectedTerms={selectedTerms}
     setSelectedTerms={setSelectedTerms}
-    setTerms={setTerms} // Make sure this is passed
+    setTerms={setTerms}
     setModifiedTerms={setModifiedTerms}
     setUnsavedChanges={setUnsavedChanges}
-    quickEdit={quickEdit}
     setQuickEdit={setQuickEdit}
     setMessage={setMessage}
     setIsSaving={setIsSaving}
     isAutoSaveEnabled={isAutoSaveEnabled}
     isSaving={isSaving}
+    isLoadingTerm={isLoadingTerm}
+    loadSingleTerm={loadSingleTerm}
+    closeActiveTerm={closeActiveTerm}
+    updateActiveTerm={updateActiveTerm}
+    updateActiveTermTitle={updateActiveTermTitle}
+    removeTerm={removeTerm}
+    prefetchedCategories={prefetchedCategories}
+    prefetchedTags={prefetchedTags}
+    relatedTermsLookup={relatedTermsLookup}
+    hasMorePrefetchedCategories={hasMorePrefetchedCategories}
+    hasMorePrefetchedTags={hasMorePrefetchedTags}
 />
 
 

@@ -1293,7 +1293,7 @@ button.wp-saving-button {
 	}
 }
 
-.currently-viewing .bulk-actions-select {
+.currently_viewing .bulk-actions-select {
 	opacity: 1;
 }
 
@@ -1307,4 +1307,143 @@ button.wp-saving-button {
 
 .iso-editor .block-editor-writing-flow .block-editor-block-list__layout .wp-block {
 	outline: none !important;
+}
+
+// Active term styling
+.glossary-term-card.active {
+    border-color: $primary-color !important;
+    box-shadow: 0 2px 4px rgba(0, 124, 186, 0.15) !important;
+}
+
+.active-term-details {
+    .components-card__header {
+        background: color-mix(in srgb, $primary-color 5%, white) !important;
+    }
+}
+
+// Loading state styling
+.glossary-term-card {
+    .components-spinner {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+    }
+}
+
+// Optimized card layout
+.terms-list {
+    .glossary-term-card {
+        transition: all 0.2s ease;
+        
+        &:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        &.active {
+            transform: scale(1.02);
+        }
+    }
+}
+
+// Pill styling for stats
+.pill {
+    background: color-mix(in srgb, $primary-color 10%, white);
+    color: $primary-color;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+// Expanded glossary term card styles
+.glossary-term-card {
+	transition: all 0.1s ease-out; // Much faster transition
+	
+	&.expanded {
+		border: 2px solid $primary-color;
+		box-shadow: 0 4px 12px rgba(56, 88, 233, 0.15);
+		
+		.components-card__header {
+			background: rgba(56, 88, 233, 0.05);
+		}
+		
+		.components-card__body {
+			background: #f9f9f9;
+			border-top: 1px solid #ddd;
+			
+			.components-base-control {
+				margin-bottom: 1.5rem;
+			}
+			
+			.components-textarea-control__input {
+				min-height: 120px;
+			}
+		}
+	}
+	
+	.components-card__header {
+		padding: 16px 20px;
+		transition: background 0.1s ease-out; // Faster header transition
+		
+		h2 {
+			margin: 0 0 8px 0;
+			font-size: 1.1em;
+		}
+		
+		.updated-times {
+			margin: 0;
+			
+			p {
+				margin: 0;
+			}
+		}
+	}
+	
+	.components-card__body {
+		transition: all 0.1s ease-out; // Faster body transition
+		animation: expandCard 0.15s ease-out; // Quick expand animation
+	}
+}
+
+// Quick expand animation
+@keyframes expandCard {
+	from {
+		opacity: 0;
+		max-height: 0;
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+	to {
+		opacity: 1;
+		max-height: 1000px;
+		padding-top: 16px;
+		padding-bottom: 16px;
+	}
+}
+
+// Instant fade-in for content
+@keyframes fadeInFast {
+	from {
+		opacity: 0;
+		transform: translateY(-5px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+// Apply to form elements for snappy feel
+.glossary-term-card.expanded .components-card__body {
+	.components-base-control {
+		animation: fadeInFast 0.1s ease-out;
+		animation-fill-mode: both;
+		
+		&:nth-child(1) { animation-delay: 0ms; }
+		&:nth-child(2) { animation-delay: 20ms; }
+		&:nth-child(3) { animation-delay: 40ms; }
+		&:nth-child(4) { animation-delay: 60ms; }
+	}
 }
