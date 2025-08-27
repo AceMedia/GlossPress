@@ -27,6 +27,8 @@ class AceMediaGlossary_Shortcode {
             true
         );
 
+        wp_enqueue_script('acemedia-glossary-frontend');
+
         wp_enqueue_style(
             'acemedia-glossary-frontend',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-frontend.css',
@@ -41,17 +43,6 @@ class AceMediaGlossary_Shortcode {
     if (!empty($custom_css)) {
         wp_add_inline_style('acemedia-glossary-frontend', $custom_css);
     }
-
-        wp_localize_script(
-            'acemedia-glossary-frontend',
-            'AceMediaGlossaryData',
-            array(
-                'restUrl' => esc_url(rest_url('wp/v2/glossary')),
-                'nonce'   => wp_create_nonce('wp_rest'),
-                'sort'    => esc_attr($atts['sort']),
-                'autoHighlight' => get_option('auto_highlight', 'false') === 'true',
-            )
-        );
 
         // Generate a unique transient key based on attributes
         $transient_key = 'acemedia_glossary_data_' . md5(json_encode($atts));
@@ -72,6 +63,40 @@ class AceMediaGlossary_Shortcode {
             // Cache the glossary data for 12 hours
             set_transient($transient_key, $terms, 12 * HOUR_IN_SECONDS);
         }
+
+        // Prepare preloaded terms data for JavaScript (same format as API response)
+        $preloaded_terms = array();
+        foreach ($terms as $term) {
+            $related_terms = get_post_meta($term->ID, 'related_terms', true);
+            $categories = get_the_terms($term->ID, 'category');
+            $tags = get_the_terms($term->ID, 'post_tag');
+            
+            $preloaded_terms[] = array(
+                'id' => $term->ID,
+                'title' => html_entity_decode($term->post_title, ENT_QUOTES),
+                'content' => html_entity_decode($term->post_content, ENT_QUOTES),
+                'modified' => $term->post_modified,
+                'relatedTerms' => is_array($related_terms) ? array_map('intval', $related_terms) : array(),
+                'categories' => is_array($categories) ? array_map(function($cat) {
+                    return array('id' => $cat->term_id, 'name' => $cat->name);
+                }, $categories) : array(),
+                'tags' => is_array($tags) ? array_map(function($tag) {
+                    return array('id' => $tag->term_id, 'name' => $tag->name);
+                }, $tags) : array(),
+            );
+        }
+
+        wp_localize_script(
+            'acemedia-glossary-frontend',
+            'AceMediaGlossaryData',
+            array(
+                'restUrl' => esc_url(rest_url('wp/v2/glossary')),
+                'nonce'   => wp_create_nonce('wp_rest'),
+                'sort'    => esc_attr($atts['sort']),
+                'autoHighlight' => get_option('auto_highlight', 'false') === 'true',
+                'preloadedTerms' => $preloaded_terms, // Add preloaded terms data
+            )
+        );
 
         // Render terms as static HTML
         ob_start(); ?>

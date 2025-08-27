@@ -5,7 +5,7 @@ import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 
 const GlossaryFrontend = ({ data }) => {
     const [terms, setTerms] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!data.preloadedTerms || data.preloadedTerms.length === 0);
     const [sortOption, setSortOption] = useState(data.sort || 'alphabetical');
     const [openCardId, setOpenCardId] = useState(null);
     const termRefs = useRef({});
@@ -373,10 +373,22 @@ const GlossaryFrontend = ({ data }) => {
     };
 
     useEffect(() => {
-        if (data.preloadedTerms) {
-            setTerms(data.preloadedTerms);
+        if (data.preloadedTerms && data.preloadedTerms.length > 0) {
+            // Use preloaded terms data (no AJAX request needed)
+            setTerms(
+                data.preloadedTerms.map((term) => ({
+                    id: term.id || '',
+                    title: decodeHTMLEntities(term.title || __('Untitled', 'acemedia-glossary')),
+                    content: decodeHTMLEntities(term.content || ''),
+                    modified: term.modified || null,
+                    relatedTerms: term.relatedTerms || [],
+                    categories: term.categories || [],
+                    tags: term.tags || [],
+                }))
+            );
             setLoading(false);
         } else {
+            // Fallback to AJAX request if no preloaded data
             fetchTerms();
         }
     }, [data]);
