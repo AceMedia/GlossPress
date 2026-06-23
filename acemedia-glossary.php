@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AceMedia Glossary
  * Description: A glossary system with React-based admin and frontend interfaces
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: AceMedia
  */
 
