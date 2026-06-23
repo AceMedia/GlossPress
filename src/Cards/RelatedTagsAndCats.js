@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from '@wordpress/element';
 import { Flex, FlexItem, CheckboxControl, Spinner, TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { getRestRoot } from '../utils';
 
 const RelatedTagsAndCats = ({
     term,
@@ -85,7 +86,8 @@ const RelatedTagsAndCats = ({
                     body.tags = selectedTags.map((tag) => tag.id);
                 }
     
-                await fetch(`/wp-json/wp/v2/glossary/${term.id}`, {
+                const restRoot = getRestRoot();
+                await fetch(`${restRoot}/wp/v2/glossary/${term.id}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -118,8 +120,9 @@ const RelatedTagsAndCats = ({
                 const validCategoryIds = term.categories.filter((cat) => cat?.id).map((cat) => cat.id);
     
                 if (validCategoryIds.length > 0) {
+                    const restRoot = getRestRoot();
                     const response = await fetch(
-                        `/wp-json/wp/v2/categories?include=${validCategoryIds.join(',')}`
+                        `${restRoot}/wp/v2/categories?include=${validCategoryIds.join(',')}`
                     );
                     if (!response.ok) throw new Error('Failed to fetch selected categories');
                     const data = await response.json();
@@ -147,8 +150,9 @@ const RelatedTagsAndCats = ({
     
                 // Only proceed if there are valid IDs
                 if (validTagIds.length > 0) {
+                    const restRoot = getRestRoot();
                     const response = await fetch(
-                        `/wp-json/wp/v2/tags?include=${validTagIds.join(',')}`
+                        `${restRoot}/wp/v2/tags?include=${validTagIds.join(',')}`
                     );
                     if (!response.ok) throw new Error('Failed to fetch selected tags');
                     const data = await response.json();
@@ -171,7 +175,8 @@ const RelatedTagsAndCats = ({
     const fetchCategories = useCallback(async (page = 1, search = '') => {
         setLoadingCategories(true);
         try {
-            const response = await fetch(`/wp-json/wp/v2/categories?page=${page}&search=${search}&per_page=20`);
+            const restRoot = getRestRoot();
+            const response = await fetch(`${restRoot}/wp/v2/categories?page=${page}&search=${search}&per_page=20`);
             if (!response.ok) throw new Error('Failed to fetch categories');
             const data = await response.json();
             setCategories((prev) => (page === 1 ? data : [...prev, ...data]));
@@ -187,7 +192,8 @@ const RelatedTagsAndCats = ({
     const fetchTags = useCallback(async (page = 1, search = '') => {
         setLoadingTags(true);
         try {
-            const response = await fetch(`/wp-json/wp/v2/tags?page=${page}&search=${search}&per_page=20`);
+            const restRoot = getRestRoot();
+            const response = await fetch(`${restRoot}/wp/v2/tags?page=${page}&search=${search}&per_page=20`);
             if (!response.ok) throw new Error('Failed to fetch tags');
             const data = await response.json();
             setTags((prev) => (page === 1 ? data : [...prev, ...data]));

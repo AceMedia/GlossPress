@@ -27,19 +27,37 @@ import {
     updateTermCategories,
     updateTermTags,
     fetchPrefetchData,
-    fetchRelatedTermsLookup
+    fetchRelatedTermsLookup,
+    getRestRoot
 } from './utils';
 
 import Modals from './Modals';
 import CardsOptimized from './Cards/CardsOptimized';
 
-
-
 const DEBOUNCE_DELAY = 2000;
+
+const createBlankTerm = () => ({
+    id: Date.now(),
+    title: '',
+    content: '',
+    autoHighlight: false,
+    enablePostRelations: false,
+    relatedTerms: [],
+    categories: [],
+    tags: [],
+    categoryIds: [],
+    tagIds: [],
+    date: new Date().toISOString(),
+    modified: new Date().toISOString(),
+    isOpen: false,
+    isLoaded: true,
+});
 
 const GlossaryAdminApp = () => {
     const [terms, setTerms] = useState([]);
     const [activeTerm, setActiveTerm] = useState(null); // Currently loaded full term data
+    const activeEditorTextareaRef = useRef(null);
+    const [termDrafts, setTermDrafts] = useState({}); // Store draft changes for each term by ID
     const [modifiedTerms, setModifiedTerms] = useState(new Set());
     const [categories, setCategories] = useState([]);
     const [tags, setTags] = useState([]);
@@ -60,9 +78,50 @@ const GlossaryAdminApp = () => {
     const [quickEdit, setQuickEdit] = useState('false'); // Initialize quickEdit state
     const [selectedTerms, setSelectedTerms] = useState([]);
     const [autoHighlight, setAutoHighlight] = useState(false);
+    const [initialAutoHighlight, setInitialAutoHighlight] = useState(false);
+    const [autoHighlightDirty, setAutoHighlightDirty] = useState(false);
+    const [archiveFeaturesEnabled, setArchiveFeaturesEnabled] = useState(true);
+    const [initialArchiveFeatures, setInitialArchiveFeatures] = useState(true);
+    const [archiveFeaturesDirty, setArchiveFeaturesDirty] = useState(false);
+    const [archiveSlug, setArchiveSlug] = useState('glossary');
+    const [initialArchiveSlug, setInitialArchiveSlug] = useState('glossary');
+    const [archiveSlugDirty, setArchiveSlugDirty] = useState(false);
+    const [archiveSlugError, setArchiveSlugError] = useState('');
+    const styleDefaults = useMemo(() => {
+        const defaults = {
+            textColor: '',
+            headingBackgroundColor: '',
+            headingTextColor: '',
+            cardBackgroundColor: '',
+            contentGap: '1.5rem',
+            headingPadding: '1.25rem',
+        };
+
+        if (typeof AceMediaGlossaryAdmin !== 'undefined' && AceMediaGlossaryAdmin.styleDefaults) {
+            return { ...defaults, ...AceMediaGlossaryAdmin.styleDefaults };
+        }
+
+        return defaults;
+    }, []);
+    const colorPalette = useMemo(() => {
+        if (typeof AceMediaGlossaryAdmin !== 'undefined' && Array.isArray(AceMediaGlossaryAdmin.colorPalette)) {
+            return AceMediaGlossaryAdmin.colorPalette;
+        }
+
+        return [];
+    }, []);
+    const [styleSettings, setStyleSettings] = useState(styleDefaults);
+    const [initialStyleSettings, setInitialStyleSettings] = useState(styleDefaults);
+    const [styleSettingsDirty, setStyleSettingsDirty] = useState(false);
+    const stylesEndpoint = useMemo(() => {
+        if (typeof AceMediaGlossaryAdmin !== 'undefined' && AceMediaGlossaryAdmin.stylesEndpoint) {
+            return AceMediaGlossaryAdmin.stylesEndpoint;
+        }
+
+        return '/wp/v2/options/glossary_styles';
+    }, []);
     const isSavingRef = useRef(false);
-    const [newTermTitle, setNewTermTitle] = useState('');
-    const [newTermContent, setNewTermContent] = useState('');
+    const [newTermData, setNewTermData] = useState(() => createBlankTerm());
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
     const [tagFilter, setTagFilter] = useState([]);
     const [categoryFilter, setCategoryFilter] = useState([]);
@@ -75,15 +134,66 @@ const GlossaryAdminApp = () => {
     const [relatedTermsLookup, setRelatedTermsLookup] = useState({});
     const [hasMorePrefetchedCategories, setHasMorePrefetchedCategories] = useState(true);
     const [hasMorePrefetchedTags, setHasMorePrefetchedTags] = useState(true);
+    const siteUrl = useMemo(() => {
+        if (typeof AceMediaGlossaryAdmin !== 'undefined' && AceMediaGlossaryAdmin.siteUrl) {
+            return AceMediaGlossaryAdmin.siteUrl;
+        }
+
+        if (typeof window !== 'undefined' && window.location) {
+            return `${window.location.origin}/`;
+        }
+
+        return '/';
+    }, []);
 
     // Fetch the initial value from wp_option on component mount
     useEffect(() => {
-        fetchFromAPI('/wp-json/wp/v2/options/auto_highlight' ) // Updated to match registered route
+    fetchFromAPI('/wp/v2/options/auto_highlight')
             .then((data) => {
-                setAutoHighlight(data.value === true); // Convert response value to boolean
+                const isEnabled = !!(data && (data.value === true || data.value === 'true'));
+                setAutoHighlight(isEnabled);
+                setInitialAutoHighlight(isEnabled);
+                setAutoHighlightDirty(false);
             })
             .catch((error) => console.error('Error fetching auto_highlight option:', error));
     }, []);
+
+    useEffect(() => {
+    fetchFromAPI('/wp/v2/options/glossary_templates')
+            .then((data) => {
+                const isEnabled = data && typeof data.value !== 'undefined'
+                    ? !!(data.value === true || data.value === 'true')
+                    : true;
+                setArchiveFeaturesEnabled(isEnabled);
+                setInitialArchiveFeatures(isEnabled);
+                setArchiveFeaturesDirty(false);
+            })
+            .catch((error) => console.error('Error fetching glossary_templates option:', error));
+    }, []);
+
+    useEffect(() => {
+    fetchFromAPI('/wp/v2/options/glossary_slug')
+            .then((data) => {
+                const slug = data && typeof data.value === 'string' ? data.value : 'glossary';
+                setArchiveSlug(slug);
+                setInitialArchiveSlug(slug);
+                setArchiveSlugDirty(false);
+                setArchiveSlugError('');
+            })
+            .catch((error) => console.error('Error fetching glossary_slug option:', error));
+    }, []);
+
+    useEffect(() => {
+    fetchFromAPI(stylesEndpoint)
+            .then((data) => {
+                const value = data && typeof data.value === 'object' ? data.value : {};
+                const merged = { ...styleDefaults, ...value };
+                setStyleSettings(merged);
+                setInitialStyleSettings(merged);
+                setStyleSettingsDirty(false);
+            })
+            .catch((error) => console.error('Error fetching glossary_styles option:', error));
+    }, [styleDefaults, stylesEndpoint]);
 
     // Prefetch data for faster card rendering
     useEffect(() => {
@@ -107,97 +217,356 @@ const GlossaryAdminApp = () => {
         prefetchData();
     }, []);
 
-    const saveAutoHighlightOption = (isEnabled) => {
-        apiFetch({
-            path: '/wp-json/wp/v2/options/auto_highlight', // Updated to match registered route
-            method: 'POST',
-            data: { value: isEnabled ? 'true' : 'false' }, // Send as string 'true' or 'false'
-            headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-        })
-            .then(() => console.log('Auto Highlight option updated successfully'))
-            .catch((error) => console.error('Error saving auto_highlight option:', error));
-    };
+    const saveAutoHighlightOption = useCallback((isEnabled) => {
+        return fetchFromAPI(
+            '/wp/v2/options/auto_highlight',
+            'POST',
+            { value: isEnabled ? 'true' : 'false' },
+            { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce }
+        ).catch((error) => {
+            console.error('Error saving auto_highlight option:', error);
+            throw error;
+        });
+    }, []);
 
-    const saveTerms = useCallback((isAutoSave = false) => {
-        if (!unsavedChanges || isSavingRef.current) return;
-    
-        setIsSaving(true);
-        isSavingRef.current = true;
-    
-        // Only save the active term if it exists and has been modified
-        const termsToSave = [];
-        if (activeTerm && modifiedTerms.has(activeTerm.id)) {
-            // Format the data to match API expectations
-            const termData = {
-                id: activeTerm.id,
-                title: activeTerm.title,
-                content: activeTerm.content || '',
-                relatedTerms: activeTerm.relatedTerms || [],
-                categories: activeTerm.categories ? activeTerm.categories.map((cat) => typeof cat === 'object' ? cat.id : cat) : [],
-                tags: activeTerm.tags ? activeTerm.tags.map((tag) => typeof tag === 'object' ? tag.id : tag) : [],
-                autoHighlight: activeTerm.autoHighlight || false,
-            };
-            console.log('Saving term data:', termData);
-            termsToSave.push(termData);
+    const saveArchiveFeaturesOption = useCallback((isEnabled) => {
+        return fetchFromAPI(
+            '/wp/v2/options/glossary_templates',
+            'POST',
+            { value: isEnabled ? 'true' : 'false' },
+            { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce }
+        ).catch((error) => {
+            console.error('Error saving glossary_templates option:', error);
+            throw error;
+        });
+    }, []);
+
+    const saveArchiveSlugOption = useCallback((slug) => {
+        return fetchFromAPI(
+            '/wp/v2/options/glossary_slug',
+            'POST',
+            { value: slug },
+            { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce }
+        );
+    }, []);
+
+    const saveStyleSettingsOption = useCallback((styles) => {
+        return fetchFromAPI(
+            stylesEndpoint,
+            'POST',
+            { value: styles },
+            { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce }
+        );
+    }, [stylesEndpoint]);
+
+    const sanitizeSpacingValue = useCallback((value) => {
+        if (typeof value !== 'string') {
+            return '';
         }
 
-        if (termsToSave.length === 0) {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === '0') {
+            return trimmed === '0' ? '0' : '';
+        }
+
+        return /^\d+(?:\.\d+)?(px|rem|em|%)$/i.test(trimmed) ? trimmed : '';
+    }, []);
+
+    const sanitizeColorValue = useCallback((value) => {
+        if (typeof value !== 'string') {
+            return '';
+    }
+
+        const trimmed = value.trim();
+        if (trimmed === '') {
+            return '';
+        }
+
+        return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(trimmed) ? trimmed : '';
+    }, []);
+
+    const areStyleSettingsEqual = useCallback((a, b) => {
+        const keys = Object.keys(styleDefaults);
+        return keys.every((key) => (a[key] || '') === (b[key] || ''));
+    }, [styleDefaults]);
+
+    const handleStyleSettingChange = useCallback((key, value) => {
+        setStyleSettings((prev) => {
+            const nextValue = key === 'contentGap' || key === 'headingPadding'
+                ? sanitizeSpacingValue(value)
+                : sanitizeColorValue(value);
+
+            if ((prev[key] || '') === (nextValue || '')) {
+                return prev;
+            }
+
+            const next = { ...prev, [key]: nextValue };
+            setStyleSettingsDirty(!areStyleSettingsEqual(next, initialStyleSettings));
+            return next;
+        });
+    }, [sanitizeSpacingValue, sanitizeColorValue, areStyleSettingsEqual, initialStyleSettings]);
+
+    const registerEditorTextarea = useCallback((ref) => {
+        activeEditorTextareaRef.current = ref;
+    }, []);
+
+    const saveTerms = useCallback((isAutoSave = false) => {
+        console.log('🔴 saveTerms() called');
+        console.log('  - unsavedChanges:', unsavedChanges);
+        console.log('  - isSavingRef.current:', isSavingRef.current);
+        console.log('  - modifiedTerms:', Array.from(modifiedTerms));
+        console.log('  - termDrafts:', termDrafts);
+        console.log('  - activeTerm:', activeTerm);
+        
+        if (!unsavedChanges || isSavingRef.current) {
+            console.log('  ⚠️ Exiting early - no changes or already saving');
+            return;
+        }
+
+        if (archiveSlugDirty && archiveSlug === '') {
+            const messageText = __('Archive slug cannot be empty.', 'acemedia-glossary');
+            setMessage(messageText);
+            setTimeout(() => setMessage(''), 4000);
+            return;
+        }
+
+        const hasTermChanges = modifiedTerms.size > 0;
+
+        if (!hasTermChanges && !autoHighlightDirty && !archiveFeaturesDirty && !archiveSlugDirty && !styleSettingsDirty) {
+            console.log('  ⚠️ No actual changes to save');
+            setUnsavedChanges(false);
+            return;
+        }
+
+        console.log('  ✅ Proceeding with save...');
+        setIsSaving(true);
+        isSavingRef.current = true;
+
+        const operations = [];
+        const startTime = performance.now();
+
+        // Save all modified terms using their draft data
+        if (hasTermChanges) {
+            console.log('  📝 Saving', modifiedTerms.size, 'modified terms');
+            Array.from(modifiedTerms).forEach((termId) => {
+                const draftData = termDrafts[termId] || {};
+                const isActiveTermTarget = activeTerm && activeTerm.id === termId;
+                const liveEditorValue = isActiveTermTarget ? activeEditorTextareaRef.current?.value : undefined;
+                const effectiveDraftData = {
+                    ...draftData,
+                    ...(typeof liveEditorValue === 'string' ? { content: liveEditorValue } : {}),
+                };
+
+                console.log('    - Term', termId, 'draft data:', effectiveDraftData);
+
+                // Find the original term data to merge with drafts
+                const originalTerm = terms.find(t => t.id === termId);
+                const baseData = activeTerm && activeTerm.id === termId ? activeTerm : originalTerm;
+                
+                if (!baseData) {
+                    console.log('    ⚠️ No base data for term', termId);
+                    return;
+                }
+
+                const termData = {
+                    id: termId,
+                    title: effectiveDraftData.title ?? baseData.title,
+                    content: effectiveDraftData.content ?? baseData.content ?? '',
+                    relatedTerms: effectiveDraftData.relatedTerms ?? baseData.relatedTerms ?? [],
+                    categories: effectiveDraftData.categories 
+                        ? effectiveDraftData.categories.map((cat) => (typeof cat === 'object' ? cat.id : cat))
+                        : (baseData.categories ?? []).map((cat) => (typeof cat === 'object' ? cat.id : cat)),
+                    tags: effectiveDraftData.tags 
+                        ? effectiveDraftData.tags.map((tag) => (typeof tag === 'object' ? tag.id : tag))
+                        : (baseData.tags ?? []).map((tag) => (typeof tag === 'object' ? tag.id : tag)),
+                    autoHighlight: effectiveDraftData.autoHighlight ?? baseData.autoHighlight ?? false,
+                    enablePostRelations: effectiveDraftData.enablePostRelations ?? baseData.enablePostRelations ?? false,
+                };
+
+                console.log('    🚀 Sending to API:', {
+                    id: termData.id,
+                    title: termData.title,
+                    contentLength: termData.content?.length || 0,
+                    content: termData.content
+                });
+
+                operations.push(
+                    fetchFromAPI(
+                        '/wp/v2/glossary',
+                        'POST',
+                        termData,
+                        { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce }
+                    ).then((response) => {
+                        console.log('    ✅ API response:', response);
+
+                        const savedId = response?.id || termData.id;
+                        const savedModified = new Date().toISOString();
+
+                        // Update active term if it's the one being saved
+                        setActiveTerm((prev) => {
+                            if (!prev || prev.id !== savedId) {
+                                return prev;
+                            }
+                            return { ...prev, title: termData.title, modified: savedModified };
+                        });
+
+                        // Update terms list
+                        setTerms((prevTerms) =>
+                            prevTerms.map((term) =>
+                                term.id === savedId
+                                    ? { ...term, title: termData.title, modified: savedModified }
+                                    : term
+                            )
+                        );
+
+                        return response;
+                    })
+                );
+            });
+        }
+
+        if (autoHighlightDirty) {
+            operations.push(
+                saveAutoHighlightOption(autoHighlight).then((response) => {
+                    setInitialAutoHighlight(autoHighlight);
+                    setAutoHighlightDirty(false);
+                    return response;
+                })
+            );
+        }
+
+        if (archiveFeaturesDirty) {
+            operations.push(
+                saveArchiveFeaturesOption(archiveFeaturesEnabled).then((response) => {
+                    setInitialArchiveFeatures(archiveFeaturesEnabled);
+                    setArchiveFeaturesDirty(false);
+                    return response;
+                })
+            );
+        }
+
+        if (archiveSlugDirty) {
+            operations.push(
+                saveArchiveSlugOption(archiveSlug)
+                    .then((response) => {
+                        const savedSlug = response && typeof response.value === 'string' ? response.value : archiveSlug;
+                        setInitialArchiveSlug(savedSlug);
+                        setArchiveSlug(savedSlug);
+                        setArchiveSlugDirty(false);
+                        setArchiveSlugError('');
+                        return response;
+                    })
+                    .catch((error) => {
+                        const errorMessage = error?.message || __('Error saving archive slug.', 'acemedia-glossary');
+                        setArchiveSlugError(errorMessage);
+                        throw error;
+                    })
+            );
+        }
+
+        if (styleSettingsDirty) {
+            const payload = { ...styleDefaults, ...styleSettings };
+            operations.push(
+                saveStyleSettingsOption(payload)
+                    .then((response) => {
+                        const savedValue = response && typeof response.value === 'object' ? { ...styleDefaults, ...response.value } : payload;
+                        setInitialStyleSettings(savedValue);
+                        setStyleSettings(savedValue);
+                        setStyleSettingsDirty(false);
+                        return response;
+                    })
+                    .catch((error) => {
+                        console.error('Error saving glossary styles option:', error);
+                        throw error;
+                    })
+            );
+        }
+
+        if (!operations.length) {
             setIsSaving(false);
             isSavingRef.current = false;
             return;
         }
 
-        const startTime = performance.now();
-        const savePromises = termsToSave.map((term) =>
-            apiFetch({
-                path: '/wp-json/wp/v2/glossary',
-                method: 'POST',
-                data: term,
-                headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
-            })
-        );
-    
-        Promise.all(savePromises)
-    .then((responses) => {
-        const endTime = performance.now();
-        const responseTime = Math.round(endTime - startTime);
+        Promise.all(operations)
+            .then(() => {
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
 
-        // Update the activeTerm with the saved data
-        if (activeTerm && responses.length > 0) {
-            const savedId = responses[0].id;
-            setActiveTerm(prev => ({ ...prev, modified: new Date().toISOString() }));
-            
-            // Update the term in the terms list
-            setTerms(prevTerms => 
-                prevTerms.map(term => 
-                    term.id === savedId 
-                        ? { ...term, title: activeTerm.title, modified: new Date().toISOString() }
-                        : term
-                )
-            );
+                // Clear modified terms and drafts after successful save
+                setModifiedTerms(new Set());
+                setTermDrafts({});
+                setUnsavedChanges(false);
+                isSavingRef.current = false;
+
+                const successMessage = isAutoSave
+                    ? `Auto-saved successfully! (${responseTime}ms)`
+                    : `Changes saved successfully! (${responseTime}ms)`;
+
+                setMessage(successMessage);
+                setTimeout(() => setMessage(''), 3000);
+            })
+            .catch((error) => {
+                console.error('Error saving changes:', error);
+                setMessage('Error saving changes');
+                setTimeout(() => setMessage(''), 3000);
+                isSavingRef.current = false;
+            })
+            .finally(() => {
+                setIsSaving(false);
+            });
+    }, [unsavedChanges, archiveSlugDirty, archiveSlug, modifiedTerms, termDrafts, autoHighlightDirty, archiveFeaturesDirty, saveAutoHighlightOption, autoHighlight, saveArchiveFeaturesOption, archiveFeaturesEnabled, saveArchiveSlugOption, styleSettingsDirty, styleSettings, saveStyleSettingsOption, styleDefaults, activeTerm]);
+
+    const sanitizeSlugValue = useCallback((value) => {
+        if (typeof value !== 'string') {
+            return '';
         }
 
-        setModifiedTerms(new Set());
-        setUnsavedChanges(false);
-        isSavingRef.current = false;
+        return value
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+    }, []);
 
-        const successMessage = isAutoSave 
-            ? `Auto-saved successfully! (${responseTime}ms)`
-            : `Changes saved successfully! (${responseTime}ms)`;
+    const handleAutoHighlightToggle = useCallback((isEnabled) => {
+        setAutoHighlight(isEnabled);
+        setAutoHighlightDirty(isEnabled !== initialAutoHighlight);
+    }, [initialAutoHighlight]);
 
-        setMessage(successMessage); // Set message for SaveBar
-        setTimeout(() => setMessage(''), 3000); // Clear the message after 3 seconds
-    })
-    .catch((error) => {
-        console.error('Error saving terms:', error);
-        setMessage('Error saving changes');
-        setTimeout(() => setMessage(''), 3000); // Clear the error message
-        isSavingRef.current = false;
-    })
-    .finally(() => {
-        setIsSaving(false);
-    });
-    }, [activeTerm, modifiedTerms, unsavedChanges]);
+    const handleArchiveFeaturesToggle = useCallback((isEnabled) => {
+        setArchiveFeaturesEnabled(isEnabled);
+        setArchiveFeaturesDirty(isEnabled !== initialArchiveFeatures);
+    }, [initialArchiveFeatures]);
+
+    const handleArchiveSlugChange = useCallback((value) => {
+        const sanitized = sanitizeSlugValue(value);
+        setArchiveSlug(sanitized);
+        setArchiveSlugDirty(sanitized !== initialArchiveSlug);
+        setArchiveSlugError(sanitized === '' ? __('Archive slug cannot be empty.', 'acemedia-glossary') : '');
+    }, [sanitizeSlugValue, initialArchiveSlug]);
+
+    useEffect(() => {
+        const hasTermChanges = modifiedTerms.size > 0;
+        setUnsavedChanges(hasTermChanges || autoHighlightDirty || archiveFeaturesDirty || archiveSlugDirty || styleSettingsDirty);
+    }, [modifiedTerms, autoHighlightDirty, archiveFeaturesDirty, archiveSlugDirty, styleSettingsDirty]);
+
+    // Warn user before leaving page with unsaved changes
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (unsavedChanges) {
+                e.preventDefault();
+                e.returnValue = ''; // Chrome requires returnValue to be set
+                return ''; // Some browsers show this message
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [unsavedChanges]);
 
 
 
@@ -213,7 +582,20 @@ const GlossaryAdminApp = () => {
     useEffect(() => {
         const startTime = performance.now();
     
-        fetchFromAPI('/wp-json/wp/v2/glossary')
+        // Clean up orphaned related term references on load
+        fetchFromAPI('/wp/v2/glossary/cleanup-orphans', 'POST', {}, {
+            'X-WP-Nonce': AceMediaGlossaryAdmin.nonce
+        })
+            .then((response) => {
+                if (response.removed_references > 0) {
+                    console.log(response.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error cleaning up orphaned references:', error);
+            });
+
+        fetchFromAPI('/wp/v2/glossary')
             .then((data) => {
                 const endTime = performance.now();
                 setLoadTime(endTime - startTime);
@@ -224,14 +606,14 @@ const GlossaryAdminApp = () => {
                 setLoadTime(null);
             });
     
-        fetchFromAPI('/wp-json/wp/v2/categories' )
+        fetchFromAPI('/wp/v2/categories' )
             .then((data) => setCategories(data.map(cat => ({
                 label: cat.name,
                 value: cat.id,
             }))))
             .catch((error) => console.error('Error loading categories:', error));
 
-        fetchFromAPI('/wp-json/wp/v2/tags?per_page=10' )
+        fetchFromAPI('/wp/v2/tags?per_page=10' )
             .then((data) => setTags(data.map(tag => ({
                 label: tag.name,
                 value: tag.id,
@@ -246,7 +628,7 @@ const GlossaryAdminApp = () => {
 
 useEffect(() => {
     apiFetch({
-        path: '/wp-json/wp/v2/get-custom-css',
+        path: '/wp/v2/get-custom-css',
         headers: {
             'X-WP-Nonce': AceMediaGlossaryAdmin.nonce, // Add nonce for validation
         },
@@ -267,7 +649,8 @@ useEffect(() => {
 
 const handleDownload = useCallback(() => {
     // Trigger the PHP export function via an API call
-    fetch('/wp-json/wp/v2/glossary/export', {
+    const restRoot = getRestRoot();
+    fetch(`${restRoot}/wp/v2/glossary/export`, {
         method: 'GET',
         headers: {
             'X-WP-Nonce': AceMediaGlossaryAdmin.nonce, // Adjust if you have CSRF protection
@@ -304,7 +687,7 @@ useEffect(() => {
     const cleanup = setupDragAndDrop({
         onFileDrop: async (importedTerms) => {
             return await apiFetch({
-                path: '/wp-json/wp/v2/glossary/import',
+                path: '/wp/v2/glossary/import',
                 method: 'POST',
                 data: importedTerms,
                 headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
@@ -400,20 +783,6 @@ useEffect(() => {
     }, [terms, sortOption, debouncedSearchQuery, tagFilter, categoryFilter]);
            
 
-
-    
-
-
-const [newTermData, setNewTermData] = useState({
-    id: Date.now(),
-    title: '',
-    content: '',
-    date: new Date().toISOString(),
-    modified: new Date().toISOString(),
-    relatedTerms: [],
-    categories: [],
-    tags: []
-});
 
 const deleteSelectedTerms = async () => {
     if (!selectedTerms.length) {
@@ -516,17 +885,8 @@ const removeTerm = async (termId) => {
 
 
 const openModalForNewTerm = () => {
+        setNewTermData(createBlankTerm());
         setIsModalOpen(true);
-        setNewTermData({
-            id: Date.now(), // Temporary ID for the new term
-            title: '',
-            content: '',
-            relatedTerms: [],
-            categories: [],
-            tags: [],
-            date: new Date().toISOString(),
-            modified: new Date().toISOString()
-        });
     };
 
 
@@ -539,22 +899,73 @@ useEffect(() => {
     
     // Function to load a single term with full data
     const loadSingleTerm = useCallback(async (termId) => {
-        if (activeTerm && activeTerm.id === termId) {
+        if (activeTerm && activeTerm.id === termId && activeTerm.isLoaded) {
             return activeTerm; // Already loaded
         }
 
+        const termSummary = terms.find(term => term.id === termId) || {};
+        const draftSnapshot = termDrafts[termId] || {};
+
+        setActiveTerm({
+            ...termSummary,
+            ...draftSnapshot,
+            id: termSummary.id ?? termId,
+            content: draftSnapshot.content ?? termSummary.content ?? '',
+            isOpen: true,
+            isLoaded: false,
+            isLoading: true,
+        });
+
         setIsLoadingTerm(true);
         try {
+            // Always fetch the full term data from API to ensure we have complete data
+            // (The terms list only contains summary info without content)
             const termData = await fetchSingleTerm(termId);
+            
+            // Apply any draft changes if they exist for this term
+            const draftChanges = termDrafts[termId] || {};
+            
+            console.log('Loading term:', termId);
+            console.log('Fresh data from API:', termData);
+            console.log('Draft changes:', draftChanges);
+            console.log('Has draft content?', !!draftChanges.content);
             
             // Ensure the term is marked as open when we set it as active
             const activeTermData = {
                 ...termData,
+                ...draftChanges, // Apply draft changes on top of fresh data
                 isOpen: true,
-                isLoaded: true
+                isLoaded: true,
+                isLoading: false,
             };
             
-            setActiveTerm(activeTermData);
+            console.log('Final active term data:', activeTermData);
+            console.log('Content length:', activeTermData.content?.length || 0);
+            
+            setActiveTerm(prev => ({
+                ...prev,
+                ...activeTermData,
+            }));
+
+            setTermDrafts(prevDrafts => {
+                if (prevDrafts[termId]) {
+                    return prevDrafts;
+                }
+                return {
+                    ...prevDrafts,
+                    [termId]: {
+                        title: activeTermData.title,
+                        content: activeTermData.content,
+                        autoHighlight: !!activeTermData.autoHighlight,
+                        enablePostRelations: !!activeTermData.enablePostRelations,
+                        relatedTerms: Array.isArray(activeTermData.relatedTerms) ? [...activeTermData.relatedTerms] : [],
+                        categories: Array.isArray(activeTermData.categories) ? [...activeTermData.categories] : [],
+                        tags: Array.isArray(activeTermData.tags) ? [...activeTermData.tags] : [],
+                        categoryIds: Array.isArray(activeTermData.categoryIds) ? [...activeTermData.categoryIds] : [],
+                        tagIds: Array.isArray(activeTermData.tagIds) ? [...activeTermData.tagIds] : [],
+                    },
+                };
+            });
             
             // Update the terms list to mark this term as loaded and open
             setTerms(prevTerms => 
@@ -574,7 +985,7 @@ useEffect(() => {
         } finally {
             setIsLoadingTerm(false);
         }
-    }, [activeTerm]);
+    }, [activeTerm, termDrafts, terms]);
 
     // Function to close the active term
     const closeActiveTerm = useCallback(() => {
@@ -588,10 +999,77 @@ useEffect(() => {
     const updateActiveTerm = useCallback((key, value) => {
         if (!activeTerm) return;
         
-        console.log('updateActiveTerm called:', { key, value, termId: activeTerm.id });
+        console.log('updateActiveTerm called:', key, '=', value?.substring?.(0, 50) || value);
+        
+        // For 'content' key, only update drafts to avoid re-renders while typing
+        // The editor maintains its own internal state
+        if (key === 'content') {
+            // Store the change in drafts only
+            setTermDrafts(prev => {
+                const newDrafts = {
+                    ...prev,
+                    [activeTerm.id]: {
+                        ...(prev[activeTerm.id] || {}),
+                        [key]: value
+                    }
+                };
+                console.log('Updated termDrafts (content):', newDrafts[activeTerm.id]);
+                return newDrafts;
+            });
+            
+            // Mark as modified
+            setModifiedTerms(prev => {
+                if (prev.has(activeTerm.id)) {
+                    return prev;
+                }
+                const newSet = new Set(prev);
+                newSet.add(activeTerm.id);
+                console.log('Term marked as modified:', activeTerm.id);
+                return newSet;
+            });
+            setUnsavedChanges(true);
+            return; // Don't update activeTerm state for content
+        }
+        
+        // For other keys (title, toggles, etc.), update activeTerm state
         setActiveTerm(prev => ({ ...prev, [key]: value }));
-        setModifiedTerms(prev => new Set([...prev, activeTerm.id]));
+        
+        // Store the change in drafts
+        setTermDrafts(prev => {
+            const newDrafts = {
+                ...prev,
+                [activeTerm.id]: {
+                    ...(prev[activeTerm.id] || {}),
+                    [key]: value
+                }
+            };
+            console.log('Updated termDrafts:', newDrafts);
+            return newDrafts;
+        });
+        
+        // Only update modifiedTerms if this term isn't already in the set
+        setModifiedTerms(prev => {
+            if (prev.has(activeTerm.id)) {
+                return prev; // Return same Set to avoid re-render
+            }
+            const newSet = new Set(prev);
+            newSet.add(activeTerm.id);
+            console.log('Term marked as modified:', activeTerm.id);
+            return newSet;
+        });
         setUnsavedChanges(true);
+        
+        // Update these specific fields in the terms list immediately for UI feedback
+        if (key === 'autoHighlight' || key === 'enablePostRelations') {
+            setTerms(prevTerms => {
+                const termIndex = prevTerms.findIndex(term => term.id === activeTerm.id);
+                if (termIndex === -1) return prevTerms;
+                
+                const newTerms = [...prevTerms];
+                newTerms[termIndex] = { ...newTerms[termIndex], [key]: value };
+                return newTerms;
+            });
+        }
     }, [activeTerm]);
 
     // Separate optimized function for title sync to avoid re-rendering all terms
@@ -599,6 +1077,16 @@ useEffect(() => {
         if (!activeTerm) return;
         
         setActiveTerm(prev => ({ ...prev, title }));
+        
+        // Store the change in drafts
+        setTermDrafts(prev => ({
+            ...prev,
+            [activeTerm.id]: {
+                ...(prev[activeTerm.id] || {}),
+                title: title
+            }
+        }));
+        
         setModifiedTerms(prev => new Set([...prev, activeTerm.id]));
         setUnsavedChanges(true);
         
@@ -635,8 +1123,17 @@ useEffect(() => {
                 tagFilter={tagFilter}
                 categoryFilter={categoryFilter}
                 autoHighlight={autoHighlight}
-                setAutoHighlight={setAutoHighlight}
-                saveAutoHighlightOption={saveAutoHighlightOption}
+                onAutoHighlightToggle={handleAutoHighlightToggle}
+                archiveFeaturesEnabled={archiveFeaturesEnabled}
+                onArchiveFeaturesToggle={handleArchiveFeaturesToggle}
+                archiveSlug={archiveSlug}
+                archiveSlugError={archiveSlugError}
+                onArchiveSlugChange={handleArchiveSlugChange}
+                siteUrl={siteUrl}
+                styleSettings={styleSettings}
+                onStyleSettingChange={handleStyleSettingChange}
+                styleDefaults={styleDefaults}
+                colorPalette={colorPalette}
                 customCss={customCss}
                 setIsCssModalOpen={setIsCssModalOpen}
                 handleDownload={handleDownload}
@@ -665,6 +1162,7 @@ useEffect(() => {
     selectedTerms={selectedTerms}
     setSelectedTerms={setSelectedTerms}
     setTerms={setTerms}
+    modifiedTerms={modifiedTerms}
     setModifiedTerms={setModifiedTerms}
     setUnsavedChanges={setUnsavedChanges}
     setQuickEdit={setQuickEdit}
@@ -683,6 +1181,8 @@ useEffect(() => {
     relatedTermsLookup={relatedTermsLookup}
     hasMorePrefetchedCategories={hasMorePrefetchedCategories}
     hasMorePrefetchedTags={hasMorePrefetchedTags}
+    globalAutoHighlightEnabled={autoHighlight}
+    registerEditorTextarea={registerEditorTextarea}
 />
 
 
@@ -725,22 +1225,23 @@ useEffect(() => {
 <Modals
     isModalOpen={isModalOpen}
     isCssModalOpen={isCssModalOpen}
-    newTermTitle={newTermTitle}
-    newTermContent={newTermContent}
+    newTermData={newTermData}
     customCss={customCss}
+    prefetchedCategories={prefetchedCategories}
+    prefetchedTags={prefetchedTags}
+    relatedTermsLookup={relatedTermsLookup}
+    hasMorePrefetchedCategories={hasMorePrefetchedCategories}
+    hasMorePrefetchedTags={hasMorePrefetchedTags}
     setIsModalOpen={setIsModalOpen}
     setIsCssModalOpen={setIsCssModalOpen}
-    setNewTermTitle={setNewTermTitle}
-    setNewTermContent={setNewTermContent}
+    setNewTermData={setNewTermData}
     setCustomCss={setCustomCss}
     setTerms={setTerms}
-    setModifiedTerms={setModifiedTerms}
-    setUnsavedChanges={setUnsavedChanges}
+    setRelatedTermsLookup={setRelatedTermsLookup}
     setMessage={setMessage}
     saveCss={saveCss}
     apiFetch={apiFetch}
 />
-
 
         </>
     );

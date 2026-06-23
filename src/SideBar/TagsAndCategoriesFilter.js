@@ -3,6 +3,7 @@ import { PanelBody, Button, TextControl, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolderClosed, faTags } from '@fortawesome/free-solid-svg-icons';
+import { getRestRoot } from '../utils';
 
 const TagsAndCategoriesFilter = ({
     tags,
@@ -67,7 +68,8 @@ const TagsAndCategoriesFilter = ({
         if (isFetchingTags || (!hasMoreTags && search === '')) return;
         setIsFetchingTags(true);
         try {
-            const response = await fetch(`/wp-json/wp/v2/tags?per_page=10&page=${page}&search=${search}`);
+            const restRoot = getRestRoot();
+            const response = await fetch(`${restRoot}/wp/v2/tags?per_page=10&page=${page}&search=${search}`);
             if (!response.ok) throw new Error('Failed to fetch tags');
             const newTags = await response.json();
 
@@ -91,7 +93,8 @@ const TagsAndCategoriesFilter = ({
         if (isFetchingCategories || (!hasMoreCategories && search === '')) return;
         setIsFetchingCategories(true);
         try {
-            const response = await fetch(`/wp-json/wp/v2/categories?per_page=10&page=${page}&search=${search}`);
+            const restRoot = getRestRoot();
+            const response = await fetch(`${restRoot}/wp/v2/categories?per_page=10&page=${page}&search=${search}`);
             if (!response.ok) throw new Error('Failed to fetch categories');
             const newCategories = await response.json();
 

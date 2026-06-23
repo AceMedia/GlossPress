@@ -1,0 +1,28 @@
+<!-- wp:template-part {"slug":"header","tagName":"header"} /-->
+<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->
+<main class="wp-block-group">
+<!-- wp:post-title {"level":1} /-->
+<!-- wp:post-content /-->
+<!-- wp:group {"tagName":"section","className":"glossary-related-posts","layout":{"type":"constrained"}} -->
+<section class="wp-block-group glossary-related-posts">
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Related Posts</h2>
+<!-- /wp:heading -->
+<!-- wp:query {"queryId":0,"query":{"perPage":6,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"exclude","inherit":false},"displayLayout":{"type":"list"},"className":"acemedia-glossary-related-query"} -->
+<div class="wp-block-query acemedia-glossary-related-query">
+<!-- wp:post-template -->
+<!-- wp:post-title {"isLink":true} /-->
+<!-- wp:post-excerpt {"moreText":"Read more"} /-->
+<!-- /wp:post-template -->
+<!-- wp:query-no-results -->
+<!-- wp:paragraph -->
+<p>No related posts found.</p>
+<!-- /wp:paragraph -->
+<!-- /wp:query-no-results -->
+</div>
+<!-- /wp:query -->
+</section>
+<!-- /wp:group -->
+</main>
+<!-- /wp:group -->
+<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->

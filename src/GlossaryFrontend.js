@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from '@wordpress/element';
+import { Fragment, useState, useEffect, useMemo, useRef } from '@wordpress/element';
 import { Spinner, TextControl, PanelBody, ToggleControl, Flex, FlexItem, Card, CardHeader, CardBody } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
+import { getRestRoot } from './utils';
 
 const GlossaryFrontend = ({ data }) => {
     const [terms, setTerms] = useState([]);
@@ -10,6 +11,9 @@ const GlossaryFrontend = ({ data }) => {
     const [openCardId, setOpenCardId] = useState(null);
     const termRefs = useRef({});
     const [searchQuery, setSearchQuery] = useState(''); // State for search query
+    const [suggestions, setSuggestions] = useState([]); // State for search suggestions
+    const [showSuggestions, setShowSuggestions] = useState(false); // Control suggestions dropdown
+    const searchRef = useRef(null); // Ref for search container
  
     const generateAnchorId = (title) => {
         return title
@@ -34,6 +38,53 @@ const GlossaryFrontend = ({ data }) => {
             }
         }
     }, [loading]);
+
+    // Handle clicks outside search to close suggestions
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Generate suggestions based on search query
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        const query = searchQuery.toLowerCase();
+        const matches = terms
+            .filter(term => 
+                term.title.toLowerCase().includes(query) ||
+                term.content?.toLowerCase().includes(query)
+            )
+            .slice(0, 10) // Limit to 10 suggestions
+            .map(term => ({
+                id: term.id,
+                title: term.title,
+                anchorId: generateAnchorId(term.title)
+            }));
+
+        setSuggestions(matches);
+        setShowSuggestions(matches.length > 0);
+    }, [searchQuery, terms]);
+
+    // No longer needed - using CSS sticky positioning instead of JS scroll handling
+
+    const handleSuggestionClick = (suggestion) => {
+        setSearchQuery(suggestion.title);
+        setShowSuggestions(false);
+        toggleCard(suggestion.title, true);
+    };
 
 
     const toggleCard = (title, shouldScrollOnly = false) => {
@@ -134,45 +185,59 @@ const GlossaryFrontend = ({ data }) => {
     
     const GlossaryItem = ({ term, isOpen, onToggle }) => {
         const [relatedPosts, setRelatedPosts] = useState([]);
+        const [relatedPostsMeta, setRelatedPostsMeta] = useState(null);
         const [loadingRelatedPosts, setLoadingRelatedPosts] = useState(false);
+        const [showAllSeeAlso, setShowAllSeeAlso] = useState(false);
         const anchorId = generateAnchorId(term.title);
 
     
         useEffect(() => {
             const fetchRelatedPosts = async () => {
-                if (!isOpen) return;
-            
-                const categoryIds = term.categories.map((cat) => cat.id);
-                const tagIds = term.tags.map((tag) => tag.id);
-            
-                if (categoryIds.length === 0 && tagIds.length === 0) {
+                // Skip fetching if post relations are disabled for this term
+                if (!isOpen || !term.enablePostRelations) {
                     setRelatedPosts([]);
+                    setRelatedPostsMeta(null);
                     return;
                 }
-            
+
+                const categoryIds = term.categories.map((cat) => cat.id);
+                const tagIds = term.tags.map((tag) => tag.id);
                 setLoadingRelatedPosts(true);
             
                 try {
                     const params = new URLSearchParams();
+                    params.append('term_id', term.id);
+                    params.append('search', term.title);
                     if (categoryIds.length > 0) params.append('categories', categoryIds.join(','));
                     if (tagIds.length > 0) params.append('tags', tagIds.join(','));
                     params.append('per_page', 3);
             
-                    const response = await fetch(`/wp-json/wp/v2/related-posts?${params.toString()}`);
-                    const posts = await response.json();
-                    setRelatedPosts(posts);
+                    const restRoot = getRestRoot();
+                    const response = await fetch(`${restRoot}/wp/v2/related-posts?${params.toString()}`);
+                    if (!response.ok) {
+                        throw new Error(`Request failed with status ${response.status}`);
+                    }
+
+                    const payload = await response.json();
+                    const postsArray = Array.isArray(payload?.posts)
+                        ? payload.posts
+                        : Array.isArray(payload)
+                            ? payload
+                            : [];
+
+                    setRelatedPosts(postsArray);
+                    setRelatedPostsMeta(payload?.meta || null);
                 } catch (error) {
                     console.error('Error fetching related posts:', error);
                     setRelatedPosts([]);
+                    setRelatedPostsMeta(null);
                 } finally {
                     setLoadingRelatedPosts(false);
                 }
             };
             
-            if (isOpen) {
-                fetchRelatedPosts();
-            }
-        }, [isOpen, term.categories, term.tags]);
+            fetchRelatedPosts();
+        }, [isOpen, term.categories, term.tags, term.id, term.title]);
     
         useEffect(() => {
             const script = document.createElement('script');
@@ -232,12 +297,12 @@ const GlossaryFrontend = ({ data }) => {
                         {term.relatedTerms.length > 0 && (
                             <div className="see-also">
                                 <strong>{__('See Also:', 'acemedia-glossary')}{' '}</strong>
-                                {term.relatedTerms.map((relatedId, index) => {
+                                {term.relatedTerms.slice(0, showAllSeeAlso ? term.relatedTerms.length : 10).map((relatedId, index, array) => {
                                     const relatedTerm = terms.find((t) => t.id === relatedId);
                                     const relatedAnchorId = relatedTerm ? generateAnchorId(relatedTerm.title) : null;
                                     const termTitle = relatedTerm ? relatedTerm.title : __('Unknown Term', 'acemedia-glossary');
-                                    const isLast = index === term.relatedTerms.length - 1;
-                                    const isSecondLast = index === term.relatedTerms.length - 2;
+                                    const isLast = index === array.length - 1;
+                                    const isSecondLast = index === array.length - 2;
     
                                     return (
                                         <span key={relatedId}>
@@ -265,6 +330,29 @@ const GlossaryFrontend = ({ data }) => {
                                         </span>
                                     );
                                 })}
+                                {term.relatedTerms.length > 10 && (
+                                    <span>
+                                        {!showAllSeeAlso && ', '}
+                                        <a
+                                            href="#"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setShowAllSeeAlso(!showAllSeeAlso);
+                                            }}
+                                            style={{ 
+                                                fontWeight: 'bold',
+                                                textDecoration: 'underline',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            {showAllSeeAlso 
+                                                ? __('Show less', 'acemedia-glossary')
+                                                : `${__('See more', 'acemedia-glossary')} (${term.relatedTerms.length - 10})`
+                                            }
+                                        </a>
+                                    </span>
+                                )}
                             </div>
                         )}
     
@@ -314,28 +402,45 @@ const GlossaryFrontend = ({ data }) => {
                         )}
     
                         {/* Related Posts Section */}
-                        <div className="related-posts">
-                            <strong>{__('Related Posts:', 'acemedia-glossary')}{' '}</strong>
-                            {loadingRelatedPosts ? (
-                                <span>{__('Loading...', 'acemedia-glossary')}</span>
-                            ) : relatedPosts.length > 0 ? (
-                                relatedPosts.map((post, index) => {
-                                    const isLast = index === relatedPosts.length - 1;
-                                    const isSecondLast = index === relatedPosts.length - 2;
-    
-                                    return (
-                                        <>
-                                            <a href={post.link} target="_blank" rel="noopener noreferrer" key={post.id}>
-                                                {post.title}
-                                            </a>
-                                            {!isLast && (isSecondLast ? ' & ' : ', ')}
-                                        </>
-                                    );
-                                })
-                            ) : (
-                                <span>{__('No related posts found.', 'acemedia-glossary')}</span>
-                            )}
-                        </div>
+                        {term.enablePostRelations && (
+                            <div className="related-posts">
+                                <strong>{__('Related Posts:', 'acemedia-glossary')}{' '}</strong>
+                                {loadingRelatedPosts ? (
+                                    <span>{__('Loading...', 'acemedia-glossary')}</span>
+                                ) : relatedPosts.length > 0 ? (
+                                    relatedPosts.map((post, index) => {
+                                        const isLast = index === relatedPosts.length - 1;
+                                        const isSecondLast = index === relatedPosts.length - 2;
+
+                                        return (
+                                            <Fragment key={post.id}>
+                                                <a href={post.link} target="_blank" rel="noopener noreferrer">
+                                                    {post.title}
+                                                </a>
+                                                {!isLast && (isSecondLast ? ' & ' : ', ')}
+                                            </Fragment>
+                                        );
+                                    })
+                                ) : (
+                                    <span>{__('No related posts found.', 'acemedia-glossary')}</span>
+                                )}
+                                {relatedPostsMeta && relatedPosts.length === 0 && (
+                                    <div className="related-posts-meta">
+                                        {relatedPostsMeta.search_term && (
+                                            <small>
+                                                {__('Search term:', 'acemedia-glossary')}{' '}
+                                                <code>{relatedPostsMeta.search_term}</code>
+                                            </small>
+                                        )}
+                                        {relatedPostsMeta.used_fallback && (
+                                            <small>
+                                                {__('Showing fallback results based on shared categories/tags.', 'acemedia-glossary')}
+                                            </small>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </CardBody>
                 )}
             </Card>
@@ -363,6 +468,7 @@ const GlossaryFrontend = ({ data }) => {
                     relatedTerms: term.relatedTerms || [],
                     categories: term.categories || [],
                     tags: term.tags || [],
+                    enablePostRelations: term.enablePostRelations || false,
                 }))
             );
         } catch (error) {
@@ -384,6 +490,7 @@ const GlossaryFrontend = ({ data }) => {
                     relatedTerms: term.relatedTerms || [],
                     categories: term.categories || [],
                     tags: term.tags || [],
+                    enablePostRelations: term.enablePostRelations || false,
                 }))
             );
             setLoading(false);
@@ -451,94 +558,82 @@ const GlossaryFrontend = ({ data }) => {
                 <>
 
 
-                    {/* Search Field */}
-                    <div className="glossary-search">
+                    {/* Search Field with Suggestions */}
+                    <div className="glossary-search" ref={searchRef}>
                         <TextControl
                             label={__('Search Terms', 'acemedia-glossary')}
                             value={searchQuery}
                             onChange={(value) => setSearchQuery(value)}
                             placeholder={__('Type to search...', 'acemedia-glossary')}
+                            onFocus={() => searchQuery && suggestions.length > 0 && setShowSuggestions(true)}
+                            autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="off"
+                            spellCheck="false"
                         />
+                        {searchQuery && (
+                            <button
+                                className="glossary-search-clear"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setSuggestions([]);
+                                    setShowSuggestions(false);
+                                }}
+                                aria-label={__('Clear search', 'acemedia-glossary')}
+                                title={__('Clear search', 'acemedia-glossary')}
+                            >
+                                ×
+                            </button>
+                        )}
+                        {showSuggestions && suggestions.length > 0 && (
+                            <ul className="glossary-search-suggestions">
+                                {suggestions.map((suggestion) => (
+                                    <li 
+                                        key={suggestion.id}
+                                        onClick={() => handleSuggestionClick(suggestion)}
+                                        className="glossary-search-suggestion-item"
+                                    >
+                                        {suggestion.title}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
 
 
-                    {/* Hide alphanumeric index and anchor links when searching */}
+                    {/* Hide alphanumeric index when searching */}
                     {!searchQuery && (
-                    <><div className="glossary-alphanumeric-index">
+                    <div className="glossary-alphanumeric-index">
                                 <Flex className="alphanumeric-links" justify="start" align="center" wrap gap="0.5em">
-                                    {'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((char) => (
+                                    {'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((char) => {
+                                        // Only render if this letter has terms
+                                        if (!groupedTerms[char]) return null;
+                                        
+                                        return (
                                         <FlexItem key={char}>
-                                            {groupedTerms[char] ? (
-                                                <a
-                                                    href={`#${generateAnchorId(char)}`}
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        const group = groupedTerms[char];
-                                                        if (group && group[0]) {
-                                                            toggleCard(group[0].title, true);
-                                                        }
-                                                    } }
-                                                    className="alphanumeric-link"
-                                                >
+                                            <a
+                                                href={`#${generateAnchorId(char)}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const group = groupedTerms[char];
+                                                    if (group && group[0]) {
+                                                        toggleCard(group[0].title, true);
+                                                    }
+                                                }}
+                                                className="alphanumeric-link"
+                                                title={`${groupedTerms[char].length} term${groupedTerms[char].length !== 1 ? 's' : ''}`}
+                                            >
                                                     {char}
+                                                    <span className="alphanumeric-count">{groupedTerms[char].length}</span>
                                                 </a>
-                                            ) : (
-                                                <span className="alphanumeric-link disabled">{char}</span>
-                                            )}
                                         </FlexItem>
-                                    ))}
+                                        );
+                                    })}
                                 </Flex>
-                            </div><div className="glossary-index">
-                                    <Flex className="glossary-anchor-links" justify="start" align="flex-start" wrap gap="1em">
-                                        {sortedGroupKeys.map((key) => (
-                                            <FlexItem key={key}>
-                                                <Flex direction="row" align="flex-start" gap={2}>
-                                                    <FlexItem style={{ flex: '1 1 20%' }}>
-                                                        <a
-                                                            href={`#${generateAnchorId(key)}`}
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                toggleCard(generateAnchorId(groupedTerms[key][0]?.title), true);
-                                                            } }
-                                                            className="glossary-anchor-link"
-                                                        >
-                                                            {key}
-                                                        </a>
-                                                    </FlexItem>
-                                                    <FlexItem style={{ flex: '1 1 80%' }}>
-                                                        <ul className="glossary-anchor-list">
-                                                            {groupedTerms[key].map((term) => (
-                                                                <li key={generateAnchorId(term.title)} className="glossary-anchor-item">
-                                                          <a
-    href={`#${generateAnchorId(term.title)}`}
-    onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation(); // Prevent event bubbling
-        
-        // First toggle the card
-        toggleCard(term.title, true);
-        
-        // Then attempt scroll after a brief delay
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                scrollToElement(generateAnchorId(term.title));
-            }, 50);
-        });
-    }}
-    className="glossary-term-link"
->
-    {term.title}
-</a>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </FlexItem>
-                                                </Flex>
-                                            </FlexItem>
-                                        ))}
-                                    </Flex>
-                                </div></>
+                            </div>
                     )}
+
+{/* Removed fixed header - now using CSS sticky positioning on h3 elements */}
 
 <div className="glossary-terms">
     {Object.keys(groupedTerms).map((key) => {
@@ -552,16 +647,18 @@ const GlossaryFrontend = ({ data }) => {
         if (filteredGroupTerms.length === 0) return null;
 
         return (
-            <div key={key} id={`group-${key}`}>
+            <div key={key} className="glossary-section" id={`group-${key}`}>
                 <h3>{key}</h3>
-                {filteredGroupTerms.map((term) => (
-                    <GlossaryItem
-                        key={generateAnchorId(term.title)}
-                        term={term}
-                        isOpen={openCardId === generateAnchorId(term.title)}
-                        onToggle={toggleCard}
-                    />
-                ))}
+                <div className="glossary-group">
+                    {filteredGroupTerms.map((term) => (
+                        <GlossaryItem
+                            key={generateAnchorId(term.title)}
+                            term={term}
+                            isOpen={openCardId === generateAnchorId(term.title)}
+                            onToggle={toggleCard}
+                        />
+                    ))}
+                </div>
             </div>
         );
     })}

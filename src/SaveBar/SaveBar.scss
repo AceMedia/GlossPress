@@ -5,7 +5,8 @@ $dark-primary-color: var(--wp-components-color-accent,var(--wp-admin-theme-color
 .ace-save-bar {
     position: fixed;
     bottom: 0px;
-    left: 0px;
+    left: 160px;
+    width: calc(100% - 160px);
     right: 0px;
     padding: 1em;
     display: flex; // Make it a flex container
@@ -49,7 +50,12 @@ $dark-primary-color: var(--wp-components-color-accent,var(--wp-admin-theme-color
     }
 }
 
-
+body.folded {
+    .ace-save-bar {
+        left: 36px;
+        width: calc(100% - 36px);
+    }
+}
 
 
 

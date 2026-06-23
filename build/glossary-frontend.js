@@ -1,2 +1,1341 @@
-/*! For license information please see glossary-frontend.js.LICENSE.txt */
-(()=>{"use strict";var e={20:(e,t,n)=>{var r=n(540),o=Symbol.for("react.element"),i=Symbol.for("react.fragment"),a=Object.prototype.hasOwnProperty,u=r.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner,s={key:!0,ref:!0,__self:!0,__source:!0};function c(e,t,n){var r,i={},c=null,l=null;for(r in void 0!==n&&(c=""+n),void 0!==t.key&&(c=""+t.key),void 0!==t.ref&&(l=t.ref),t)a.call(t,r)&&!s.hasOwnProperty(r)&&(i[r]=t[r]);if(e&&e.defaultProps)for(r in t=e.defaultProps)void 0===i[r]&&(i[r]=t[r]);return{$$typeof:o,type:e,key:c,ref:l,props:i,_owner:u.current}}t.Fragment=i,t.jsx=c,t.jsxs=c},287:(e,t)=>{var n=Symbol.for("react.element"),r=Symbol.for("react.portal"),o=Symbol.for("react.fragment"),i=Symbol.for("react.strict_mode"),a=Symbol.for("react.profiler"),u=Symbol.for("react.provider"),s=Symbol.for("react.context"),c=Symbol.for("react.forward_ref"),l=Symbol.for("react.suspense"),f=Symbol.for("react.memo"),d=Symbol.for("react.lazy"),p=Symbol.iterator,m={isMounted:function(){return!1},enqueueForceUpdate:function(){},enqueueReplaceState:function(){},enqueueSetState:function(){}},h=Object.assign,y={};function g(e,t,n){this.props=e,this.context=t,this.refs=y,this.updater=n||m}function v(){}function b(e,t,n){this.props=e,this.context=t,this.refs=y,this.updater=n||m}g.prototype.isReactComponent={},g.prototype.setState=function(e,t){if("object"!=typeof e&&"function"!=typeof e&&null!=e)throw Error("setState(...): takes an object of state variables to update or a function which returns an object of state variables.");this.updater.enqueueSetState(this,e,t,"setState")},g.prototype.forceUpdate=function(e){this.updater.enqueueForceUpdate(this,e,"forceUpdate")},v.prototype=g.prototype;var x=b.prototype=new v;x.constructor=b,h(x,g.prototype),x.isPureReactComponent=!0;var _=Array.isArray,j=Object.prototype.hasOwnProperty,w={current:null},C={key:!0,ref:!0,__self:!0,__source:!0};function S(e,t,r){var o,i={},a=null,u=null;if(null!=t)for(o in void 0!==t.ref&&(u=t.ref),void 0!==t.key&&(a=""+t.key),t)j.call(t,o)&&!C.hasOwnProperty(o)&&(i[o]=t[o]);var s=arguments.length-2;if(1===s)i.children=r;else if(1<s){for(var c=Array(s),l=0;l<s;l++)c[l]=arguments[l+2];i.children=c}if(e&&e.defaultProps)for(o in s=e.defaultProps)void 0===i[o]&&(i[o]=s[o]);return{$$typeof:n,type:e,key:a,ref:u,props:i,_owner:w.current}}function E(e){return"object"==typeof e&&null!==e&&e.$$typeof===n}var k=/\/+/g;function T(e,t){return"object"==typeof e&&null!==e&&null!=e.key?function(e){var t={"=":"=0",":":"=2"};return"$"+e.replace(/[=:]/g,function(e){return t[e]})}(""+e.key):t.toString(36)}function O(e,t,o,i,a){var u=typeof e;"undefined"!==u&&"boolean"!==u||(e=null);var s=!1;if(null===e)s=!0;else switch(u){case"string":case"number":s=!0;break;case"object":switch(e.$$typeof){case n:case r:s=!0}}if(s)return a=a(s=e),e=""===i?"."+T(s,0):i,_(a)?(o="",null!=e&&(o=e.replace(k,"$&/")+"/"),O(a,t,o,"",function(e){return e})):null!=a&&(E(a)&&(a=function(e,t){return{$$typeof:n,type:e.type,key:t,ref:e.ref,props:e.props,_owner:e._owner}}(a,o+(!a.key||s&&s.key===a.key?"":(""+a.key).replace(k,"$&/")+"/")+e)),t.push(a)),1;if(s=0,i=""===i?".":i+":",_(e))for(var c=0;c<e.length;c++){var l=i+T(u=e[c],c);s+=O(u,t,o,l,a)}else if(l=function(e){return null===e||"object"!=typeof e?null:"function"==typeof(e=p&&e[p]||e["@@iterator"])?e:null}(e),"function"==typeof l)for(e=l.call(e),c=0;!(u=e.next()).done;)s+=O(u=u.value,t,o,l=i+T(u,c++),a);else if("object"===u)throw t=String(e),Error("Objects are not valid as a React child (found: "+("[object Object]"===t?"object with keys {"+Object.keys(e).join(", ")+"}":t)+"). If you meant to render a collection of children, use an array instead.");return s}function R(e,t,n){if(null==e)return e;var r=[],o=0;return O(e,r,"","",function(e){return t.call(n,e,o++)}),r}function N(e){if(-1===e._status){var t=e._result;(t=t()).then(function(t){0!==e._status&&-1!==e._status||(e._status=1,e._result=t)},function(t){0!==e._status&&-1!==e._status||(e._status=2,e._result=t)}),-1===e._status&&(e._status=0,e._result=t)}if(1===e._status)return e._result.default;throw e._result}var P={current:null},A={transition:null},F={ReactCurrentDispatcher:P,ReactCurrentBatchConfig:A,ReactCurrentOwner:w};function D(){throw Error("act(...) is not supported in production builds of React.")}t.Children={map:R,forEach:function(e,t,n){R(e,function(){t.apply(this,arguments)},n)},count:function(e){var t=0;return R(e,function(){t++}),t},toArray:function(e){return R(e,function(e){return e})||[]},only:function(e){if(!E(e))throw Error("React.Children.only expected to receive a single React element child.");return e}},t.Component=g,t.Fragment=o,t.Profiler=a,t.PureComponent=b,t.StrictMode=i,t.Suspense=l,t.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED=F,t.act=D,t.cloneElement=function(e,t,r){if(null==e)throw Error("React.cloneElement(...): The argument must be a React element, but you passed "+e+".");var o=h({},e.props),i=e.key,a=e.ref,u=e._owner;if(null!=t){if(void 0!==t.ref&&(a=t.ref,u=w.current),void 0!==t.key&&(i=""+t.key),e.type&&e.type.defaultProps)var s=e.type.defaultProps;for(c in t)j.call(t,c)&&!C.hasOwnProperty(c)&&(o[c]=void 0===t[c]&&void 0!==s?s[c]:t[c])}var c=arguments.length-2;if(1===c)o.children=r;else if(1<c){s=Array(c);for(var l=0;l<c;l++)s[l]=arguments[l+2];o.children=s}return{$$typeof:n,type:e.type,key:i,ref:a,props:o,_owner:u}},t.createContext=function(e){return(e={$$typeof:s,_currentValue:e,_currentValue2:e,_threadCount:0,Provider:null,Consumer:null,_defaultValue:null,_globalName:null}).Provider={$$typeof:u,_context:e},e.Consumer=e},t.createElement=S,t.createFactory=function(e){var t=S.bind(null,e);return t.type=e,t},t.createRef=function(){return{current:null}},t.forwardRef=function(e){return{$$typeof:c,render:e}},t.isValidElement=E,t.lazy=function(e){return{$$typeof:d,_payload:{_status:-1,_result:e},_init:N}},t.memo=function(e,t){return{$$typeof:f,type:e,compare:void 0===t?null:t}},t.startTransition=function(e){var t=A.transition;A.transition={};try{e()}finally{A.transition=t}},t.unstable_act=D,t.useCallback=function(e,t){return P.current.useCallback(e,t)},t.useContext=function(e){return P.current.useContext(e)},t.useDebugValue=function(){},t.useDeferredValue=function(e){return P.current.useDeferredValue(e)},t.useEffect=function(e,t){return P.current.useEffect(e,t)},t.useId=function(){return P.current.useId()},t.useImperativeHandle=function(e,t,n){return P.current.useImperativeHandle(e,t,n)},t.useInsertionEffect=function(e,t){return P.current.useInsertionEffect(e,t)},t.useLayoutEffect=function(e,t){return P.current.useLayoutEffect(e,t)},t.useMemo=function(e,t){return P.current.useMemo(e,t)},t.useReducer=function(e,t,n){return P.current.useReducer(e,t,n)},t.useRef=function(e){return P.current.useRef(e)},t.useState=function(e){return P.current.useState(e)},t.useSyncExternalStore=function(e,t,n){return P.current.useSyncExternalStore(e,t,n)},t.useTransition=function(){return P.current.useTransition()},t.version="18.3.1"},540:(e,t,n)=>{e.exports=n(287)},848:(e,t,n)=>{e.exports=n(20)}},t={};function n(r){var o=t[r];if(void 0!==o)return o.exports;var i=t[r]={exports:{}};return e[r](i,i.exports,n),i.exports}var r=n(540);const o=wp.element;function i(e,t,n,r,o,i,a){try{var u=e[i](a),s=u.value}catch(e){return void n(e)}u.done?t(s):Promise.resolve(s).then(r,o)}function a(e){return function(){var t=this,n=arguments;return new Promise(function(r,o){var a=e.apply(t,n);function u(e){i(a,r,o,u,s,"next",e)}function s(e){i(a,r,o,u,s,"throw",e)}u(void 0)})}}function u(e,t){(null==t||t>e.length)&&(t=e.length);for(var n=0,r=Array(t);n<t;n++)r[n]=e[n];return r}function s(e,t){if(e){if("string"==typeof e)return u(e,t);var n={}.toString.call(e).slice(8,-1);return"Object"===n&&e.constructor&&(n=e.constructor.name),"Map"===n||"Set"===n?Array.from(e):"Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)?u(e,t):void 0}}function c(e){return function(e){if(Array.isArray(e))return u(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||s(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function l(e,t){return function(e){if(Array.isArray(e))return e}(e)||function(e,t){var n=null==e?null:"undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(null!=n){var r,o,i,a,u=[],s=!0,c=!1;try{if(i=(n=n.call(e)).next,0===t){if(Object(n)!==n)return;s=!1}else for(;!(s=(r=i.call(n)).done)&&(u.push(r.value),u.length!==t);s=!0);}catch(e){c=!0,o=e}finally{try{if(!s&&null!=n.return&&(a=n.return(),Object(a)!==a))return}finally{if(c)throw o}}return u}}(e,t)||s(e,t)||function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}const f=wp.components,d=wp.i18n;function p(){return p=Object.assign||function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)Object.prototype.hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},p.apply(this,arguments)}function m(e,t){return m=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e},m(e,t)}var h=function(e){var t,n;function o(){var t;return(t=e.call(this)||this).state={columns:[],childRefs:[],hasDistributed:!1},t}n=e,(t=o).prototype=Object.create(n.prototype),t.prototype.constructor=t,m(t,n);var i=o.prototype;return i.componentDidUpdate=function(){this.state.hasDistributed||this.props.sequential||this.distributeChildren()},o.getDerivedStateFromProps=function(e,t){var n=e.children,r=e.columnsCount,i=r!==t.columns.length;return t&&n===t.children&&!i?null:p({},o.getEqualCountColumns(n,r),{children:n,hasDistributed:!1})},i.shouldComponentUpdate=function(e){return e.children!==this.state.children||e.columnsCount!==this.props.columnsCount},i.distributeChildren=function(){var e=this,t=this.props,n=t.children,o=t.columnsCount,i=Array(o).fill(0);if(this.state.childRefs.every(function(e){return e.current.getBoundingClientRect().height})){var a=Array.from({length:o},function(){return[]}),u=0;r.Children.forEach(n,function(t){if(t&&r.isValidElement(t)){var n=e.state.childRefs[u].current.getBoundingClientRect().height,o=i.indexOf(Math.min.apply(Math,i));i[o]+=n,a[o].push(t),u++}}),this.setState(function(e){return p({},e,{columns:a,hasDistributed:!0})})}},o.getEqualCountColumns=function(e,t){var n=Array.from({length:t},function(){return[]}),o=0,i=[];return r.Children.forEach(e,function(e){if(e&&r.isValidElement(e)){var a=r.createRef();i.push(a),n[o%t].push(r.createElement("div",{style:{display:"flex",justifyContent:"stretch"},key:o,ref:a},e)),o++}}),{columns:n,childRefs:i}},i.renderColumns=function(){var e=this.props,t=e.gutter,n=e.itemTag,o=e.itemStyle;return this.state.columns.map(function(e,i){return r.createElement(n,{key:i,style:p({display:"flex",flexDirection:"column",justifyContent:"flex-start",alignContent:"stretch",flex:1,width:0,gap:t},o)},e.map(function(e){return e}))})},i.render=function(){var e=this.props,t=e.gutter,n=e.className,o=e.style,i=e.containerTag;return r.createElement(i,{style:p({display:"flex",flexDirection:"row",justifyContent:"center",alignContent:"stretch",boxSizing:"border-box",width:"100%",gap:t},o),className:n},this.renderColumns())},o}(r.Component);h.propTypes={},h.defaultProps={columnsCount:3,gutter:"0",className:null,style:{},containerTag:"div",itemTag:"div",itemStyle:{},sequential:!1};var y="undefined"!=typeof window?r.useLayoutEffect:r.useEffect;(function(e){var t,n,o,i,a,u=e.columnsCountBreakPoints,s=void 0===u?{350:1,750:2,900:3}:u,c=e.gutterBreakPoints,l=void 0===c?{}:c,f=e.children,d=e.className,p=void 0===d?null:d,m=e.style,h=void 0===m?null:m,g=(t=function(){var e=(0,r.useState)(!1),t=e[0],n=e[1];return y(function(){n(!0)},[]),t}(),n=(0,r.useState)("undefined"!=typeof window?window.innerWidth:0),o=n[0],i=n[1],a=(0,r.useCallback)(function(){t&&i(window.innerWidth)},[t]),y(function(){if(t)return window.addEventListener("resize",a),a(),function(){return window.removeEventListener("resize",a)}},[t,a]),o),v=(0,r.useCallback)(function(e,t){var n=Object.keys(e).sort(function(e,t){return e-t}),r=n.length>0?e[n[0]]:t;return n.forEach(function(t){t<g&&(r=e[t])}),r},[g]),b=(0,r.useMemo)(function(){return v(s,1)},[v,s]),x=(0,r.useMemo)(function(){return v(l,"10px")},[v,l]);return r.createElement("div",{className:p,style:h},r.Children.map(f,function(e,t){return r.cloneElement(e,{key:t,columnsCount:b,gutter:x})}))}).propTypes={};var g=n(848);function v(){var e,t,n="function"==typeof Symbol?Symbol:{},r=n.iterator||"@@iterator",o=n.toStringTag||"@@toStringTag";function i(n,r,o,i){var s=r&&r.prototype instanceof u?r:u,c=Object.create(s.prototype);return b(c,"_invoke",function(n,r,o){var i,u,s,c=0,l=o||[],f=!1,d={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,n){return i=t,u=0,s=e,d.n=n,a}};function p(n,r){for(u=n,s=r,t=0;!f&&c&&!o&&t<l.length;t++){var o,i=l[t],p=d.p,m=i[2];n>3?(o=m===r)&&(s=i[(u=i[4])?5:(u=3,3)],i[4]=i[5]=e):i[0]<=p&&((o=n<2&&p<i[1])?(u=0,d.v=r,d.n=i[1]):p<m&&(o=n<3||i[0]>r||r>m)&&(i[4]=n,i[5]=r,d.n=m,u=0))}if(o||n>1)return a;throw f=!0,r}return function(o,l,m){if(c>1)throw TypeError("Generator is already running");for(f&&1===l&&p(l,m),u=l,s=m;(t=u<2?e:s)||!f;){i||(u?u<3?(u>1&&(d.n=-1),p(u,s)):d.n=s:d.v=s);try{if(c=2,i){if(u||(o="next"),t=i[o]){if(!(t=t.call(i,s)))throw TypeError("iterator result is not an object");if(!t.done)return t;s=t.value,u<2&&(u=0)}else 1===u&&(t=i.return)&&t.call(i),u<2&&(s=TypeError("The iterator does not provide a '"+o+"' method"),u=1);i=e}else if((t=(f=d.n<0)?s:n.call(r,d))!==a)break}catch(t){i=e,u=1,s=t}finally{c=1}}return{value:t,done:f}}}(n,o,i),!0),c}var a={};function u(){}function s(){}function c(){}t=Object.getPrototypeOf;var l=[][r]?t(t([][r]())):(b(t={},r,function(){return this}),t),f=c.prototype=u.prototype=Object.create(l);function d(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,b(e,o,"GeneratorFunction")),e.prototype=Object.create(f),e}return s.prototype=c,b(f,"constructor",c),b(c,"constructor",s),s.displayName="GeneratorFunction",b(c,o,"GeneratorFunction"),b(f),b(f,o,"Generator"),b(f,r,function(){return this}),b(f,"toString",function(){return"[object Generator]"}),(v=function(){return{w:i,m:d}})()}function b(e,t,n,r){var o=Object.defineProperty;try{o({},"",{})}catch(e){o=0}b=function(e,t,n,r){if(t)o?o(e,t,{value:n,enumerable:!r,configurable:!r,writable:!r}):e[t]=n;else{var i=function(t,n){b(e,t,function(e){return this._invoke(t,n,e)})};i("next",0),i("throw",1),i("return",2)}},b(e,t,n,r)}const x=function(e){var t=e.data,n=l((0,o.useState)([]),2),r=n[0],i=n[1],u=l((0,o.useState)(!t.preloadedTerms||0===t.preloadedTerms.length),2),s=u[0],p=u[1],m=l((0,o.useState)(t.sort||"alphabetical"),2),h=m[0],y=(m[1],l((0,o.useState)(null),2)),b=y[0],x=y[1],_=(0,o.useRef)({}),j=l((0,o.useState)(""),2),w=j[0],C=j[1],S=function(e){return e.toLowerCase().replace(/\s+/g,"-").replace(/[^\w\-]/g,"")};(0,o.useEffect)(function(){b&&_.current[b]&&window.history.pushState(null,"","#".concat(b))},[b]),(0,o.useEffect)(function(){if(!s){var e=window.location.hash;if(e){var t=e.substring(1);E(t)}}},[s]);var E=function(e){var t=arguments.length>1&&void 0!==arguments[1]&&arguments[1],n=S(e);t&&b===n?k(n):x(function(e){return e===n?t?(requestAnimationFrame(function(){setTimeout(function(){k(n)},50)}),e):null:(requestAnimationFrame(function(){setTimeout(function(){k(n)},50)}),n)})},k=function(e){var t=arguments.length>1&&void 0!==arguments[1]?arguments[1]:5,n=document.getElementById(e);if(n){var r=Array.from(document.querySelectorAll("header, .fixed, .sticky, #wpadminbar")).reduce(function(e,t){var n=window.getComputedStyle(t).position;if("fixed"===n||"sticky"===n||"wpadminbar"===t.id)return e+t.getBoundingClientRect().height;if("header"===t.tagName.toLowerCase()){var r=Array.from(t.children).map(function(e){var t=window.getComputedStyle(e).position;return"fixed"===t||"sticky"===t?e.getBoundingClientRect().height:0});return e+Math.max.apply(Math,c(r))}return e},0)+2*parseFloat(getComputedStyle(document.documentElement).fontSize),o=n.getBoundingClientRect().top+window.pageYOffset-r;requestAnimationFrame(function(){window.scrollTo({top:o,behavior:"smooth"})}),setTimeout(function(){var e=n.getBoundingClientRect();(e.top<0||e.top>window.innerHeight)&&window.scrollTo({top:o,behavior:"auto"})},500)}else t>0&&setTimeout(function(){return k(e,t-1)},100)},T=function(e){var t=document.createElement("textarea");return t.innerHTML=e,t.value},O=function(e){var t=e.term,n=e.isOpen,i=e.onToggle,u=l((0,o.useState)([]),2),s=u[0],c=u[1],p=l((0,o.useState)(!1),2),m=p[0],h=p[1],y=S(t.title);return(0,o.useEffect)(function(){var e=function(){var e=a(v().m(function e(){var r,o,i,a,u,s;return v().w(function(e){for(;;)switch(e.p=e.n){case 0:if(n){e.n=1;break}return e.a(2);case 1:if(r=t.categories.map(function(e){return e.id}),o=t.tags.map(function(e){return e.id}),0!==r.length||0!==o.length){e.n=2;break}return c([]),e.a(2);case 2:return h(!0),e.p=3,i=new URLSearchParams,r.length>0&&i.append("categories",r.join(",")),o.length>0&&i.append("tags",o.join(",")),i.append("per_page",3),e.n=4,fetch("/wp-json/wp/v2/related-posts?".concat(i.toString()));case 4:return a=e.v,e.n=5,a.json();case 5:u=e.v,c(u),e.n=7;break;case 6:e.p=6,s=e.v,console.error("Error fetching related posts:",s),c([]);case 7:return e.p=7,h(!1),e.f(7);case 8:return e.a(2)}},e,null,[[3,6,7,8]])}));return function(){return e.apply(this,arguments)}}();n&&e()},[n,t.categories,t.tags]),(0,o.useEffect)(function(){var e=document.createElement("script");return e.type="application/ld+json",e.textContent=JSON.stringify({"@context":"https://schema.org","@type":"DefinedTerm",name:t.title,description:t.content?t.content.replace(/<[^>]*>?/gm,"").slice(0,150):"No description available.",url:window.location.origin+"#term-".concat(t.id)}),document.head.appendChild(e),function(){document.head.removeChild(e)}},[t]),(0,g.jsxs)(f.Card,{className:"glossary-item-card",ref:function(e){return _.current[y]=e},style:{backgroundColor:"none"},id:y,children:[(0,g.jsx)(f.CardHeader,{onClick:function(e){e.preventDefault(),e.stopPropagation(),i(t.title),requestAnimationFrame(function(){setTimeout(function(){k(S(t.title))},50)})},style:{cursor:"pointer",fontWeight:"bold"},children:(0,g.jsx)("h4",{children:t.title})}),n&&(0,g.jsxs)(f.CardBody,{children:[t.content?(0,g.jsx)("div",{dangerouslySetInnerHTML:{__html:t.content}}):(0,g.jsx)("p",{children:(0,d.__)("No content available.","acemedia-glossary")}),t.relatedTerms.length>0&&(0,g.jsxs)("div",{className:"see-also",children:[(0,g.jsxs)("strong",{children:[(0,d.__)("See Also:","acemedia-glossary")," "]}),t.relatedTerms.map(function(e,n){var o=r.find(function(t){return t.id===e}),a=o?S(o.title):null,u=o?o.title:(0,d.__)("Unknown Term","acemedia-glossary"),s=n===t.relatedTerms.length-1,c=n===t.relatedTerms.length-2;return(0,g.jsxs)("span",{children:[(0,g.jsx)("a",{href:"#".concat(a),onClick:function(e){e.preventDefault(),e.stopPropagation(),i(o.title),requestAnimationFrame(function(){setTimeout(function(){k(S(o.title))},50)})},children:u},e),!s&&(c?" & ":", ")]},e)})]}),(t.categories.length>0||t.tags.length>0)&&(0,g.jsxs)("div",{className:"categories-tags",children:[t.categories.length>0&&(0,g.jsxs)(g.Fragment,{children:[(0,g.jsxs)("strong",{children:[(0,d.__)("Categories:","acemedia-glossary")," "]}),t.categories.map(function(e,n){var r=n===t.categories.length-1,o=n===t.categories.length-2;return(0,g.jsxs)(g.Fragment,{children:[(0,g.jsx)("a",{href:"/category/".concat(e.slug),children:e.title},e.id),!r&&(o?" & ":", ")]})})]}),t.tags.length>0&&(0,g.jsxs)(g.Fragment,{children:[(0,g.jsxs)("strong",{children:[" ",(0,d.__)("Tags:","acemedia-glossary")," "]}),t.tags.map(function(e,n){var r=n===t.tags.length-1,o=n===t.tags.length-2;return(0,g.jsxs)(g.Fragment,{children:[(0,g.jsx)("a",{href:"/tag/".concat(e.slug),children:e.title},e.id),!r&&(o?" & ":", ")]})})]})]}),(0,g.jsxs)("div",{className:"related-posts",children:[(0,g.jsxs)("strong",{children:[(0,d.__)("Related Posts:","acemedia-glossary")," "]}),m?(0,g.jsx)("span",{children:(0,d.__)("Loading...","acemedia-glossary")}):s.length>0?s.map(function(e,t){var n=t===s.length-1,r=t===s.length-2;return(0,g.jsxs)(g.Fragment,{children:[(0,g.jsx)("a",{href:e.link,target:"_blank",rel:"noopener noreferrer",children:e.title},e.id),!n&&(r?" & ":", ")]})}):(0,g.jsx)("span",{children:(0,d.__)("No related posts found.","acemedia-glossary")})]})]})]},y)},R=function(){var e=a(v().m(function e(){var t,n,r;return v().w(function(e){for(;;)switch(e.p=e.n){case 0:return p(!0),e.p=1,e.n=2,fetch(AceMediaGlossaryData.restUrl,{headers:{"X-WP-Nonce":AceMediaGlossaryData.nonce}});case 2:return t=e.v,e.n=3,t.json();case 3:n=e.v,i(n.map(function(e){return{id:e.id||"",title:T(e.title||(0,d.__)("Untitled","acemedia-glossary")),content:T(e.content||""),modified:e.modified||null,relatedTerms:e.relatedTerms||[],categories:e.categories||[],tags:e.tags||[]}})),e.n=5;break;case 4:e.p=4,r=e.v,console.error("Error fetching glossary terms:",r);case 5:return e.p=5,p(!1),e.f(5);case 6:return e.a(2)}},e,null,[[1,4,5,6]])}));return function(){return e.apply(this,arguments)}}();(0,o.useEffect)(function(){t.preloadedTerms&&t.preloadedTerms.length>0?(i(t.preloadedTerms.map(function(e){return{id:e.id||"",title:T(e.title||(0,d.__)("Untitled","acemedia-glossary")),content:T(e.content||""),modified:e.modified||null,relatedTerms:e.relatedTerms||[],categories:e.categories||[],tags:e.tags||[]}})),p(!1)):R()},[t]);var N=(0,o.useMemo)(function(){if(!w)return r;var e=w.toLowerCase();return r.filter(function(t){return t.title&&t.title.toLowerCase().includes(e)||t.content&&t.content.toLowerCase().includes(e)})},[r,w]),P=(0,o.useMemo)(function(){return c(N).sort(function(e,t){return"alphabetical"===h?e.title.localeCompare(t.title,void 0,{numeric:!0}):"updated"===h?new Date(t.modified||0)-new Date(e.modified||0):0})},[N,h]),A=(0,o.useMemo)(function(){return r.length?P.reduce(function(e,t){var n=t.title.charAt(0).toUpperCase();return e[n]||(e[n]=[]),e[n].push(t),e},{}):{}},[P]),F=(0,o.useMemo)(function(){return Object.keys(A).sort(function(e,t){var n=/^\d$/.test(e),r=/^\d$/.test(t);return n&&!r?-1:!n&&r?1:e.localeCompare(t,void 0,{numeric:!0})})},[A]);return(0,g.jsx)("div",{className:"acemedia-glossary-frontend",children:s?(0,g.jsxs)("div",{className:"loading-spinner",children:[(0,g.jsx)(f.Spinner,{}),(0,g.jsx)("p",{children:(0,d.__)("Loading glossary...","acemedia-glossary")})]}):r.length>0?(0,g.jsxs)(g.Fragment,{children:[(0,g.jsx)("div",{className:"glossary-search",children:(0,g.jsx)(f.TextControl,{label:(0,d.__)("Search Terms","acemedia-glossary"),value:w,onChange:function(e){return C(e)},placeholder:(0,d.__)("Type to search...","acemedia-glossary")})}),!w&&(0,g.jsxs)(g.Fragment,{children:[(0,g.jsx)("div",{className:"glossary-alphanumeric-index",children:(0,g.jsx)(f.Flex,{className:"alphanumeric-links",justify:"start",align:"center",wrap:!0,gap:"0.5em",children:"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(function(e){return(0,g.jsx)(f.FlexItem,{children:A[e]?(0,g.jsx)("a",{href:"#".concat(S(e)),onClick:function(t){t.preventDefault();var n=A[e];n&&n[0]&&E(n[0].title,!0)},className:"alphanumeric-link",children:e}):(0,g.jsx)("span",{className:"alphanumeric-link disabled",children:e})},e)})})}),(0,g.jsx)("div",{className:"glossary-index",children:(0,g.jsx)(f.Flex,{className:"glossary-anchor-links",justify:"start",align:"flex-start",wrap:!0,gap:"1em",children:F.map(function(e){return(0,g.jsx)(f.FlexItem,{children:(0,g.jsxs)(f.Flex,{direction:"row",align:"flex-start",gap:2,children:[(0,g.jsx)(f.FlexItem,{style:{flex:"1 1 20%"},children:(0,g.jsx)("a",{href:"#".concat(S(e)),onClick:function(t){var n;t.preventDefault(),E(S(null===(n=A[e][0])||void 0===n?void 0:n.title),!0)},className:"glossary-anchor-link",children:e})}),(0,g.jsx)(f.FlexItem,{style:{flex:"1 1 80%"},children:(0,g.jsx)("ul",{className:"glossary-anchor-list",children:A[e].map(function(e){return(0,g.jsx)("li",{className:"glossary-anchor-item",children:(0,g.jsx)("a",{href:"#".concat(S(e.title)),onClick:function(t){t.preventDefault(),t.stopPropagation(),E(e.title,!0),requestAnimationFrame(function(){setTimeout(function(){k(S(e.title))},50)})},className:"glossary-term-link",children:e.title})},S(e.title))})})})]})},e)})})})]}),(0,g.jsx)("div",{className:"glossary-terms",children:Object.keys(A).map(function(e){var t=A[e].filter(function(e){var t;return e.title.toLowerCase().includes(w.toLowerCase())||(null===(t=e.content)||void 0===t?void 0:t.toLowerCase().includes(w.toLowerCase()))});return 0===t.length?null:(0,g.jsxs)("div",{id:"group-".concat(e),children:[(0,g.jsx)("h3",{children:e}),t.map(function(e){return(0,g.jsx)(O,{term:e,isOpen:b===S(e.title),onToggle:E},S(e.title))})]},e)})})]}):(0,g.jsx)("p",{children:(0,d.__)("No glossary terms found.","acemedia-glossary")})})};document.addEventListener("DOMContentLoaded",function(){var e=document.getElementById("acemedia-glossary-root");if(console.log("DOMContentLoaded event fired. Root:",e),e){var t=window.AceMediaGlossaryData||{};console.log("Glossary Data:",t),(0,o.render)((0,g.jsx)(x,{data:t}),e)}})})();
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	// The require scope
+/******/ 	var __webpack_require__ = {};
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+
+;// external "React"
+const external_React_namespaceObject = window["React"];
+var external_React_default = /*#__PURE__*/__webpack_require__.n(external_React_namespaceObject);
+;// external ["wp","element"]
+const external_wp_element_namespaceObject = window["wp"]["element"];
+;// external ["wp","components"]
+const external_wp_components_namespaceObject = window["wp"]["components"];
+;// external ["wp","i18n"]
+const external_wp_i18n_namespaceObject = window["wp"]["i18n"];
+;// ./node_modules/react-responsive-masonry/es/Masonry/index.js
+function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
+
+function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.create(superClass.prototype); subClass.prototype.constructor = subClass; _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+
+
+
+var Masonry_Masonry = /*#__PURE__*/function (_React$Component) {
+  _inheritsLoose(Masonry, _React$Component);
+
+  function Masonry() {
+    var _this;
+
+    _this = _React$Component.call(this) || this;
+    _this.state = {
+      columns: [],
+      childRefs: [],
+      hasDistributed: false
+    };
+    return _this;
+  }
+
+  var _proto = Masonry.prototype;
+
+  _proto.componentDidUpdate = function componentDidUpdate() {
+    if (!this.state.hasDistributed && !this.props.sequential) this.distributeChildren();
+  };
+
+  Masonry.getDerivedStateFromProps = function getDerivedStateFromProps(props, state) {
+    var children = props.children,
+        columnsCount = props.columnsCount;
+    var hasColumnsChanged = columnsCount !== state.columns.length;
+    if (state && children === state.children && !hasColumnsChanged) return null;
+    return _extends({}, Masonry.getEqualCountColumns(children, columnsCount), {
+      children: children,
+      hasDistributed: false
+    });
+  };
+
+  _proto.shouldComponentUpdate = function shouldComponentUpdate(nextProps) {
+    return nextProps.children !== this.state.children || nextProps.columnsCount !== this.props.columnsCount;
+  };
+
+  _proto.distributeChildren = function distributeChildren() {
+    var _this2 = this;
+
+    var _this$props = this.props,
+        children = _this$props.children,
+        columnsCount = _this$props.columnsCount;
+    var columnHeights = Array(columnsCount).fill(0);
+    var isReady = this.state.childRefs.every(function (ref) {
+      return ref.current.getBoundingClientRect().height;
+    });
+    if (!isReady) return;
+    var columns = Array.from({
+      length: columnsCount
+    }, function () {
+      return [];
+    });
+    var validIndex = 0;
+    external_React_default().Children.forEach(children, function (child) {
+      if (child && external_React_default().isValidElement(child)) {
+        // .current is undefined if ref was passed to a functional component without forwardRef
+        // now passing ref into a wrapper div so it should always be defined
+        var childHeight = _this2.state.childRefs[validIndex].current.getBoundingClientRect().height;
+
+        var minHeightColumnIndex = columnHeights.indexOf(Math.min.apply(Math, columnHeights));
+        columnHeights[minHeightColumnIndex] += childHeight;
+        columns[minHeightColumnIndex].push(child);
+        validIndex++;
+      }
+    });
+    this.setState(function (p) {
+      return _extends({}, p, {
+        columns: columns,
+        hasDistributed: true
+      });
+    });
+  };
+
+  Masonry.getEqualCountColumns = function getEqualCountColumns(children, columnsCount) {
+    var columns = Array.from({
+      length: columnsCount
+    }, function () {
+      return [];
+    });
+    var validIndex = 0;
+    var childRefs = [];
+    external_React_default().Children.forEach(children, function (child) {
+      if (child && external_React_default().isValidElement(child)) {
+        var ref = external_React_default().createRef();
+        childRefs.push(ref);
+        columns[validIndex % columnsCount].push( /*#__PURE__*/external_React_default().createElement("div", {
+          style: {
+            display: "flex",
+            justifyContent: "stretch"
+          },
+          key: validIndex,
+          ref: ref
+        }, child) // React.cloneElement(child, {ref}) // cannot attach refs to functional components without forwardRef
+        );
+        validIndex++;
+      }
+    });
+    return {
+      columns: columns,
+      childRefs: childRefs
+    };
+  };
+
+  _proto.renderColumns = function renderColumns() {
+    var _this$props2 = this.props,
+        gutter = _this$props2.gutter,
+        itemTag = _this$props2.itemTag,
+        itemStyle = _this$props2.itemStyle;
+    return this.state.columns.map(function (column, i) {
+      return external_React_default().createElement(itemTag, {
+        key: i,
+        style: _extends({
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+          alignContent: "stretch",
+          flex: 1,
+          width: 0,
+          gap: gutter
+        }, itemStyle)
+      }, column.map(function (item) {
+        return item;
+      }));
+    });
+  };
+
+  _proto.render = function render() {
+    var _this$props3 = this.props,
+        gutter = _this$props3.gutter,
+        className = _this$props3.className,
+        style = _this$props3.style,
+        containerTag = _this$props3.containerTag;
+    return external_React_default().createElement(containerTag, {
+      style: _extends({
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "center",
+        alignContent: "stretch",
+        boxSizing: "border-box",
+        width: "100%",
+        gap: gutter
+      }, style),
+      className: className
+    }, this.renderColumns());
+  };
+
+  return Masonry;
+}((external_React_default()).Component);
+
+Masonry_Masonry.propTypes =  false ? 0 : {};
+Masonry_Masonry.defaultProps = {
+  columnsCount: 3,
+  gutter: "0",
+  className: null,
+  style: {},
+  containerTag: "div",
+  itemTag: "div",
+  itemStyle: {},
+  sequential: false
+};
+/* harmony default export */ const es_Masonry = ((/* unused pure expression or super */ null && (Masonry_Masonry)));
+;// ./node_modules/react-responsive-masonry/es/ResponsiveMasonry/index.js
+
+
+var DEFAULT_COLUMNS_COUNT = 1;
+var DEFAULT_GUTTER = "10px";
+var useIsomorphicLayoutEffect = typeof window !== "undefined" ? external_React_namespaceObject.useLayoutEffect : external_React_namespaceObject.useEffect;
+
+var useHasMounted = function useHasMounted() {
+  var _useState = (0,external_React_namespaceObject.useState)(false),
+      hasMounted = _useState[0],
+      setHasMounted = _useState[1];
+
+  useIsomorphicLayoutEffect(function () {
+    setHasMounted(true);
+  }, []);
+  return hasMounted;
+};
+
+var useWindowWidth = function useWindowWidth() {
+  var hasMounted = useHasMounted();
+
+  var _useState2 = (0,external_React_namespaceObject.useState)(typeof window !== "undefined" ? window.innerWidth : 0),
+      width = _useState2[0],
+      setWidth = _useState2[1];
+
+  var handleResize = (0,external_React_namespaceObject.useCallback)(function () {
+    if (!hasMounted) return;
+    setWidth(window.innerWidth);
+  }, [hasMounted]);
+  useIsomorphicLayoutEffect(function () {
+    if (hasMounted) {
+      window.addEventListener("resize", handleResize);
+      handleResize();
+      return function () {
+        return window.removeEventListener("resize", handleResize);
+      };
+    }
+  }, [hasMounted, handleResize]);
+  return width;
+};
+
+var MasonryResponsive = function MasonryResponsive(_ref) {
+  var _ref$columnsCountBrea = _ref.columnsCountBreakPoints,
+      columnsCountBreakPoints = _ref$columnsCountBrea === void 0 ? {
+    350: 1,
+    750: 2,
+    900: 3
+  } : _ref$columnsCountBrea,
+      _ref$gutterBreakPoint = _ref.gutterBreakPoints,
+      gutterBreakPoints = _ref$gutterBreakPoint === void 0 ? {} : _ref$gutterBreakPoint,
+      children = _ref.children,
+      _ref$className = _ref.className,
+      className = _ref$className === void 0 ? null : _ref$className,
+      _ref$style = _ref.style,
+      style = _ref$style === void 0 ? null : _ref$style;
+  var windowWidth = useWindowWidth();
+  var getResponsiveValue = (0,external_React_namespaceObject.useCallback)(function (breakPoints, defaultValue) {
+    var sortedBreakPoints = Object.keys(breakPoints).sort(function (a, b) {
+      return a - b;
+    });
+    var value = sortedBreakPoints.length > 0 ? breakPoints[sortedBreakPoints[0]] : defaultValue;
+    sortedBreakPoints.forEach(function (breakPoint) {
+      if (breakPoint < windowWidth) {
+        value = breakPoints[breakPoint];
+      }
+    });
+    return value;
+  }, [windowWidth]);
+  var columnsCount = (0,external_React_namespaceObject.useMemo)(function () {
+    return getResponsiveValue(columnsCountBreakPoints, DEFAULT_COLUMNS_COUNT);
+  }, [getResponsiveValue, columnsCountBreakPoints]);
+  var gutter = (0,external_React_namespaceObject.useMemo)(function () {
+    return getResponsiveValue(gutterBreakPoints, DEFAULT_GUTTER);
+  }, [getResponsiveValue, gutterBreakPoints]);
+  return /*#__PURE__*/external_React_default().createElement("div", {
+    className: className,
+    style: style
+  }, external_React_default().Children.map(children, function (child, index) {
+    return external_React_default().cloneElement(child, {
+      key: index,
+      columnsCount: columnsCount,
+      gutter: gutter
+    });
+  }));
+};
+
+MasonryResponsive.propTypes =  false ? 0 : {};
+/* harmony default export */ const ResponsiveMasonry = ((/* unused pure expression or super */ null && (MasonryResponsive)));
+;// ./node_modules/react-responsive-masonry/es/index.js
+
+
+/* harmony default export */ const es = ((/* unused pure expression or super */ null && (Masonry)));
+
+;// external ["wp","apiFetch"]
+const external_wp_apiFetch_namespaceObject = window["wp"]["apiFetch"];
+;// ./src/utils.js
+
+const getRestRoot = () => {
+  if (typeof AceMediaGlossaryAdmin !== 'undefined' && AceMediaGlossaryAdmin.restRoot) {
+    return AceMediaGlossaryAdmin.restRoot.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.wpApiSettings?.root) {
+    return window.wpApiSettings.root.replace(/\/+$/, '');
+  }
+  return '/wp-json';
+};
+
+/**
+ * Decode HTML entities in a string.
+ * @param {string} str - String to decode.
+ * @returns {string} - Decoded string.
+ */
+const decodeHTMLEntities = str => {
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = str;
+  return textarea.value;
+};
+
+/**
+ * Debounce a function call by a given delay.
+ * @param {Function} func - Function to debounce.
+ * @param {number} delay - Debounce delay in milliseconds.
+ * @returns {Function} - Debounced function.
+ */
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
+
+/**
+ * Smoothly scroll to a specific vertical position.
+ * @param {number} targetY - The target vertical position to scroll to.
+ * @param {number} [duration=1000] - Duration of the scroll animation in milliseconds.
+ */
+const smoothScrollTo = (targetY, duration = 1000) => {
+  const startY = window.scrollY;
+  const distance = targetY - startY;
+  const startTime = performance.now();
+  const easeInOutQuad = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // Ease-in-out formula
+
+  const step = currentTime => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1); // Clamp progress to 1
+
+    const easedProgress = easeInOutQuad(progress); // Apply easing
+    window.scrollTo(0, startY + distance * easedProgress);
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    }
+  };
+  requestAnimationFrame(step);
+};
+
+/**
+ * Generic API fetch utility.
+ * @param {string} path - API path to fetch.
+ * @param {string} [method='GET'] - HTTP method.
+ * @param {object|null} [data=null] - Data to send with the request.
+ * @param {object} [headers={}] - Additional headers for the request.
+ * @returns {Promise<object>} - Response data.
+ */
+const fetchFromAPI = async (path, method = 'GET', data = null, headers = {}) => {
+  if (typeof path !== 'string' || path.trim() === '') {
+    throw new Error('fetchFromAPI requires a valid path.');
+  }
+  const normalizedPath = (() => {
+    if (/^https?:\/\//i.test(path)) {
+      return path.trim();
+    }
+    let prepared = path.trim();
+    return prepared.replace(/^\/+/, '').replace(/^wp-json\/?/, '');
+  })();
+  const baseHeaders = {
+    ...headers
+  };
+  const options = {
+    method: method || 'GET'
+  };
+  if (data !== null && method && method.toUpperCase() !== 'GET') {
+    options.body = JSON.stringify(data);
+    baseHeaders['Content-Type'] = 'application/json';
+  }
+  const resolveRestRoot = () => {
+    if (typeof AceMediaGlossaryAdmin !== 'undefined' && AceMediaGlossaryAdmin.restRoot) {
+      return AceMediaGlossaryAdmin.restRoot.replace(/\/+$/, '');
+    }
+    if (typeof AceMediaGlossaryBlockConfig !== 'undefined' && AceMediaGlossaryBlockConfig.restRoot) {
+      return AceMediaGlossaryBlockConfig.restRoot.replace(/\/+$/, '');
+    }
+    if (typeof window !== 'undefined' && window.wpApiSettings && window.wpApiSettings.root) {
+      return window.wpApiSettings.root.replace(/\/+$/, '');
+    }
+    return '';
+  };
+  const restRoot = resolveRestRoot();
+  const isAbsoluteUrl = /^https?:\/\//i.test(normalizedPath);
+  let requestArgs;
+  if (isAbsoluteUrl) {
+    requestArgs = {
+      url: normalizedPath,
+      headers: baseHeaders,
+      ...options
+    };
+  } else if (restRoot) {
+    const cleanRoot = restRoot.replace(/\/+$/, '');
+    const cleanPath = normalizedPath.replace(/^\/+/, '');
+    requestArgs = {
+      url: `${cleanRoot}/${cleanPath}`,
+      headers: baseHeaders,
+      ...options
+    };
+  } else {
+    requestArgs = {
+      path: normalizedPath.replace(/^\/+/, ''),
+      headers: baseHeaders,
+      ...options
+    };
+  }
+  try {
+    const response = await apiFetch(requestArgs);
+    return response;
+  } catch (error) {
+    console.error(`Error fetching from API (${normalizedPath}):`, error.message);
+    console.error('Full error object:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch logs via API.
+ * @param {Function} setLogs - State setter for logs.
+ */
+const fetchLogs = async setLogs => {
+  try {
+    const response = await fetchFromAPI('/wp/v2/logs', 'GET', null, {
+      'X-WP-Nonce': AceMediaGlossaryAdmin.nonce
+    });
+    const fetchedLogs = response.logs || ''; // Extract logs from response object
+    setLogs(fetchedLogs); // Update state
+  } catch (error) {
+    console.error('Error fetching logs:', error);
+    setLogs(''); // Clear logs in case of error
+  }
+};
+
+/**
+ * Clear logs via API.
+ * @returns {Promise<void>} - Resolves when logs are cleared.
+ */
+const clearLogs = async () => {
+  try {
+    const response = await fetchFromAPI('/wp/v2/logs', 'DELETE', null, {
+      'X-WP-Nonce': AceMediaGlossaryAdmin.nonce
+    });
+    if (response?.success || response?.message) {
+      console.log('Logs cleared successfully.');
+    } else {
+      console.warn('Logs cleared (no explicit success message returned).');
+    }
+  } catch (error) {
+    console.error('Error clearing logs:', error.message);
+  }
+};
+
+/**
+ * Save a CSS string via API.
+ * @param {string} css - Custom CSS string.
+ */
+const saveCss = async css => {
+  console.log('Saving custom CSS:', css);
+  try {
+    if (typeof css !== 'string' || css.trim() === '') {
+      throw new Error('CSS must be a valid non-empty string.');
+    }
+    const response = await fetchFromAPI('/wp/v2/save-custom-css', 'POST', {
+      css: css.trim()
+    }, {
+      'X-WP-Nonce': AceMediaGlossaryAdmin.nonce
+    });
+    if (response?.success) {
+      console.log('Custom CSS saved successfully:', response.message);
+      return response.message; // Return the success message
+    } else {
+      console.error('Failed to save CSS:', response?.message || 'Unknown error');
+      return response?.message || 'Unknown error'; // Return the error message
+    }
+  } catch (error) {
+    console.error('Error saving custom CSS:', error.message);
+    return error.message; // Return the error message
+  }
+};
+
+/**
+ * Fetch a single glossary term with full data.
+ * @param {number} termId - The ID of the term to fetch.
+ * @returns {Promise<object>} - The full term data.
+ */
+const fetchSingleTerm = async termId => {
+  try {
+    const response = await fetchFromAPI(`/wp/v2/glossary/${termId}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching single term:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update related terms for a glossary term.
+ * @param {number} termId - The ID of the term to update.
+ * @param {Array<number>} relatedTermIds - Array of related term IDs.
+ * @param {object} termsLookup - Optional lookup object to get term titles for better messaging.
+ * @returns {Promise<object>} - Response data.
+ */
+const updateRelatedTerms = async (termId, relatedTermIds, termsLookup = {}) => {
+  try {
+    const response = await fetchFromAPI(`/wp/v2/glossary/${termId}/related`, 'POST', {
+      relatedTerms: relatedTermIds
+    });
+
+    // Enhanced response with term information for better messaging
+    if (termsLookup && Object.keys(termsLookup).length > 0) {
+      const currentTermTitle = termsLookup[termId] || `Term ${termId}`;
+      const relatedTermTitles = relatedTermIds.map(id => termsLookup[id] || `Term ${id}`);
+      response.termInfo = {
+        currentTerm: currentTermTitle,
+        relatedTerms: relatedTermTitles,
+        currentTermId: termId,
+        relatedTermIds: relatedTermIds
+      };
+    }
+    return response;
+  } catch (error) {
+    console.error('Error updating related terms:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update categories for a glossary term.
+ * @param {number} termId - The ID of the term to update.
+ * @param {Array<number>} categoryIds - Array of category IDs.
+ * @param {boolean} isAutosave - Whether this is an autosave operation.
+ * @returns {Promise<object>} - Response data.
+ */
+const updateTermCategories = async (termId, categoryIds, isAutosave = false) => {
+  try {
+    // Use different endpoint for autosave to avoid conflicts
+    const endpoint = isAutosave ? `/wp/v2/glossary/${termId}/categories/autosave` : `/wp/v2/glossary/${termId}/categories`;
+    const response = await fetchFromAPI(endpoint, 'POST', {
+      categories: categoryIds
+    });
+    return response;
+  } catch (error) {
+    console.error('Error updating categories:', error);
+
+    // Enhanced error handling with more details
+    if (error.data) {
+      const enhancedError = new Error(error.data.message || 'Failed to update categories');
+      enhancedError.data = error.data;
+      enhancedError.status = error.status;
+      throw enhancedError;
+    }
+    throw error;
+  }
+};
+
+/**
+ * Update tags for a glossary term.
+ * @param {number} termId - ID of the glossary term.
+ * @param {Array} tagIds - Array of tag IDs to associate with the term.
+ * @param {boolean} isAutosave - Whether this is an autosave operation.
+ * @returns {Promise} - Promise representing the API request.
+ */
+const updateTermTags = async (termId, tagIds, isAutosave = false) => {
+  try {
+    // Use different endpoint for autosave to avoid conflicts
+    const endpoint = isAutosave ? `/wp/v2/glossary/${termId}/tags/autosave` : `/wp/v2/glossary/${termId}/tags`;
+    const response = await fetchFromAPI(endpoint, 'POST', {
+      tags: tagIds
+    });
+    return response;
+  } catch (error) {
+    console.error('Error updating tags:', error);
+
+    // Enhanced error handling with more details
+    if (error.data) {
+      const enhancedError = new Error(error.data.message || 'Failed to update tags');
+      enhancedError.data = error.data;
+      enhancedError.status = error.status;
+      throw enhancedError;
+    }
+    throw error;
+  }
+};
+
+/**
+ * Prefetch initial data for tags and categories to speed up card rendering.
+ * @returns {Promise} - Promise representing the API request.
+ */
+const fetchPrefetchData = async () => {
+  try {
+    return await fetchFromAPI('/wp/v2/glossary/prefetch-data');
+  } catch (error) {
+    console.error('Error fetching prefetch data:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get related terms lookup data (id -> title mapping) for faster rendering.
+ * @returns {Promise} - Promise representing the API request.
+ */
+const fetchRelatedTermsLookup = async () => {
+  try {
+    return await fetchFromAPI('/wp/v2/glossary/related-terms-lookup');
+  } catch (error) {
+    console.error('Error fetching related terms lookup:', error);
+    throw error;
+  }
+};
+
+/**
+ * Format relative time from a timestamp.
+ * @param {string|number} timestamp - Timestamp to format.
+ * @returns {string} - Formatted relative time string.
+ */
+const formatRelativeTime = timestamp => {
+  if (!timestamp) return null;
+  const time = new Date(timestamp);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - time) / 1000);
+  const intervals = {
+    year: 31536000,
+    month: 2592000,
+    week: 604800,
+    day: 86400,
+    hour: 3600,
+    minute: 60,
+    second: 1
+  };
+  for (const [key, seconds] of Object.entries(intervals)) {
+    const interval = Math.floor(diffInSeconds / seconds);
+    if (interval >= 1) {
+      return `${interval} ${key}${interval !== 1 ? 's' : ''} ago`;
+    }
+  }
+  return 'Just now';
+};
+const setupDragAndDrop = ({
+  onFileDrop,
+  setIsDragging,
+  setMessage,
+  clearLogs,
+  setIsSaving,
+  fetchLogs,
+  setLoadTime,
+  setTerms,
+  setLogs // Include setLogs here
+}) => {
+  const handleDragOver = e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsDragging(true);
+  };
+  const handleDragLeave = e => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  const handleDrop = async e => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/json') {
+      const reader = new FileReader();
+      reader.onload = async event => {
+        try {
+          const parsedPayload = JSON.parse(event.target.result);
+          let termsArray = [];
+          let payloadToSend = parsedPayload;
+          if (Array.isArray(parsedPayload)) {
+            termsArray = parsedPayload;
+          } else if (parsedPayload && typeof parsedPayload === 'object' && Array.isArray(parsedPayload.terms)) {
+            termsArray = parsedPayload.terms;
+          } else {
+            throw new Error('Invalid JSON format. Expected an array of terms or an export payload.');
+          }
+          setIsSaving(true);
+          await clearLogs();
+          const startTime = performance.now();
+          const response = await onFileDrop(payloadToSend);
+          const endTime = performance.now();
+          const responseTime = Math.round(endTime - startTime);
+          const {
+            new_terms = [],
+            matched_terms = 0
+          } = response;
+          const totalTerms = termsArray.length;
+          const newTerms = Array.isArray(new_terms) ? new_terms.length : new_terms;
+          setMessage(`${newTerms} terms imported successfully in ${responseTime}ms. ${matched_terms} terms already existed.`);
+          await fetchLogs(setLogs); // Ensure fetchLogs correctly uses setLogs
+
+          const fetchStartTime = performance.now();
+          const updatedTerms = await fetchFromAPI('/wp/v2/glossary');
+          const fetchEndTime = performance.now();
+          const newLoadTime = Math.round(fetchEndTime - fetchStartTime);
+          setLoadTime(newLoadTime);
+          setTerms(updatedTerms);
+        } catch (error) {
+          console.error('Error importing terms:', error);
+          setMessage('Error importing terms. Please try again.');
+        } finally {
+          setIsSaving(false);
+          setTimeout(() => setMessage(''), 5000);
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      setMessage('Please drop a valid JSON file.');
+      setTimeout(() => setMessage(''), 5000);
+    }
+  };
+  window.addEventListener('dragover', handleDragOver);
+  window.addEventListener('dragleave', handleDragLeave);
+  window.addEventListener('drop', handleDrop);
+  return () => {
+    window.removeEventListener('dragover', handleDragOver);
+    window.removeEventListener('dragleave', handleDragLeave);
+    window.removeEventListener('drop', handleDrop);
+  };
+};
+;// external "ReactJSXRuntime"
+const external_ReactJSXRuntime_namespaceObject = window["ReactJSXRuntime"];
+;// ./src/GlossaryFrontend.js
+
+
+
+
+
+
+const GlossaryFrontend = ({
+  data
+}) => {
+  const [terms, setTerms] = (0,external_wp_element_namespaceObject.useState)([]);
+  const [loading, setLoading] = (0,external_wp_element_namespaceObject.useState)(!data.preloadedTerms || data.preloadedTerms.length === 0);
+  const [sortOption, setSortOption] = (0,external_wp_element_namespaceObject.useState)(data.sort || 'alphabetical');
+  const [openCardId, setOpenCardId] = (0,external_wp_element_namespaceObject.useState)(null);
+  const termRefs = (0,external_wp_element_namespaceObject.useRef)({});
+  const [searchQuery, setSearchQuery] = (0,external_wp_element_namespaceObject.useState)(''); // State for search query
+  const [suggestions, setSuggestions] = (0,external_wp_element_namespaceObject.useState)([]); // State for search suggestions
+  const [showSuggestions, setShowSuggestions] = (0,external_wp_element_namespaceObject.useState)(false); // Control suggestions dropdown
+  const searchRef = (0,external_wp_element_namespaceObject.useRef)(null); // Ref for search container
+
+  const generateAnchorId = title => {
+    return title.toLowerCase().replace(/\s+/g, '-') // Replace spaces with dashes
+    .replace(/[^\w\-]/g, ''); // Remove all non-word characters except dashes
+  };
+  (0,external_wp_element_namespaceObject.useEffect)(() => {
+    if (openCardId && termRefs.current[openCardId]) {
+      //   scrollToElement(openCardId);
+      window.history.pushState(null, '', `#${openCardId}`);
+    }
+  }, [openCardId]);
+  (0,external_wp_element_namespaceObject.useEffect)(() => {
+    if (!loading) {
+      const hash = window.location.hash;
+      if (hash) {
+        const id = hash.substring(1); // Remove the '#' from the hash
+        toggleCard(id); // Open the card and scroll to it
+      }
+    }
+  }, [loading]);
+
+  // Handle clicks outside search to close suggestions
+  (0,external_wp_element_namespaceObject.useEffect)(() => {
+    const handleClickOutside = event => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Generate suggestions based on search query
+  (0,external_wp_element_namespaceObject.useEffect)(() => {
+    if (searchQuery.trim() === '') {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const query = searchQuery.toLowerCase();
+    const matches = terms.filter(term => term.title.toLowerCase().includes(query) || term.content?.toLowerCase().includes(query)).slice(0, 10) // Limit to 10 suggestions
+    .map(term => ({
+      id: term.id,
+      title: term.title,
+      anchorId: generateAnchorId(term.title)
+    }));
+    setSuggestions(matches);
+    setShowSuggestions(matches.length > 0);
+  }, [searchQuery, terms]);
+
+  // No longer needed - using CSS sticky positioning instead of JS scroll handling
+
+  const handleSuggestionClick = suggestion => {
+    setSearchQuery(suggestion.title);
+    setShowSuggestions(false);
+    toggleCard(suggestion.title, true);
+  };
+  const toggleCard = (title, shouldScrollOnly = false) => {
+    const id = generateAnchorId(title);
+    if (shouldScrollOnly && openCardId === id) {
+      scrollToElement(id); // Only scroll if the card is already open
+      return;
+    }
+    setOpenCardId(prevId => {
+      if (prevId === id) {
+        if (!shouldScrollOnly) return null; // Close card if toggle requested
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            scrollToElement(id);
+          }, 50);
+        });
+        return prevId; // Keep it open if only scrolling
+      }
+      // Open the new card and scroll to it
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          scrollToElement(id);
+        }, 50);
+      });
+      return id;
+    });
+  };
+  const escapeCSSSelector = id => {
+    return id.replace(/([!"#$%&'()*+,.\/:;<=>?@[\]^`{|}~])/g, '\\$1');
+  };
+  const calculateHeaderOffset = () => {
+    const fixedElementsOffset = Array.from(document.querySelectorAll('header, .fixed, .sticky, #wpadminbar')).reduce((total, el) => {
+      const position = window.getComputedStyle(el).position;
+      if (position === 'fixed' || position === 'sticky' || el.id === 'wpadminbar') {
+        return total + el.getBoundingClientRect().height;
+      }
+      if (el.tagName.toLowerCase() === 'header') {
+        const childHeights = Array.from(el.children).map(child => {
+          const childPosition = window.getComputedStyle(child).position;
+          if (childPosition === 'fixed' || childPosition === 'sticky') {
+            return child.getBoundingClientRect().height;
+          }
+          return 0;
+        });
+        const maxChildHeight = Math.max(...childHeights);
+        return total + maxChildHeight;
+      }
+      return total;
+    }, 0);
+
+    // Add 2em padding
+    const emSize = parseFloat(getComputedStyle(document.documentElement).fontSize) * 2;
+    return fixedElementsOffset + emSize;
+  };
+  const scrollToElement = (id, retries = 5) => {
+    const element = document.getElementById(id);
+    if (element) {
+      const headerOffset = calculateHeaderOffset();
+      const elementRect = element.getBoundingClientRect();
+      const absoluteElementTop = elementRect.top + window.pageYOffset;
+      const middle = absoluteElementTop - headerOffset;
+      requestAnimationFrame(() => {
+        window.scrollTo({
+          top: middle,
+          behavior: 'smooth'
+        });
+      });
+      setTimeout(() => {
+        const newRect = element.getBoundingClientRect();
+        if (newRect.top < 0 || newRect.top > window.innerHeight) {
+          window.scrollTo({
+            top: middle,
+            behavior: 'auto'
+          });
+        }
+      }, 500);
+    } else if (retries > 0) {
+      setTimeout(() => scrollToElement(id, retries - 1), 100);
+    }
+  };
+  const decodeHTMLEntities = str => {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = str;
+    return textarea.value;
+  };
+  const GlossaryItem = ({
+    term,
+    isOpen,
+    onToggle
+  }) => {
+    const [relatedPosts, setRelatedPosts] = (0,external_wp_element_namespaceObject.useState)([]);
+    const [relatedPostsMeta, setRelatedPostsMeta] = (0,external_wp_element_namespaceObject.useState)(null);
+    const [loadingRelatedPosts, setLoadingRelatedPosts] = (0,external_wp_element_namespaceObject.useState)(false);
+    const [showAllSeeAlso, setShowAllSeeAlso] = (0,external_wp_element_namespaceObject.useState)(false);
+    const anchorId = generateAnchorId(term.title);
+    (0,external_wp_element_namespaceObject.useEffect)(() => {
+      const fetchRelatedPosts = async () => {
+        // Skip fetching if post relations are disabled for this term
+        if (!isOpen || !term.enablePostRelations) {
+          setRelatedPosts([]);
+          setRelatedPostsMeta(null);
+          return;
+        }
+        const categoryIds = term.categories.map(cat => cat.id);
+        const tagIds = term.tags.map(tag => tag.id);
+        setLoadingRelatedPosts(true);
+        try {
+          const params = new URLSearchParams();
+          params.append('term_id', term.id);
+          params.append('search', term.title);
+          if (categoryIds.length > 0) params.append('categories', categoryIds.join(','));
+          if (tagIds.length > 0) params.append('tags', tagIds.join(','));
+          params.append('per_page', 3);
+          const restRoot = getRestRoot();
+          const response = await fetch(`${restRoot}/wp/v2/related-posts?${params.toString()}`);
+          if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+          const payload = await response.json();
+          const postsArray = Array.isArray(payload?.posts) ? payload.posts : Array.isArray(payload) ? payload : [];
+          setRelatedPosts(postsArray);
+          setRelatedPostsMeta(payload?.meta || null);
+        } catch (error) {
+          console.error('Error fetching related posts:', error);
+          setRelatedPosts([]);
+          setRelatedPostsMeta(null);
+        } finally {
+          setLoadingRelatedPosts(false);
+        }
+      };
+      fetchRelatedPosts();
+    }, [isOpen, term.categories, term.tags, term.id, term.title]);
+    (0,external_wp_element_namespaceObject.useEffect)(() => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "DefinedTerm",
+        "name": term.title,
+        "description": term.content ? term.content.replace(/<[^>]*>?/gm, '').slice(0, 150) : "No description available.",
+        "url": window.location.origin + `#term-${term.id}`
+      });
+      document.head.appendChild(script);
+      return () => {
+        document.head.removeChild(script);
+      };
+    }, [term]);
+    return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_components_namespaceObject.Card, {
+      className: "glossary-item-card",
+      ref: el => termRefs.current[anchorId] = el,
+      style: {
+        backgroundColor: 'none'
+      },
+      id: anchorId,
+      children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.CardHeader, {
+        onClick: e => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Toggle the card
+          onToggle(term.title);
+
+          // Then attempt scroll after a brief delay
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              scrollToElement(generateAnchorId(term.title));
+            }, 50);
+          });
+        },
+        style: {
+          cursor: 'pointer',
+          fontWeight: 'bold'
+        },
+        children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("h4", {
+          children: term.title
+        })
+      }), isOpen && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_components_namespaceObject.CardBody, {
+        children: [term.content ? /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("div", {
+          dangerouslySetInnerHTML: {
+            __html: term.content
+          }
+        }) : /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("p", {
+          children: (0,external_wp_i18n_namespaceObject.__)('No content available.', 'acemedia-glossary')
+        }), term.relatedTerms.length > 0 && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
+          className: "see-also",
+          children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("strong", {
+            children: [(0,external_wp_i18n_namespaceObject.__)('See Also:', 'acemedia-glossary'), ' ']
+          }), term.relatedTerms.slice(0, showAllSeeAlso ? term.relatedTerms.length : 10).map((relatedId, index, array) => {
+            const relatedTerm = terms.find(t => t.id === relatedId);
+            const relatedAnchorId = relatedTerm ? generateAnchorId(relatedTerm.title) : null;
+            const termTitle = relatedTerm ? relatedTerm.title : (0,external_wp_i18n_namespaceObject.__)('Unknown Term', 'acemedia-glossary');
+            const isLast = index === array.length - 1;
+            const isSecondLast = index === array.length - 2;
+            return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("span", {
+              children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("a", {
+                href: `#${relatedAnchorId}`,
+                onClick: e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  // Toggle the card
+                  onToggle(relatedTerm.title);
+
+                  // Then attempt scroll after a brief delay
+                  requestAnimationFrame(() => {
+                    setTimeout(() => {
+                      scrollToElement(generateAnchorId(relatedTerm.title));
+                    }, 50);
+                  });
+                },
+                children: termTitle
+              }, relatedId), !isLast && (isSecondLast ? ' & ' : ', ')]
+            }, relatedId);
+          }), term.relatedTerms.length > 10 && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("span", {
+            children: [!showAllSeeAlso && ', ', /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("a", {
+              href: "#",
+              onClick: e => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowAllSeeAlso(!showAllSeeAlso);
+              },
+              style: {
+                fontWeight: 'bold',
+                textDecoration: 'underline',
+                cursor: 'pointer'
+              },
+              children: showAllSeeAlso ? (0,external_wp_i18n_namespaceObject.__)('Show less', 'acemedia-glossary') : `${(0,external_wp_i18n_namespaceObject.__)('See more', 'acemedia-glossary')} (${term.relatedTerms.length - 10})`
+            })]
+          })]
+        }), (term.categories.length > 0 || term.tags.length > 0) && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
+          className: "categories-tags",
+          children: [term.categories.length > 0 && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_ReactJSXRuntime_namespaceObject.Fragment, {
+            children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("strong", {
+              children: [(0,external_wp_i18n_namespaceObject.__)('Categories:', 'acemedia-glossary'), ' ']
+            }), term.categories.map((category, index) => {
+              const isLast = index === term.categories.length - 1;
+              const isSecondLast = index === term.categories.length - 2;
+              return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_ReactJSXRuntime_namespaceObject.Fragment, {
+                children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("a", {
+                  href: `/category/${category.slug}`,
+                  children: category.title
+                }, category.id), !isLast && (isSecondLast ? ' & ' : ', ')]
+              });
+            })]
+          }), term.tags.length > 0 && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_ReactJSXRuntime_namespaceObject.Fragment, {
+            children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("strong", {
+              children: [' ', (0,external_wp_i18n_namespaceObject.__)('Tags:', 'acemedia-glossary'), ' ']
+            }), term.tags.map((tag, index) => {
+              const isLast = index === term.tags.length - 1;
+              const isSecondLast = index === term.tags.length - 2;
+              return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_ReactJSXRuntime_namespaceObject.Fragment, {
+                children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("a", {
+                  href: `/tag/${tag.slug}`,
+                  children: tag.title
+                }, tag.id), !isLast && (isSecondLast ? ' & ' : ', ')]
+              });
+            })]
+          })]
+        }), term.enablePostRelations && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
+          className: "related-posts",
+          children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("strong", {
+            children: [(0,external_wp_i18n_namespaceObject.__)('Related Posts:', 'acemedia-glossary'), ' ']
+          }), loadingRelatedPosts ? /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("span", {
+            children: (0,external_wp_i18n_namespaceObject.__)('Loading...', 'acemedia-glossary')
+          }) : relatedPosts.length > 0 ? relatedPosts.map((post, index) => {
+            const isLast = index === relatedPosts.length - 1;
+            const isSecondLast = index === relatedPosts.length - 2;
+            return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_element_namespaceObject.Fragment, {
+              children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("a", {
+                href: post.link,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                children: post.title
+              }), !isLast && (isSecondLast ? ' & ' : ', ')]
+            }, post.id);
+          }) : /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("span", {
+            children: (0,external_wp_i18n_namespaceObject.__)('No related posts found.', 'acemedia-glossary')
+          }), relatedPostsMeta && relatedPosts.length === 0 && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
+            className: "related-posts-meta",
+            children: [relatedPostsMeta.search_term && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("small", {
+              children: [(0,external_wp_i18n_namespaceObject.__)('Search term:', 'acemedia-glossary'), ' ', /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("code", {
+                children: relatedPostsMeta.search_term
+              })]
+            }), relatedPostsMeta.used_fallback && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("small", {
+              children: (0,external_wp_i18n_namespaceObject.__)('Showing fallback results based on shared categories/tags.', 'acemedia-glossary')
+            })]
+          })]
+        })]
+      })]
+    }, anchorId);
+  };
+  const fetchTerms = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(AceMediaGlossaryData.restUrl, {
+        headers: {
+          'X-WP-Nonce': AceMediaGlossaryData.nonce
+        }
+      });
+      const data = await response.json();
+      setTerms(data.map(term => ({
+        id: term.id || '',
+        title: decodeHTMLEntities(term.title || (0,external_wp_i18n_namespaceObject.__)('Untitled', 'acemedia-glossary')),
+        content: decodeHTMLEntities(term.content || ''),
+        modified: term.modified || null,
+        relatedTerms: term.relatedTerms || [],
+        categories: term.categories || [],
+        tags: term.tags || [],
+        enablePostRelations: term.enablePostRelations || false
+      })));
+    } catch (error) {
+      console.error('Error fetching glossary terms:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  (0,external_wp_element_namespaceObject.useEffect)(() => {
+    if (data.preloadedTerms && data.preloadedTerms.length > 0) {
+      // Use preloaded terms data (no AJAX request needed)
+      setTerms(data.preloadedTerms.map(term => ({
+        id: term.id || '',
+        title: decodeHTMLEntities(term.title || (0,external_wp_i18n_namespaceObject.__)('Untitled', 'acemedia-glossary')),
+        content: decodeHTMLEntities(term.content || ''),
+        modified: term.modified || null,
+        relatedTerms: term.relatedTerms || [],
+        categories: term.categories || [],
+        tags: term.tags || [],
+        enablePostRelations: term.enablePostRelations || false
+      })));
+      setLoading(false);
+    } else {
+      // Fallback to AJAX request if no preloaded data
+      fetchTerms();
+    }
+  }, [data]);
+
+  // Filter terms based on search query
+  const filteredTerms = (0,external_wp_element_namespaceObject.useMemo)(() => {
+    if (!searchQuery) return terms;
+    const lowercasedQuery = searchQuery.toLowerCase();
+    return terms.filter(term => term.title && term.title.toLowerCase().includes(lowercasedQuery) || term.content && term.content.toLowerCase().includes(lowercasedQuery));
+  }, [terms, searchQuery]);
+  const sortedTerms = (0,external_wp_element_namespaceObject.useMemo)(() => {
+    return [...filteredTerms].sort((a, b) => {
+      if (sortOption === 'alphabetical') return a.title.localeCompare(b.title, undefined, {
+        numeric: true
+      });
+      if (sortOption === 'updated') return new Date(b.modified || 0) - new Date(a.modified || 0);
+      return 0;
+    });
+  }, [filteredTerms, sortOption]); // Use filteredTerms here
+
+  const groupedTerms = (0,external_wp_element_namespaceObject.useMemo)(() => {
+    if (!terms.length) return {};
+    // Use sortedTerms instead of terms to maintain consistent order
+    return sortedTerms.reduce((groups, term) => {
+      const firstChar = term.title.charAt(0).toUpperCase();
+      if (!groups[firstChar]) groups[firstChar] = [];
+      groups[firstChar].push(term);
+      return groups;
+    }, {});
+  }, [sortedTerms]);
+  const sortedGroupKeys = (0,external_wp_element_namespaceObject.useMemo)(() => {
+    const keys = Object.keys(groupedTerms);
+    return keys.sort((a, b) => {
+      const isANumber = /^\d$/.test(a);
+      const isBNumber = /^\d$/.test(b);
+      if (isANumber && !isBNumber) return -1; // Numbers before letters
+      if (!isANumber && isBNumber) return 1; // Letters after numbers
+
+      return a.localeCompare(b, undefined, {
+        numeric: true
+      });
+    });
+  }, [groupedTerms]);
+  return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("div", {
+    className: "acemedia-glossary-frontend",
+    children: loading ? /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
+      className: "loading-spinner",
+      children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Spinner, {}), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("p", {
+        children: (0,external_wp_i18n_namespaceObject.__)('Loading glossary...', 'acemedia-glossary')
+      })]
+    }) : terms.length > 0 ? /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_ReactJSXRuntime_namespaceObject.Fragment, {
+      children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
+        className: "glossary-search",
+        ref: searchRef,
+        children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.TextControl, {
+          label: (0,external_wp_i18n_namespaceObject.__)('Search Terms', 'acemedia-glossary'),
+          value: searchQuery,
+          onChange: value => setSearchQuery(value),
+          placeholder: (0,external_wp_i18n_namespaceObject.__)('Type to search...', 'acemedia-glossary'),
+          onFocus: () => searchQuery && suggestions.length > 0 && setShowSuggestions(true),
+          autoComplete: "off",
+          autoCorrect: "off",
+          autoCapitalize: "off",
+          spellCheck: "false"
+        }), searchQuery && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("button", {
+          className: "glossary-search-clear",
+          onClick: () => {
+            setSearchQuery('');
+            setSuggestions([]);
+            setShowSuggestions(false);
+          },
+          "aria-label": (0,external_wp_i18n_namespaceObject.__)('Clear search', 'acemedia-glossary'),
+          title: (0,external_wp_i18n_namespaceObject.__)('Clear search', 'acemedia-glossary'),
+          children: "\xD7"
+        }), showSuggestions && suggestions.length > 0 && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("ul", {
+          className: "glossary-search-suggestions",
+          children: suggestions.map(suggestion => /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("li", {
+            onClick: () => handleSuggestionClick(suggestion),
+            className: "glossary-search-suggestion-item",
+            children: suggestion.title
+          }, suggestion.id))
+        })]
+      }), !searchQuery && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("div", {
+        className: "glossary-alphanumeric-index",
+        children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Flex, {
+          className: "alphanumeric-links",
+          justify: "start",
+          align: "center",
+          wrap: true,
+          gap: "0.5em",
+          children: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(char => {
+            // Only render if this letter has terms
+            if (!groupedTerms[char]) return null;
+            return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.FlexItem, {
+              children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("a", {
+                href: `#${generateAnchorId(char)}`,
+                onClick: e => {
+                  e.preventDefault();
+                  const group = groupedTerms[char];
+                  if (group && group[0]) {
+                    toggleCard(group[0].title, true);
+                  }
+                },
+                className: "alphanumeric-link",
+                title: `${groupedTerms[char].length} term${groupedTerms[char].length !== 1 ? 's' : ''}`,
+                children: [char, /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("span", {
+                  className: "alphanumeric-count",
+                  children: groupedTerms[char].length
+                })]
+              })
+            }, char);
+          })
+        })
+      }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("div", {
+        className: "glossary-terms",
+        children: Object.keys(groupedTerms).map(key => {
+          // Filter terms dynamically based on the search query
+          const filteredGroupTerms = groupedTerms[key].filter(term => term.title.toLowerCase().includes(searchQuery.toLowerCase()) || term.content?.toLowerCase().includes(searchQuery.toLowerCase()));
+
+          // Skip rendering the group if no terms match the search query
+          if (filteredGroupTerms.length === 0) return null;
+          return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
+            className: "glossary-section",
+            id: `group-${key}`,
+            children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("h3", {
+              children: key
+            }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("div", {
+              className: "glossary-group",
+              children: filteredGroupTerms.map(term => /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(GlossaryItem, {
+                term: term,
+                isOpen: openCardId === generateAnchorId(term.title),
+                onToggle: toggleCard
+              }, generateAnchorId(term.title)))
+            })]
+          }, key);
+        })
+      })]
+    }) : /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("p", {
+      children: (0,external_wp_i18n_namespaceObject.__)('No glossary terms found.', 'acemedia-glossary')
+    })
+  });
+};
+/* harmony default export */ const src_GlossaryFrontend = (GlossaryFrontend);
+;// ./src/glossary-frontend.js
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const root = document.getElementById('acemedia-glossary-root');
+  console.log('DOMContentLoaded event fired. Root:', root);
+  if (root) {
+    const glossaryData = window.AceMediaGlossaryData || {};
+    console.log('Glossary Data:', glossaryData);
+    const styleMap = {
+      textColor: '--glossary-text-color',
+      headingBackgroundColor: '--glossary-heading-background',
+      headingTextColor: '--glossary-heading-text-color',
+      cardBackgroundColor: '--glossary-card-background',
+      contentGap: '--glossary-content-gap',
+      headingPadding: '--glossary-heading-padding'
+    };
+    if (glossaryData.styles) {
+      Object.entries(styleMap).forEach(([key, cssVar]) => {
+        const value = glossaryData.styles[key];
+        if (value) {
+          root.style.setProperty(cssVar, value);
+        }
+      });
+    }
+    (0,external_wp_element_namespaceObject.render)(/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(src_GlossaryFrontend, {
+      data: glossaryData
+    }), root);
+  }
+});
+/******/ })()
+;

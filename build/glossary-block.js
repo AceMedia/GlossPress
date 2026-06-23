@@ -1,2 +1,383 @@
-/*! For license information please see glossary-block.js.LICENSE.txt */
-(()=>{"use strict";var e={20:(e,t,r)=>{var n=r(540),o=Symbol.for("react.element"),u=(Symbol.for("react.fragment"),Object.prototype.hasOwnProperty),a=n.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner,i={key:!0,ref:!0,__self:!0,__source:!0};function c(e,t,r){var n,c={},l=null,s=null;for(n in void 0!==r&&(l=""+r),void 0!==t.key&&(l=""+t.key),void 0!==t.ref&&(s=t.ref),t)u.call(t,n)&&!i.hasOwnProperty(n)&&(c[n]=t[n]);if(e&&e.defaultProps)for(n in t=e.defaultProps)void 0===c[n]&&(c[n]=t[n]);return{$$typeof:o,type:e,key:l,ref:s,props:c,_owner:a.current}}t.jsx=c,t.jsxs=c},287:(e,t)=>{var r=Symbol.for("react.element"),n=Symbol.for("react.portal"),o=Symbol.for("react.fragment"),u=Symbol.for("react.strict_mode"),a=Symbol.for("react.profiler"),i=Symbol.for("react.provider"),c=Symbol.for("react.context"),l=Symbol.for("react.forward_ref"),s=Symbol.for("react.suspense"),f=Symbol.for("react.memo"),p=Symbol.for("react.lazy"),y=Symbol.iterator,d={isMounted:function(){return!1},enqueueForceUpdate:function(){},enqueueReplaceState:function(){},enqueueSetState:function(){}},b=Object.assign,_={};function m(e,t,r){this.props=e,this.context=t,this.refs=_,this.updater=r||d}function v(){}function h(e,t,r){this.props=e,this.context=t,this.refs=_,this.updater=r||d}m.prototype.isReactComponent={},m.prototype.setState=function(e,t){if("object"!=typeof e&&"function"!=typeof e&&null!=e)throw Error("setState(...): takes an object of state variables to update or a function which returns an object of state variables.");this.updater.enqueueSetState(this,e,t,"setState")},m.prototype.forceUpdate=function(e){this.updater.enqueueForceUpdate(this,e,"forceUpdate")},v.prototype=m.prototype;var S=h.prototype=new v;S.constructor=h,b(S,m.prototype),S.isPureReactComponent=!0;var g=Array.isArray,w=Object.prototype.hasOwnProperty,O={current:null},j={key:!0,ref:!0,__self:!0,__source:!0};function E(e,t,n){var o,u={},a=null,i=null;if(null!=t)for(o in void 0!==t.ref&&(i=t.ref),void 0!==t.key&&(a=""+t.key),t)w.call(t,o)&&!j.hasOwnProperty(o)&&(u[o]=t[o]);var c=arguments.length-2;if(1===c)u.children=n;else if(1<c){for(var l=Array(c),s=0;s<c;s++)l[s]=arguments[s+2];u.children=l}if(e&&e.defaultProps)for(o in c=e.defaultProps)void 0===u[o]&&(u[o]=c[o]);return{$$typeof:r,type:e,key:a,ref:i,props:u,_owner:O.current}}function k(e){return"object"==typeof e&&null!==e&&e.$$typeof===r}var P=/\/+/g;function R(e,t){return"object"==typeof e&&null!==e&&null!=e.key?function(e){var t={"=":"=0",":":"=2"};return"$"+e.replace(/[=:]/g,function(e){return t[e]})}(""+e.key):t.toString(36)}function $(e,t,o,u,a){var i=typeof e;"undefined"!==i&&"boolean"!==i||(e=null);var c=!1;if(null===e)c=!0;else switch(i){case"string":case"number":c=!0;break;case"object":switch(e.$$typeof){case r:case n:c=!0}}if(c)return a=a(c=e),e=""===u?"."+R(c,0):u,g(a)?(o="",null!=e&&(o=e.replace(P,"$&/")+"/"),$(a,t,o,"",function(e){return e})):null!=a&&(k(a)&&(a=function(e,t){return{$$typeof:r,type:e.type,key:t,ref:e.ref,props:e.props,_owner:e._owner}}(a,o+(!a.key||c&&c.key===a.key?"":(""+a.key).replace(P,"$&/")+"/")+e)),t.push(a)),1;if(c=0,u=""===u?".":u+":",g(e))for(var l=0;l<e.length;l++){var s=u+R(i=e[l],l);c+=$(i,t,o,s,a)}else if(s=function(e){return null===e||"object"!=typeof e?null:"function"==typeof(e=y&&e[y]||e["@@iterator"])?e:null}(e),"function"==typeof s)for(e=s.call(e),l=0;!(i=e.next()).done;)c+=$(i=i.value,t,o,s=u+R(i,l++),a);else if("object"===i)throw t=String(e),Error("Objects are not valid as a React child (found: "+("[object Object]"===t?"object with keys {"+Object.keys(e).join(", ")+"}":t)+"). If you meant to render a collection of children, use an array instead.");return c}function x(e,t,r){if(null==e)return e;var n=[],o=0;return $(e,n,"","",function(e){return t.call(r,e,o++)}),n}function C(e){if(-1===e._status){var t=e._result;(t=t()).then(function(t){0!==e._status&&-1!==e._status||(e._status=1,e._result=t)},function(t){0!==e._status&&-1!==e._status||(e._status=2,e._result=t)}),-1===e._status&&(e._status=0,e._result=t)}if(1===e._status)return e._result.default;throw e._result}var I={current:null},D={transition:null},T={ReactCurrentDispatcher:I,ReactCurrentBatchConfig:D,ReactCurrentOwner:O};function A(){throw Error("act(...) is not supported in production builds of React.")}t.Children={map:x,forEach:function(e,t,r){x(e,function(){t.apply(this,arguments)},r)},count:function(e){var t=0;return x(e,function(){t++}),t},toArray:function(e){return x(e,function(e){return e})||[]},only:function(e){if(!k(e))throw Error("React.Children.only expected to receive a single React element child.");return e}},t.Component=m,t.Fragment=o,t.Profiler=a,t.PureComponent=h,t.StrictMode=u,t.Suspense=s,t.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED=T,t.act=A,t.cloneElement=function(e,t,n){if(null==e)throw Error("React.cloneElement(...): The argument must be a React element, but you passed "+e+".");var o=b({},e.props),u=e.key,a=e.ref,i=e._owner;if(null!=t){if(void 0!==t.ref&&(a=t.ref,i=O.current),void 0!==t.key&&(u=""+t.key),e.type&&e.type.defaultProps)var c=e.type.defaultProps;for(l in t)w.call(t,l)&&!j.hasOwnProperty(l)&&(o[l]=void 0===t[l]&&void 0!==c?c[l]:t[l])}var l=arguments.length-2;if(1===l)o.children=n;else if(1<l){c=Array(l);for(var s=0;s<l;s++)c[s]=arguments[s+2];o.children=c}return{$$typeof:r,type:e.type,key:u,ref:a,props:o,_owner:i}},t.createContext=function(e){return(e={$$typeof:c,_currentValue:e,_currentValue2:e,_threadCount:0,Provider:null,Consumer:null,_defaultValue:null,_globalName:null}).Provider={$$typeof:i,_context:e},e.Consumer=e},t.createElement=E,t.createFactory=function(e){var t=E.bind(null,e);return t.type=e,t},t.createRef=function(){return{current:null}},t.forwardRef=function(e){return{$$typeof:l,render:e}},t.isValidElement=k,t.lazy=function(e){return{$$typeof:p,_payload:{_status:-1,_result:e},_init:C}},t.memo=function(e,t){return{$$typeof:f,type:e,compare:void 0===t?null:t}},t.startTransition=function(e){var t=D.transition;D.transition={};try{e()}finally{D.transition=t}},t.unstable_act=A,t.useCallback=function(e,t){return I.current.useCallback(e,t)},t.useContext=function(e){return I.current.useContext(e)},t.useDebugValue=function(){},t.useDeferredValue=function(e){return I.current.useDeferredValue(e)},t.useEffect=function(e,t){return I.current.useEffect(e,t)},t.useId=function(){return I.current.useId()},t.useImperativeHandle=function(e,t,r){return I.current.useImperativeHandle(e,t,r)},t.useInsertionEffect=function(e,t){return I.current.useInsertionEffect(e,t)},t.useLayoutEffect=function(e,t){return I.current.useLayoutEffect(e,t)},t.useMemo=function(e,t){return I.current.useMemo(e,t)},t.useReducer=function(e,t,r){return I.current.useReducer(e,t,r)},t.useRef=function(e){return I.current.useRef(e)},t.useState=function(e){return I.current.useState(e)},t.useSyncExternalStore=function(e,t,r){return I.current.useSyncExternalStore(e,t,r)},t.useTransition=function(){return I.current.useTransition()},t.version="18.3.1"},540:(e,t,r)=>{e.exports=r(287)},848:(e,t,r)=>{e.exports=r(20)}},t={};function r(e){return r="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},r(e)}function n(e,t,n){return(t=function(e){var t=function(e){if("object"!=r(e)||!e)return e;var t=e[Symbol.toPrimitive];if(void 0!==t){var n=t.call(e,"string");if("object"!=r(n))return n;throw new TypeError("@@toPrimitive must return a primitive value.")}return String(e)}(e);return"symbol"==r(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:n,enumerable:!0,configurable:!0,writable:!0}):e[t]=n,e}const o=wp.blocks,u=wp.blockEditor,a=wp.components,i=wp.i18n;var c=function r(n){var o=t[n];if(void 0!==o)return o.exports;var u=t[n]={exports:{}};return e[n](u,u.exports,r),u.exports}(848);function l(e,t){var r=Object.keys(e);if(Object.getOwnPropertySymbols){var n=Object.getOwnPropertySymbols(e);t&&(n=n.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),r.push.apply(r,n)}return r}function s(e){for(var t=1;t<arguments.length;t++){var r=null!=arguments[t]?arguments[t]:{};t%2?l(Object(r),!0).forEach(function(t){n(e,t,r[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(r)):l(Object(r)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(r,t))})}return e}(0,o.registerBlockType)("acemedia/glossary",{title:(0,i.__)("Glossary","acemedia-glossary"),description:(0,i.__)("Display a glossary of terms.","acemedia-glossary"),category:"widgets",icon:"book-alt",attributes:{sort:{type:"string",default:"alphabetical"}},edit:function(e){var t=e.attributes,r=e.setAttributes,n=(0,u.useBlockProps)();return(0,c.jsxs)("div",s(s({},n),{},{children:[(0,c.jsx)(u.InspectorControls,{children:(0,c.jsx)(a.PanelBody,{title:(0,i.__)("Settings","acemedia-glossary"),initialOpen:!0,children:(0,c.jsx)(a.SelectControl,{label:(0,i.__)("Sort Order","acemedia-glossary"),value:t.sort,options:[{label:(0,i.__)("Alphabetical","acemedia-glossary"),value:"alphabetical"},{label:(0,i.__)("Updated","acemedia-glossary"),value:"updated"}],onChange:function(e){return r({sort:e})}})})}),(0,c.jsx)("p",{children:(0,i.__)("The glossary will be rendered dynamically.","acemedia-glossary")})]}))},save:function(){return null}})})();
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	// The require scope
+/******/ 	var __webpack_require__ = {};
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+
+;// external ["wp","blocks"]
+const external_wp_blocks_namespaceObject = window["wp"]["blocks"];
+;// external ["wp","blockEditor"]
+const external_wp_blockEditor_namespaceObject = window["wp"]["blockEditor"];
+;// external ["wp","components"]
+const external_wp_components_namespaceObject = window["wp"]["components"];
+;// external ["wp","i18n"]
+const external_wp_i18n_namespaceObject = window["wp"]["i18n"];
+;// external ["wp","apiFetch"]
+const external_wp_apiFetch_namespaceObject = window["wp"]["apiFetch"];
+var external_wp_apiFetch_default = /*#__PURE__*/__webpack_require__.n(external_wp_apiFetch_namespaceObject);
+;// external ["wp","element"]
+const external_wp_element_namespaceObject = window["wp"]["element"];
+;// external "ReactJSXRuntime"
+const external_ReactJSXRuntime_namespaceObject = window["ReactJSXRuntime"];
+;// ./src/glossary-block.js
+
+
+
+
+
+
+
+const STYLE_KEYS = ['textColor', 'headingBackgroundColor', 'headingTextColor', 'cardBackgroundColor', 'contentGap', 'headingPadding'];
+const DEFAULT_STYLES = {
+  textColor: '',
+  headingBackgroundColor: '',
+  headingTextColor: '',
+  cardBackgroundColor: '',
+  contentGap: '1.5rem',
+  headingPadding: '1.25rem'
+};
+const getBlockConfig = () => {
+  if (typeof AceMediaGlossaryBlockConfig !== 'undefined') {
+    return AceMediaGlossaryBlockConfig;
+  }
+  return {};
+};
+const sanitizeSpacingValue = value => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  const trimmed = value.trim();
+  if (trimmed === '' || trimmed === '0') {
+    return trimmed === '0' ? '0' : '';
+  }
+  return /^\d+(?:\.\d+)?(px|rem|em|%)$/i.test(trimmed) ? trimmed : '';
+};
+const sanitizeColorValue = value => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  const trimmed = value.trim();
+  if (trimmed === '') {
+    return '';
+  }
+  return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(trimmed) ? trimmed : '';
+};
+(0,external_wp_blocks_namespaceObject.registerBlockType)('acemedia/glossary', {
+  title: (0,external_wp_i18n_namespaceObject.__)('Glossary', 'acemedia-glossary'),
+  description: (0,external_wp_i18n_namespaceObject.__)('Display a glossary of terms.', 'acemedia-glossary'),
+  category: 'widgets',
+  icon: 'book-alt',
+  attributes: {
+    sort: {
+      type: 'string',
+      default: 'alphabetical'
+    },
+    textColor: {
+      type: 'string',
+      default: ''
+    },
+    headingBackgroundColor: {
+      type: 'string',
+      default: ''
+    },
+    headingTextColor: {
+      type: 'string',
+      default: ''
+    },
+    cardBackgroundColor: {
+      type: 'string',
+      default: ''
+    },
+    contentGap: {
+      type: 'string',
+      default: '1.5rem'
+    },
+    headingPadding: {
+      type: 'string',
+      default: '1.25rem'
+    }
+  },
+  edit: ({
+    attributes,
+    setAttributes
+  }) => {
+    const {
+      sort
+    } = attributes;
+    const config = (0,external_wp_element_namespaceObject.useMemo)(() => getBlockConfig(), []);
+    const initialStyles = (0,external_wp_element_namespaceObject.useMemo)(() => ({
+      ...DEFAULT_STYLES,
+      ...(config.styles || {})
+    }), [config.styles]);
+    const [globalStyles, setGlobalStyles] = (0,external_wp_element_namespaceObject.useState)(initialStyles);
+    const [styleError, setStyleError] = (0,external_wp_element_namespaceObject.useState)(null);
+    const [isSavingStyles, setIsSavingStyles] = (0,external_wp_element_namespaceObject.useState)(false);
+    const saveTimeoutRef = (0,external_wp_element_namespaceObject.useRef)();
+    const latestStylesRef = (0,external_wp_element_namespaceObject.useRef)(initialStyles);
+    const restRoot = (0,external_wp_element_namespaceObject.useMemo)(() => {
+      if (config.restRoot) {
+        return config.restRoot.replace(/\/+$/, '');
+      }
+      if (typeof window !== 'undefined' && window.wpApiSettings && window.wpApiSettings.root) {
+        return window.wpApiSettings.root.replace(/\/+$/, '');
+      }
+      return '';
+    }, [config.restRoot]);
+    const buildApiRequest = (0,external_wp_element_namespaceObject.useCallback)((path, extra = {}) => {
+      if (!path || typeof path !== 'string') {
+        throw new Error('Missing REST path.');
+      }
+      if (/^https?:\/\//i.test(path)) {
+        return {
+          url: path,
+          ...extra
+        };
+      }
+      const normalized = path.startsWith('/') ? path : `/${path}`;
+      if (restRoot) {
+        return {
+          url: `${restRoot}${normalized}`,
+          ...extra
+        };
+      }
+      return {
+        path: normalized,
+        ...extra
+      };
+    }, [restRoot]);
+    (0,external_wp_element_namespaceObject.useEffect)(() => {
+      latestStylesRef.current = globalStyles;
+    }, [globalStyles]);
+    (0,external_wp_element_namespaceObject.useEffect)(() => {
+      if (!config.stylesPath) {
+        return;
+      }
+      external_wp_apiFetch_default()(buildApiRequest(config.stylesPath || '/wp/v2/options/glossary_styles')).then(data => {
+        const fetched = {
+          ...DEFAULT_STYLES,
+          ...(data && data.value || {})
+        };
+        setGlobalStyles(fetched);
+        setStyleError(null);
+      }).catch(error => {
+        const message = error?.message || (0,external_wp_i18n_namespaceObject.__)('Unable to load shared styles.', 'acemedia-glossary');
+        setStyleError(message);
+      });
+    }, [config.stylesPath]);
+    (0,external_wp_element_namespaceObject.useEffect)(() => {
+      const updates = {};
+      STYLE_KEYS.forEach(key => {
+        const nextValue = globalStyles[key] || '';
+        if ((attributes[key] || '') !== nextValue) {
+          updates[key] = nextValue;
+        }
+      });
+      if (Object.keys(updates).length) {
+        setAttributes(updates);
+      }
+    }, [attributes, globalStyles, setAttributes]);
+    (0,external_wp_element_namespaceObject.useEffect)(() => () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    }, []);
+    const saveStylesToServer = (0,external_wp_element_namespaceObject.useCallback)(stylesToSave => {
+      if (!config.canManageOptions) {
+        return;
+      }
+      setIsSavingStyles(true);
+      setStyleError(null);
+      external_wp_apiFetch_default()(buildApiRequest(config.stylesPath || '/wp/v2/options/glossary_styles', {
+        method: 'POST',
+        data: {
+          value: stylesToSave
+        },
+        headers: {
+          'X-WP-Nonce': config.nonce
+        }
+      })).then(response => {
+        const saved = {
+          ...DEFAULT_STYLES,
+          ...(response && response.value || stylesToSave)
+        };
+        setGlobalStyles(saved);
+      }).catch(error => {
+        const message = error?.message || (0,external_wp_i18n_namespaceObject.__)('Error saving shared styles.', 'acemedia-glossary');
+        setStyleError(message);
+      }).finally(() => {
+        setIsSavingStyles(false);
+      });
+    }, [config.canManageOptions, config.nonce, config.stylesPath]);
+    const queueSaveStyles = (0,external_wp_element_namespaceObject.useCallback)(stylesToSave => {
+      if (!config.canManageOptions) {
+        return;
+      }
+      latestStylesRef.current = stylesToSave;
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        saveStylesToServer(latestStylesRef.current);
+      }, 400);
+    }, [config.canManageOptions, saveStylesToServer]);
+    const handleStyleChange = (0,external_wp_element_namespaceObject.useCallback)((key, value) => {
+      if (!config.canManageOptions) {
+        return;
+      }
+      setGlobalStyles(prev => {
+        const nextValue = key === 'contentGap' || key === 'headingPadding' ? sanitizeSpacingValue(value || '') : sanitizeColorValue(value || '');
+        const next = {
+          ...prev,
+          [key]: nextValue
+        };
+        queueSaveStyles(next);
+        return next;
+      });
+    }, [config.canManageOptions, queueSaveStyles]);
+    const blockProps = (0,external_wp_blockEditor_namespaceObject.useBlockProps)({
+      style: {
+        '--glossary-text-color': globalStyles.textColor || undefined,
+        '--glossary-heading-background': globalStyles.headingBackgroundColor || undefined,
+        '--glossary-heading-text-color': globalStyles.headingTextColor || undefined,
+        '--glossary-card-background': globalStyles.cardBackgroundColor || undefined,
+        '--glossary-content-gap': globalStyles.contentGap || undefined,
+        '--glossary-heading-padding': globalStyles.headingPadding || undefined
+      }
+    });
+    const palette = (0,external_wp_element_namespaceObject.useMemo)(() => config.colorPalette || [], [config.colorPalette]);
+    const paletteProvided = palette && palette.length > 0;
+    return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
+      ...blockProps,
+      children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_blockEditor_namespaceObject.InspectorControls, {
+        children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.PanelBody, {
+          title: (0,external_wp_i18n_namespaceObject.__)('Settings', 'acemedia-glossary'),
+          initialOpen: true,
+          children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.SelectControl, {
+            label: (0,external_wp_i18n_namespaceObject.__)('Sort Order', 'acemedia-glossary'),
+            value: sort,
+            options: [{
+              label: (0,external_wp_i18n_namespaceObject.__)('Alphabetical', 'acemedia-glossary'),
+              value: 'alphabetical'
+            }, {
+              label: (0,external_wp_i18n_namespaceObject.__)('Updated', 'acemedia-glossary'),
+              value: 'updated'
+            }],
+            onChange: sort => setAttributes({
+              sort
+            })
+          })
+        }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_blockEditor_namespaceObject.PanelColorSettings, {
+          title: (0,external_wp_i18n_namespaceObject.__)('Colours', 'acemedia-glossary'),
+          initialOpen: false,
+          colorSettings: [{
+            value: globalStyles.textColor,
+            colors: paletteProvided ? palette : undefined,
+            onChange: value => handleStyleChange('textColor', value || ''),
+            label: (0,external_wp_i18n_namespaceObject.__)('Body text colour', 'acemedia-glossary')
+          }, {
+            value: globalStyles.headingBackgroundColor,
+            colors: paletteProvided ? palette : undefined,
+            onChange: value => handleStyleChange('headingBackgroundColor', value || ''),
+            label: (0,external_wp_i18n_namespaceObject.__)('Heading background', 'acemedia-glossary')
+          }, {
+            value: globalStyles.headingTextColor,
+            colors: paletteProvided ? palette : undefined,
+            onChange: value => handleStyleChange('headingTextColor', value || ''),
+            label: (0,external_wp_i18n_namespaceObject.__)('Heading text colour', 'acemedia-glossary')
+          }, {
+            value: globalStyles.cardBackgroundColor,
+            colors: paletteProvided ? palette : undefined,
+            onChange: value => handleStyleChange('cardBackgroundColor', value || ''),
+            label: (0,external_wp_i18n_namespaceObject.__)('Card background', 'acemedia-glossary')
+          }]
+        }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_components_namespaceObject.PanelBody, {
+          title: (0,external_wp_i18n_namespaceObject.__)('Layout', 'acemedia-glossary'),
+          initialOpen: false,
+          children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.__experimentalUnitControl, {
+            label: (0,external_wp_i18n_namespaceObject.__)('Gap between entries', 'acemedia-glossary'),
+            value: globalStyles.contentGap,
+            onChange: value => handleStyleChange('contentGap', value || ''),
+            units: [{
+              value: 'px',
+              label: 'px'
+            }, {
+              value: 'rem',
+              label: 'rem'
+            }, {
+              value: 'em',
+              label: 'em'
+            }, {
+              value: '%',
+              label: '%'
+            }]
+          }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.__experimentalUnitControl, {
+            label: (0,external_wp_i18n_namespaceObject.__)('Heading padding', 'acemedia-glossary'),
+            value: globalStyles.headingPadding,
+            onChange: value => handleStyleChange('headingPadding', value || ''),
+            units: [{
+              value: 'px',
+              label: 'px'
+            }, {
+              value: 'rem',
+              label: 'rem'
+            }, {
+              value: 'em',
+              label: 'em'
+            }, {
+              value: '%',
+              label: '%'
+            }]
+          }), !config.canManageOptions && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Notice, {
+            status: "info",
+            isDismissible: false,
+            children: (0,external_wp_i18n_namespaceObject.__)('Styles are centrally managed. Contact an administrator to make changes.', 'acemedia-glossary')
+          }), isSavingStyles && config.canManageOptions && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Notice, {
+            status: "info",
+            isDismissible: false,
+            children: (0,external_wp_i18n_namespaceObject.__)('Saving shared glossary styles...', 'acemedia-glossary')
+          }), styleError && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Notice, {
+            status: "warning",
+            isDismissible: false,
+            children: styleError
+          })]
+        })]
+      }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("p", {
+        children: (0,external_wp_i18n_namespaceObject.__)('The glossary will be rendered dynamically.', 'acemedia-glossary')
+      })]
+    });
+  },
+  save: () => null // Dynamic block; server-side rendering only.
+});
+/******/ })()
+;

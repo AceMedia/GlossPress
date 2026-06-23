@@ -7,37 +7,7 @@ const SaveBar = ({ children, onSave, setUnsavedChanges, unsavedChanges, isAutoSa
     const [elapsedTime, setElapsedTime] = useState(0);
     const [intervalId, setIntervalId] = useState(null);
 
-    // Function to update the fixed position
-    function updateFixedPosition() {
-        const adminMenuWrap = document.querySelector('#adminmenuwrap');
-        const fixedElement = document.querySelector('.ace-save-bar');
 
-        if (adminMenuWrap && fixedElement) {
-            const adminMenuWidth = adminMenuWrap.offsetWidth;
-            fixedElement.style.left = `${adminMenuWidth}px`;
-        }
-    }
-
-    useEffect(() => {
-        window.addEventListener('resize', updateFixedPosition);
-        window.addEventListener('scroll', updateFixedPosition);
-        window.addEventListener('load', updateFixedPosition);
-
-        const handleBeforeUnload = (event) => {
-            if (unsavedChanges) {
-                event.preventDefault();
-                event.returnValue = '';
-            }
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-
-        return () => {
-            window.removeEventListener('resize', updateFixedPosition);
-            window.removeEventListener('scroll', updateFixedPosition);
-            window.removeEventListener('load', updateFixedPosition);
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, [unsavedChanges]);
 
     useEffect(() => {
         if (message === 'Time since last saved') {

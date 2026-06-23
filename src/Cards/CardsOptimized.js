@@ -1,11 +1,13 @@
 import React from 'react';
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from '@wordpress/element';
-import { FlexBlock, Card, CardHeader, CardBody, TextControl, ToggleControl, TextareaControl, PanelRow, Tooltip, IconButton, Flex, Spinner } from '@wordpress/components';
+import { FlexBlock, Card, CardHeader, CardBody, TextControl, ToggleControl, PanelRow, Tooltip, IconButton, Flex, Spinner } from '@wordpress/components';
+import { store as blockEditorStore } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faClock, faEdit, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import { decodeHTMLEntities, formatRelativeTime, smoothScrollTo } from '../utils';
 import RelatedTagsAndCatsOptimized from './RelatedTagsAndCatsOptimized';
+import BlockEditor from '../components/BlockEditor';
 
 // Debounce utility function
 function debounce(func, wait) {
@@ -31,6 +33,7 @@ const CardsOptimized = ({
     setSelectedTerms,
     sortOption,
     setTerms,
+    modifiedTerms,
     setModifiedTerms,
     setUnsavedChanges,
     loadTime,
@@ -49,100 +52,148 @@ const CardsOptimized = ({
     prefetchedTags,
     relatedTermsLookup,
     hasMorePrefetchedCategories,
-    hasMorePrefetchedTags
+    hasMorePrefetchedTags,
+    globalAutoHighlightEnabled,
+    registerEditorTextarea
 }) => {
     const editorRef = useRef(null);
-    const activeEditor = useRef(null);
+    const lastEditorContentRef = useRef('');
+    const activeTermIdRef = useRef(null);
+    const updateActiveTermRef = useRef(updateActiveTerm);
     const termRefs = useRef({});
     const focusedTermIdRef = useRef(null);
     const focusedFieldRef = useRef(null);
+    const modifiedTermsRef = useRef(modifiedTerms);
+    
+    // Local state for block editor content
+    const [localEditorContent, setLocalEditorContent] = useState('');
+    const contentLoadedForTermRef = useRef(null);
+    const isEditingRef = useRef(false);
+    const editorTextareaRef = useRef(null); // Will hold reference to BlockEditor's hidden textarea
 
-    // Create debounced title update function for immediate UI response
-    const debouncedTitleUpdate = useMemo(() => 
-        debounce((title) => {
-            updateActiveTermTitle(title);
-        }, 150), // Very short debounce for title sync
-    [updateActiveTermTitle]);
-
-    // Immediate title update for instant UI feedback
-    const handleTitleChange = useCallback((value) => {
-        // Update UI immediately for responsive typing
-        if (activeTerm) {
-            setActiveTerm(prev => ({ ...prev, title: value }));
-        }
-        // Debounced sync to terms list
-        debouncedTitleUpdate(value);
-    }, [activeTerm, setActiveTerm, debouncedTitleUpdate]);
-
-    // Add editor functionality
-    const attachEditor = useCallback((term) => {
-        if (!editorRef.current || activeEditor.current?.id === term.id) return;
-
-        if (activeEditor.current?.instance) {
-            activeEditor.current.instance.destroy();
-        }
-
-        // Wait a bit for the content to be loaded and DOM to be ready
-        setTimeout(() => {
-            if (!editorRef.current) return;
-            
-            const editorInstance = wp.attachEditor(editorRef.current, {
-                value: term.content || '',
-                onSaveContent: (content) => {
-                    console.log('Editor onSaveContent called with:', content);
-                    updateActiveTerm('content', content);
-                },
-                onChange: (content) => {
-                    console.log('Editor onChange called with:', content);
-                    updateActiveTerm('content', content);
-                },
-                onLoad: (parse) => {
-                    console.log('Editor loaded');
-                    // Force set content when editor loads to ensure it's displayed
-                    if (term.content && editorInstance?.instance?.tinymce) {
-                        editorInstance.instance.tinymce.setContent(term.content);
-                    }
-                },
-                onError: (error) => {
-                    console.error('Editor error:', error);
-                },
-            });
-
-            // Also listen for TinyMCE events directly
-            if (editorInstance?.instance?.tinymce) {
-                editorInstance.instance.tinymce.on('input change keyup', function() {
-                    const content = editorInstance.instance.tinymce.getContent();
-                    updateActiveTerm('content', content);
-                });
-            }
-
-            activeEditor.current = { id: term.id, instance: editorInstance };
-        }, 100);
+    useEffect(() => {
+        updateActiveTermRef.current = updateActiveTerm;
     }, [updateActiveTerm]);
 
-    // Attach editor when active term changes or when content loads
     useEffect(() => {
-        if (activeTerm && activeTerm.isOpen && activeTerm.isLoaded) {
-            attachEditor(activeTerm);
+        modifiedTermsRef.current = modifiedTerms;
+    }, [modifiedTerms]);
+
+    useEffect(() => {
+        return () => {
+            registerEditorTextarea?.(null);
+        };
+    }, [registerEditorTextarea]);
+
+    useEffect(() => {
+        const termId = activeTerm?.id || null;
+        const content = activeTerm?.content || '';
+        const prevTermId = activeTermIdRef.current;
+        const prevContent = lastEditorContentRef.current;
+
+        console.log('Content effect - termId:', termId, 'prevTermId:', prevTermId, 'content:', content?.substring(0, 50), 'prevContent:', prevContent?.substring(0, 50), 'isEditing:', isEditingRef.current);
+
+        // Term changed OR content loaded after term opened
+        const termChanged = prevTermId !== termId && activeTerm?.isOpen;
+        const contentArrived = termId === prevTermId && !prevContent && content && activeTerm?.isOpen;
+        
+        console.log('termChanged:', termChanged, 'contentArrived:', contentArrived);
+        
+        // Reset editing flag when term changes OR when fresh content arrives from API
+        if (termChanged || contentArrived) {
+            isEditingRef.current = false;
+        }
+        
+        if ((termChanged || contentArrived) && !isEditingRef.current) {
+            console.log('✅ Loading content into editor:', termId, content?.substring(0, 100));
+            setLocalEditorContent(content);
+            contentLoadedForTermRef.current = termId;
+            
+            // Update the textarea if we have a reference to it
+            if (editorTextareaRef.current) {
+                editorTextareaRef.current.value = content;
+                registerEditorTextarea?.(editorTextareaRef.current);
+            }
+        }
+        
+        activeTermIdRef.current = termId;
+        lastEditorContentRef.current = content;
+
+        if (editorRef.current) {
+            editorRef.current.value = content;
         }
 
-        return () => {
-            if (activeEditor.current?.instance) {
-                activeEditor.current.instance.destroy();
-                activeEditor.current = null;
-            }
-        };
-    }, [activeTerm, attachEditor]);
+        if (!termId) {
+            editorTextareaRef.current = null;
+            registerEditorTextarea?.(null);
+        }
+    }, [activeTerm?.id, activeTerm?.content, activeTerm?.isOpen, registerEditorTextarea]);
 
-    // Cleanup function for editor management
+    // Handle title change - update parent immediately (but memo will prevent full re-renders)
+    const handleTitleChange = useCallback((value) => {
+        if (!activeTerm) return;
+        updateActiveTerm('title', value);
+    }, [activeTerm, updateActiveTerm]);
+    
+    // Track when editor is focused to mark term as edited
+    const handleEditorFocus = useCallback(() => {
+        if (activeTerm) {
+            isEditingRef.current = true;
+            setModifiedTerms(prev => {
+                if (prev.has(activeTerm.id)) {
+                    return prev;
+                }
+                const newSet = new Set(prev);
+                newSet.add(activeTerm.id);
+                return newSet;
+            });
+            setUnsavedChanges(true);
+        }
+    }, [activeTerm, setModifiedTerms, setUnsavedChanges]);
+    
+    // Store content updates locally WITHOUT syncing to parent (to avoid re-renders)
+    const handleEditorContentUpdate = useCallback((content, textareaRef) => {
+        console.log('🔵 User is editing - content updated locally');
+        console.log('  - Content length:', content?.length || 0);
+        console.log('  - Content (first 200 chars):', content?.substring(0, 200));
+        isEditingRef.current = true;
+        
+        // Store the textarea ref so we can read from it later
+        if (textareaRef) {
+            editorTextareaRef.current = textareaRef;
+            registerEditorTextarea?.(textareaRef);
+        }
+        
+        // Update state for re-renders, but don't rely on it for saving
+        setLocalEditorContent(content);
+        
+        // Persist draft content so switching terms retains unsaved edits.
+        if (activeTermIdRef.current && typeof updateActiveTermRef.current === 'function') {
+            updateActiveTermRef.current('content', content);
+        }
+    }, [registerEditorTextarea]);
+    
+    // Sync local content to parent only when saving
     useEffect(() => {
-        return () => {
-            if (activeEditor.current?.instance) {
-                activeEditor.current.instance.destroy();
-                activeEditor.current = null;
-            }
-        };
-    }, []);
+        if (isSaving && activeTerm) {
+            // Read directly from textarea (like blocks-everywhere does)
+            const contentToSave = editorTextareaRef.current?.value || localEditorContent;
+            
+            console.log('🟢 SAVE TRIGGERED - Syncing content to parent');
+            console.log('  - Term ID:', activeTerm.id);
+            console.log('  - Content from textarea:', editorTextareaRef.current?.value?.substring(0, 100));
+            console.log('  - Content length:', contentToSave?.length || 0);
+            console.log('  - Content:', contentToSave);
+            updateActiveTerm('content', contentToSave);
+        }
+    }, [isSaving, activeTerm, updateActiveTerm, localEditorContent]);
+    
+    // Reset editing flag after save completes
+    useEffect(() => {
+        if (!isSaving) {
+            isEditingRef.current = false;
+        }
+    }, [isSaving]);
 
     // Toggle term open/close with instant loading placeholder
     const toggleTermOpen = useCallback(async (termId) => {
@@ -157,65 +208,34 @@ const CardsOptimized = ({
             closeActiveTerm();
         }
 
-        // Find the basic term data from the terms list for instant display
-        const basicTermData = terms.find(term => term.id === termId);
-        if (basicTermData) {
-            // Show placeholder immediately with basic data - no loading state initially
-            const placeholderTerm = {
-                ...basicTermData,
-                content: '', // Will be loaded
-                relatedTerms: [],
-                categories: [],
-                tags: [],
-                isOpen: true,
-                isLoaded: false,
-                isLoading: false // Start without loading state for instant UI
-            };
-            
-            // Set the placeholder immediately for instant feedback
-            setActiveTerm(placeholderTerm);
-            
-            // Update terms list to show this term as open (synchronously)
-            setTerms(prevTerms => 
-                prevTerms.map(term => ({
-                    ...term,
-                    isOpen: term.id === termId
-                }))
-            );
-            
-            // Immediately scroll to the term (no delay)
-            if (termRefs.current[termId]) {
-                termRefs.current[termId].scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'nearest' 
-                });
-            }
+        // Check if this term has unsaved changes
+        const hasUnsavedChanges = modifiedTerms.has(termId);
+
+        // Update terms list to show this term as open
+        setTerms(prevTerms => 
+            prevTerms.map(term => ({
+                ...term,
+                isOpen: term.id === termId
+            }))
+        );
+        
+        // Scroll to the term
+        if (termRefs.current[termId]) {
+            termRefs.current[termId].scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'nearest' 
+            });
         }
 
-        // Load the full term data in the background (async)
-        setTimeout(async () => {
-            try {
-                // Only show loading if it takes longer than expected
-                const loadingTimer = setTimeout(() => {
-                    setActiveTerm(prev => prev && prev.id === termId ? { ...prev, isLoading: true } : prev);
-                }, 200); // Only show loading after 200ms
-
-                await loadSingleTerm(termId);
-                
-                clearTimeout(loadingTimer);
-            } catch (error) {
-                console.error('Error loading term:', error);
-                setMessage('Failed to load term data');
-                setTimeout(() => setMessage(''), 3000);
-            }
-        }, 0); // Start loading immediately but non-blocking
-
-        // Cleanup the editor instance if needed
-        if (activeEditor.current?.instance) {
-            activeEditor.current.instance.destroy();
-            activeEditor.current = null;
+        // Load the full term data immediately (await the API call)
+        try {
+            await loadSingleTerm(termId);
+        } catch (error) {
+            console.error('Error loading term:', error);
+            setMessage('Failed to load term data');
+            setTimeout(() => setMessage(''), 3000);
         }
-    }, [activeTerm, loadSingleTerm, closeActiveTerm, setMessage, terms, setActiveTerm, setTerms]);
+    }, [activeTerm, loadSingleTerm, closeActiveTerm, setMessage, terms, setActiveTerm, setTerms, modifiedTerms]);
 
     // Calculate visible count
     const visibleCount = Object.keys(displayedTerms).reduce((count, key) => {
@@ -294,86 +314,121 @@ const CardsOptimized = ({
                             <CardHeader
                                 onClick={(event) => {
                                     if (quickEdit === 'true') {
-                                        // Bulk edit mode
                                         if (event.target.type !== 'checkbox') {
                                             setSelectedTerms((prev) => {
                                                 if (prev.includes(term.id)) {
                                                     return prev.filter((id) => id !== term.id);
-                                                } else {
-                                                    return [...prev, term.id];
                                                 }
+                                                return [...prev, term.id];
                                             });
                                         }
                                     } else {
-                                        // Normal mode - load term details
                                         toggleTermOpen(term.id);
                                     }
                                 }}
-                                style={{ cursor: 'pointer' }}
+                                style={{ 
+                                    cursor: 'pointer',
+                                    borderLeft: modifiedTerms.has(term.id) ? '4px solid #46b450' : 'none',
+                                    paddingLeft: modifiedTerms.has(term.id) ? '12px' : '16px',
+                                }}
                             >
-                                {quickEdit === 'true' && (
-                                    <ToggleControl
-                                        checked={selectedTerms.includes(term.id)}
-                                        onChange={(isChecked) => {
-                                            setSelectedTerms((prev) =>
-                                                isChecked ? [...prev, term.id] : prev.filter((id) => id !== term.id)
-                                            );
-                                        }}
-                                        className="bulk-select-toggle"
-                                    />
-                                )}
-                                
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                                        <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <h2>{decodeHTMLEntities(term.title) || __('New Term', 'acemedia-glossary')}</h2>
-                                                {term.autoHighlight && (
-                                                    <Tooltip text={__('Auto-highlight enabled', 'acemedia-glossary')}>
-                                                        <span style={{ 
-                                                            fontSize: '10px', 
-                                                            background: '#007cba', 
-                                                            color: 'white', 
-                                                            padding: '2px 6px', 
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                                            <h2 style={{ margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {decodeHTMLEntities(term.title) || __('New Term', 'acemedia-glossary')}
+                                            </h2>
+                                            {term.autoHighlight && (
+                                                <Tooltip
+                                                    text={globalAutoHighlightEnabled
+                                                        ? __('Auto-highlight enabled', 'acemedia-glossary')
+                                                        : __('Disabled by main toggle', 'acemedia-glossary')}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            fontSize: '10px',
+                                                            background: globalAutoHighlightEnabled ? '#007cba' : '#d6d6d6',
+                                                            color: globalAutoHighlightEnabled ? '#fff' : '#555',
+                                                            padding: '2px 6px',
                                                             borderRadius: '3px',
-                                                            fontWeight: 'bold'
-                                                        }}>
-                                                            AUTO
-                                                        </span>
-                                                    </Tooltip>
-                                                )}
-                                            </div>
-                                            <div className="updated-times" style={{ fontSize: '0.85em', color: '#777', display: 'flex', gap: '.5em' }}>
-                                                <Tooltip text={`Created at ${new Date(term.date).toLocaleDateString()}`}>
-                                                    <p><strong>Created:</strong> {formatRelativeTime(term.date)}</p>
+                                                            fontWeight: 'bold',
+                                                            opacity: globalAutoHighlightEnabled ? 1 : 0.7,
+                                                        }}
+                                                    >
+                                                        AUTO
+                                                    </span>
                                                 </Tooltip>
-                                                <Tooltip text={`Last edited at ${new Date(term.modified).toLocaleDateString()}`}>
-                                                    <p><strong>Updated:</strong> {formatRelativeTime(term.modified)}</p>
-                                                </Tooltip>
-                                            </div>
-                                        </div>
-                                        
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            {/* Subtle loading indicator only when actually loading */}
-                                            {activeTerm && activeTerm.id === term.id && activeTerm.isLoading && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
-                                                    <Spinner style={{ width: '16px', height: '16px' }} />
-                                                    <span>Loading...</span>
-                                                </div>
                                             )}
-                                            
-                                            {activeTerm && activeTerm.id === term.id && (
-                                                <IconButton
-                                                    icon="no-alt"
-                                                    label={__('Close', 'acemedia-glossary')}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        closeActiveTerm();
-                                                    }}
-                                                    style={{ color: '#666' }}
-                                                />
+                                            {term.enablePostRelations && (
+                                                <Tooltip
+                                                    text={__('Related posts enabled', 'acemedia-glossary')}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            fontSize: '10px',
+                                                            background: '#46b450',
+                                                            color: '#fff',
+                                                            padding: '2px 6px',
+                                                            borderRadius: '3px',
+                                                            fontWeight: 'bold',
+                                                        }}
+                                                    >
+                                                        RELATED
+                                                    </span>
+                                                </Tooltip>
                                             )}
                                         </div>
                                     </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#555', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                                            <Tooltip text={`Created at ${new Date(term.date).toLocaleString()}`}>
+                                                <span className="meta-pill">
+                                                    <FontAwesomeIcon icon={faClock} style={{ marginRight: '4px' }} />
+                                                    {formatRelativeTime(term.date)}
+                                                </span>
+                                            </Tooltip>
+                                            <Tooltip text={`Last updated at ${new Date(term.modified).toLocaleString()}`}>
+                                                <span className="meta-pill">
+                                                    <FontAwesomeIcon icon={faEdit} style={{ marginRight: '4px' }} />
+                                                    {formatRelativeTime(term.modified)}
+                                                </span>
+                                            </Tooltip>
+                                        </div>
+
+                                        {activeTerm && activeTerm.id === term.id && activeTerm.isLoading && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#666' }}>
+                                                <Spinner style={{ width: '16px', height: '16px' }} />
+                                                <span>Loading...</span>
+                                            </div>
+                                        )}
+
+                                        {quickEdit === 'true' && (
+                                            <ToggleControl
+                                                checked={selectedTerms.includes(term.id)}
+                                                onChange={(isChecked) => {
+                                                    setSelectedTerms((prev) =>
+                                                        isChecked ? [...prev, term.id] : prev.filter((id) => id !== term.id)
+                                                    );
+                                                }}
+                                                className="bulk-select-toggle right"
+                                                __nextHasNoMarginBottom
+                                            />
+                                        )}
+
+                                        {activeTerm && activeTerm.id === term.id && (
+                                            <IconButton
+                                                icon="no-alt"
+                                                label={__('Close', 'acemedia-glossary')}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    closeActiveTerm();
+                                                }}
+                                                style={{ color: '#666' }}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
                             </CardHeader>
                             
                             {/* Expanded editing interface - shows inline within the card */}
@@ -387,47 +442,49 @@ const CardsOptimized = ({
                                         placeholder={__('Enter term title...', 'acemedia-glossary')}
                                     />
 
-                                    <TextareaControl
-                                        ref={(el) => {
-                                            if (el) {
-                                                editorRef.current = el;
-                                                // Force update value when content loads
-                                                if (activeTerm?.content && el.value !== activeTerm.content) {
-                                                    el.value = activeTerm.content;
-                                                }
-                                                
-                                                // Add input event listener to detect changes
-                                                const handleInputChange = (e) => {
-                                                    updateActiveTerm('content', e.target.value);
-                                                };
-                                                
-                                                el.addEventListener('input', handleInputChange);
-                                                el.addEventListener('change', handleInputChange);
-                                                
-                                                // Cleanup listeners on unmount
-                                                return () => {
-                                                    el.removeEventListener('input', handleInputChange);
-                                                    el.removeEventListener('change', handleInputChange);
-                                                };
-                                            }
-                                        }}
-                                        label={__('Content', 'acemedia-glossary')}
-                                        value={activeTerm.content || ''}
-                                        onChange={(value) => updateActiveTerm('content', value)}
-                                        placeholder={activeTerm.isLoading ? __('Loading content...', 'acemedia-glossary') : __('Enter term content...', 'acemedia-glossary')}
-                                        rows={8}
-                                        disabled={activeTerm.isLoading}
-                                    />
+                                    <div className="glossary-editor-container" key={`editor-container-${activeTerm.id}`}>
+                                        <label className="term-content-label">
+                                            {__('Content', 'acemedia-glossary')}
+                                        </label>
+                                        {activeTerm.isLoading ? (
+                                            <div className="editor-loading-state">
+                                                <Spinner />
+                                                <span>{__('Loading term content...', 'acemedia-glossary')}</span>
+                                            </div>
+                                        ) : (
+                                            <BlockEditor
+                                                key={`block-editor-${activeTerm.id}`}
+                                                termId={activeTerm.id}
+                                                content={activeTerm.content || ''}
+                                                onChange={handleEditorContentUpdate}
+                                                onFocus={handleEditorFocus}
+                                            />
+                                        )}
+                                    </div>
 
-                                    <PanelRow>
-                                        <ToggleControl
-                                            label={__('Auto-highlight this term', 'acemedia-glossary')}
-                                            help={__('When enabled, this term will be automatically highlighted with tooltips in your content.', 'acemedia-glossary')}
-                                            checked={activeTerm.autoHighlight || false}
-                                            onChange={(value) => updateActiveTerm('autoHighlight', value)}
-                                            disabled={activeTerm.isLoading}
-                                        />
-                                    </PanelRow>
+                                    <div className="term-toggle-grid">
+                                        <PanelRow>
+                                            <ToggleControl
+                                                label={__('Auto-highlight this term', 'acemedia-glossary')}
+                                                help={globalAutoHighlightEnabled
+                                                    ? __('When enabled, this term will be automatically highlighted with tooltips in your content.', 'acemedia-glossary')
+                                                    : __('Main auto highlight toggle is off, so highlights are paused.', 'acemedia-glossary')}
+                                                checked={activeTerm.autoHighlight || false}
+                                                onChange={(value) => updateActiveTerm('autoHighlight', value)}
+                                                disabled={activeTerm.isLoading}
+                                            />
+                                        </PanelRow>
+
+                                        <PanelRow>
+                                            <ToggleControl
+                                                label={__('Enable post relations', 'acemedia-glossary')}
+                                                help={__('When enabled, this term will show related posts and appear in post relation searches.', 'acemedia-glossary')}
+                                                checked={activeTerm.enablePostRelations || false}
+                                                onChange={(value) => updateActiveTerm('enablePostRelations', value)}
+                                                disabled={activeTerm.isLoading}
+                                            />
+                                        </PanelRow>
+                                    </div>
 
                                     <RelatedTagsAndCatsOptimized
                                         term={activeTerm}
@@ -465,4 +522,41 @@ const CardsOptimized = ({
     );
 };
 
-export default memo(CardsOptimized);
+// Custom comparison function to prevent unnecessary re-renders
+const arePropsEqual = (prevProps, nextProps) => {
+    // If terms list changed, re-render
+    if (prevProps.terms !== nextProps.terms) return false;
+    
+    // If displayedTerms changed, re-render
+    if (prevProps.displayedTerms !== nextProps.displayedTerms) return false;
+    
+    // If activeTerm changed in any way, we need to re-render to update inputs
+    if (prevProps.activeTerm !== nextProps.activeTerm) return false;
+    
+    // If modifiedTerms Set reference is the same, no need to check contents
+    if (prevProps.modifiedTerms !== nextProps.modifiedTerms) {
+        // Different Set object, check if the contents are actually different
+        if (prevProps.modifiedTerms.size !== nextProps.modifiedTerms.size) return false;
+        for (const id of nextProps.modifiedTerms) {
+            if (!prevProps.modifiedTerms.has(id)) return false;
+        }
+    }
+    
+    // Other props that should trigger re-render
+    if (prevProps.quickEdit !== nextProps.quickEdit) return false;
+    if (prevProps.sortOption !== nextProps.sortOption) return false;
+    if (prevProps.isLoadingTerm !== nextProps.isLoadingTerm) return false;
+    if (prevProps.isSaving !== nextProps.isSaving) return false;
+    if (prevProps.loadTime !== nextProps.loadTime) return false;
+    if (prevProps.globalAutoHighlightEnabled !== nextProps.globalAutoHighlightEnabled) return false;
+    if (prevProps.registerEditorTextarea !== nextProps.registerEditorTextarea) return false;
+    
+    // selectedTerms array
+    if (prevProps.selectedTerms.length !== nextProps.selectedTerms.length) return false;
+    if (prevProps.selectedTerms.some((id, i) => id !== nextProps.selectedTerms[i])) return false;
+    
+    // All other props are functions or stable values, don't need to compare
+    return true; // Props are equal, skip re-render
+};
+
+export default memo(CardsOptimized, arePropsEqual);

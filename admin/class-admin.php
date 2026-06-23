@@ -25,40 +25,13 @@ class AceMediaGlossary_Admin {
             return;
         }
 
-        // Core WordPress scripts
-        wp_enqueue_script('wp-element');
-        wp_enqueue_script('wp-data');
-        wp_enqueue_script('wp-core-data');
-        wp_enqueue_script('wp-components');
-        wp_enqueue_script('wp-api-fetch'); // Ensure this is included for API calls
+        // Ensure core editor scripts and media utilities are available
+        wp_enqueue_editor();
+        wp_enqueue_media();
 
-
-
-    
-        // Enqueue the Isolated Block Editor
-        wp_enqueue_script(
-            'isolated-block-editor',
-            ACEMEDIA_GLOSSARY_URL . 'editor/isolated-block-editor.js',
-            array('react', 'react-dom'),
-            '2.29.0',
-            true
-        );
-    
-        wp_enqueue_style(
-            'isolated-block-editor-core',
-            ACEMEDIA_GLOSSARY_URL . 'editor/core.css',
-            array(),
-            '2.29.0'
-        );
-    
-        wp_enqueue_style(
-            'isolated-block-editor',
-            ACEMEDIA_GLOSSARY_URL . 'editor/isolated-block-editor.css',
-            array(),
-            '2.29.0'
-        );
-    
-
+        // Dequeue block editor scripts to avoid conflicts
+        wp_dequeue_script('wp-block-editor');        // Remove the full wp-admin block editor chrome which clashes with the isolated editor instance.
+        wp_dequeue_script('wp-edit-post');
 
         // Enqueue the admin color scheme for styling
         global $_wp_admin_css_colors;
@@ -70,13 +43,75 @@ class AceMediaGlossary_Admin {
                 array('wp-admin')
             );
         }
+        
+        // Custom admin script - no dependencies since we enqueued everything above
+        $asset = include ACEMEDIA_GLOSSARY_PATH . 'build/glossary-admin.asset.php';
 
-        // Custom admin script
+        wp_add_inline_script(
+            'wp-data',
+            <<<'JS'
+(function suppressDuplicateInterfaceStoreWarning(){
+    var originalError = console.error;
+
+    console.error = function(){
+        if (
+            arguments.length > 0 &&
+            typeof arguments[0] === 'string' &&
+            arguments[0].indexOf('Store "core/interface" is already registered.') !== -1
+        ) {
+            return;
+        }
+
+        return originalError.apply( console, arguments );
+    };
+})();
+JS
+            ,
+            'after'
+        );
+
+        wp_add_inline_script(
+            'wp-rich-text',
+            <<<'JS'
+(function patchGlossaryFormats(){
+    var attempt = function(){
+        if ( ! window.wp || ! window.wp.richText || window.wp.richText.__glossaryPatched ) {
+            if ( window.wp && window.wp.richText && window.wp.richText.__glossaryPatched ) {
+                return;
+            }
+            setTimeout( attempt, 50 );
+            return;
+        }
+
+        var originalRegisterFormatType = window.wp.richText.registerFormatType;
+        if ( typeof originalRegisterFormatType === 'function' ) {
+            window.wp.richText.registerFormatType = function( name ) {
+                try {
+                    if ( name === 'core/footnote' && typeof window.wp.richText.getFormatType === 'function' ) {
+                        var existing = window.wp.richText.getFormatType( name );
+                        if ( existing ) {
+                            return existing;
+                        }
+                    }
+                } catch ( error ) {}
+                return originalRegisterFormatType.apply( this, arguments );
+            };
+        }
+        window.wp.richText.__glossaryPatched = true;
+    };
+
+    attempt();
+})();
+JS
+            ,
+            'after'
+        );
+
         wp_enqueue_script(
             'acemedia-glossary-admin',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-admin.js',
-            array('wp-editor', 'wp-block-editor', 'wp-element', 'wp-data', 'wp-core-data', 'wp-components', 'wp-api-fetch'),
-            ACEMEDIA_GLOSSARY_VERSION,
+            $asset['dependencies'],
+            $asset['version'],
             true
         );
 
@@ -88,12 +123,29 @@ class AceMediaGlossary_Admin {
             ACEMEDIA_GLOSSARY_VERSION
         );
 
-        // Enqueue block editor styles
+        // Enqueue WordPress block editor styles (but not full editor interface)
+        wp_enqueue_style('wp-block-editor');
+        wp_enqueue_style('wp-block-library');
+        wp_enqueue_style('wp-block-library-theme');
+
+        // Avoid loading the full editor chrome that conflicts with our layout
+        wp_dequeue_style('wp-edit-post');
+        wp_dequeue_style('wp-edit-site');
+
+        // Add editor localization data required by block library
+        if (function_exists('wp_set_script_translations')) {
+            wp_set_script_translations('wp-block-library', 'default');
+        }
 
         // Localize script to pass PHP data to JavaScript
         wp_localize_script('acemedia-glossary-admin', 'AceMediaGlossaryAdmin', array(
             'apiUrl' => esc_url_raw(get_rest_url(null, '/')), // Ensure correct REST API URL
-            'nonce' => wp_create_nonce('wp_rest') // REST API nonce
+            'nonce' => wp_create_nonce('wp_rest'), // REST API nonce
+            'siteUrl' => esc_url(home_url('/')),
+            'styleDefaults' => AceMediaGlossary_Style_Settings::get_styles(),
+            'colorPalette' => AceMediaGlossary_Style_Settings::get_color_palette(),
+            'stylesEndpoint' => '/wp/v2/options/glossary_styles',
+            'restRoot' => esc_url_raw(get_rest_url(null, '/')),
         ));
     }
 }

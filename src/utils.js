@@ -1,5 +1,17 @@
 import apiFetch from '@wordpress/api-fetch';
 
+export const getRestRoot = () => {
+    if (typeof AceMediaGlossaryAdmin !== 'undefined' && AceMediaGlossaryAdmin.restRoot) {
+        return AceMediaGlossaryAdmin.restRoot.replace(/\/+$/, '');
+    }
+
+    if (typeof window !== 'undefined' && window.wpApiSettings?.root) {
+        return window.wpApiSettings.root.replace(/\/+$/, '');
+    }
+
+    return '/wp-json';
+};
+
 /**
  * Decode HTML entities in a string.
  * @param {string} str - String to decode.
@@ -65,21 +77,62 @@ export const smoothScrollTo = (targetY, duration = 1000) => {
  * @returns {Promise<object>} - Response data.
  */
 export const fetchFromAPI = async (path, method = 'GET', data = null, headers = {}) => {
-    const options = { method, headers };
+    if (typeof path !== 'string' || path.trim() === '') {
+        throw new Error('fetchFromAPI requires a valid path.');
+    }
 
-    if (data) {
-        options.body = JSON.stringify(data); // Convert data to JSON
-        options.headers = {
-            ...headers,
-            'Content-Type': 'application/json', // Ensure JSON payload is sent
-        };
+    const normalizedPath = (() => {
+        if (/^https?:\/\//i.test(path)) {
+            return path.trim();
+        }
+
+        let prepared = path.trim();
+    return prepared.replace(/^\/+/, '').replace(/^wp-json\/?/, '');
+    })();
+
+    const baseHeaders = { ...headers };
+    const options = { method: method || 'GET' };
+
+    if (data !== null && method && method.toUpperCase() !== 'GET') {
+        options.body = JSON.stringify(data);
+        baseHeaders['Content-Type'] = 'application/json';
+    }
+
+    const resolveRestRoot = () => {
+        if (typeof AceMediaGlossaryAdmin !== 'undefined' && AceMediaGlossaryAdmin.restRoot) {
+            return AceMediaGlossaryAdmin.restRoot.replace(/\/+$/, '');
+        }
+
+        if (typeof AceMediaGlossaryBlockConfig !== 'undefined' && AceMediaGlossaryBlockConfig.restRoot) {
+            return AceMediaGlossaryBlockConfig.restRoot.replace(/\/+$/, '');
+        }
+
+        if (typeof window !== 'undefined' && window.wpApiSettings && window.wpApiSettings.root) {
+            return window.wpApiSettings.root.replace(/\/+$/, '');
+        }
+
+        return '';
+    };
+
+    const restRoot = resolveRestRoot();
+    const isAbsoluteUrl = /^https?:\/\//i.test(normalizedPath);
+    let requestArgs;
+
+    if (isAbsoluteUrl) {
+        requestArgs = { url: normalizedPath, headers: baseHeaders, ...options };
+    } else if (restRoot) {
+        const cleanRoot = restRoot.replace(/\/+$/, '');
+        const cleanPath = normalizedPath.replace(/^\/+/, '');
+        requestArgs = { url: `${cleanRoot}/${cleanPath}`, headers: baseHeaders, ...options };
+    } else {
+        requestArgs = { path: normalizedPath.replace(/^\/+/, ''), headers: baseHeaders, ...options };
     }
 
     try {
-        const response = await apiFetch({ path, ...options });
+        const response = await apiFetch(requestArgs);
         return response;
     } catch (error) {
-        console.error(`Error fetching from API (${path}):`, error.message);
+        console.error(`Error fetching from API (${normalizedPath}):`, error.message);
         console.error('Full error object:', error);
         throw error;
     }
@@ -93,7 +146,7 @@ export const fetchFromAPI = async (path, method = 'GET', data = null, headers = 
  */
 export const fetchLogs = async (setLogs) => {
     try {
-        const response = await fetchFromAPI('/wp-json/wp/v2/logs', 'GET', null, {
+        const response = await fetchFromAPI('/wp/v2/logs', 'GET', null, {
             'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
         });
         const fetchedLogs = response.logs || ''; // Extract logs from response object
@@ -111,7 +164,7 @@ export const fetchLogs = async (setLogs) => {
  */
 export const clearLogs = async () => {
     try {
-        const response = await fetchFromAPI('/wp-json/wp/v2/logs', 'DELETE', null, {
+        const response = await fetchFromAPI('/wp/v2/logs', 'DELETE', null, {
             'X-WP-Nonce': AceMediaGlossaryAdmin.nonce,
         });
 
@@ -137,7 +190,7 @@ export const saveCss = async (css) => {
         }
 
         const response = await fetchFromAPI(
-            '/wp-json/wp/v2/save-custom-css',
+            '/wp/v2/save-custom-css',
             'POST',
             { css: css.trim() },
             { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce }
@@ -163,7 +216,7 @@ export const saveCss = async (css) => {
  */
 export const fetchSingleTerm = async (termId) => {
     try {
-        const response = await fetchFromAPI(`/wp-json/wp/v2/glossary/${termId}`);
+        const response = await fetchFromAPI(`/wp/v2/glossary/${termId}`);
         return response;
     } catch (error) {
         console.error('Error fetching single term:', error);
@@ -181,7 +234,7 @@ export const fetchSingleTerm = async (termId) => {
 export const updateRelatedTerms = async (termId, relatedTermIds, termsLookup = {}) => {
     try {
         const response = await fetchFromAPI(
-            `/wp-json/wp/v2/glossary/${termId}/related`,
+            `/wp/v2/glossary/${termId}/related`,
             'POST',
             { relatedTerms: relatedTermIds }
         );
@@ -217,8 +270,8 @@ export const updateTermCategories = async (termId, categoryIds, isAutosave = fal
     try {
         // Use different endpoint for autosave to avoid conflicts
         const endpoint = isAutosave 
-            ? `/wp-json/wp/v2/glossary/${termId}/categories/autosave`
-            : `/wp-json/wp/v2/glossary/${termId}/categories`;
+            ? `/wp/v2/glossary/${termId}/categories/autosave`
+            : `/wp/v2/glossary/${termId}/categories`;
             
         const response = await fetchFromAPI(
             endpoint,
@@ -252,8 +305,8 @@ export const updateTermTags = async (termId, tagIds, isAutosave = false) => {
     try {
         // Use different endpoint for autosave to avoid conflicts
         const endpoint = isAutosave 
-            ? `/wp-json/wp/v2/glossary/${termId}/tags/autosave`
-            : `/wp-json/wp/v2/glossary/${termId}/tags`;
+            ? `/wp/v2/glossary/${termId}/tags/autosave`
+            : `/wp/v2/glossary/${termId}/tags`;
             
         const response = await fetchFromAPI(
             endpoint,
@@ -282,7 +335,7 @@ export const updateTermTags = async (termId, tagIds, isAutosave = false) => {
  */
 export const fetchPrefetchData = async () => {
     try {
-        return await fetchFromAPI('/wp-json/wp/v2/glossary/prefetch-data');
+        return await fetchFromAPI('/wp/v2/glossary/prefetch-data');
     } catch (error) {
         console.error('Error fetching prefetch data:', error);
         throw error;
@@ -295,7 +348,7 @@ export const fetchPrefetchData = async () => {
  */
 export const fetchRelatedTermsLookup = async () => {
     try {
-        return await fetchFromAPI('/wp-json/wp/v2/glossary/related-terms-lookup');
+        return await fetchFromAPI('/wp/v2/glossary/related-terms-lookup');
     } catch (error) {
         console.error('Error fetching related terms lookup:', error);
         throw error;
@@ -366,10 +419,17 @@ export const setupDragAndDrop = ({
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    const importedTerms = JSON.parse(event.target.result);
+                    const parsedPayload = JSON.parse(event.target.result);
 
-                    if (!Array.isArray(importedTerms)) {
-                        throw new Error('Invalid JSON format. Expected an array of terms.');
+                    let termsArray = [];
+                    let payloadToSend = parsedPayload;
+
+                    if (Array.isArray(parsedPayload)) {
+                        termsArray = parsedPayload;
+                    } else if (parsedPayload && typeof parsedPayload === 'object' && Array.isArray(parsedPayload.terms)) {
+                        termsArray = parsedPayload.terms;
+                    } else {
+                        throw new Error('Invalid JSON format. Expected an array of terms or an export payload.');
                     }
 
                     setIsSaving(true);
@@ -377,15 +437,15 @@ export const setupDragAndDrop = ({
 
                     const startTime = performance.now();
 
-                    const response = await onFileDrop(importedTerms);
+                    const response = await onFileDrop(payloadToSend);
 
                     const endTime = performance.now();
                     const responseTime = Math.round(endTime - startTime);
 
                     const { new_terms = [], matched_terms = 0 } = response;
 
-                    const totalTerms = importedTerms.length;
-                    const newTerms = totalTerms - matched_terms;
+                    const totalTerms = termsArray.length;
+                    const newTerms = Array.isArray(new_terms) ? new_terms.length : new_terms;
 
                     setMessage(
                         `${newTerms} terms imported successfully in ${responseTime}ms. ${matched_terms} terms already existed.`
@@ -394,7 +454,7 @@ export const setupDragAndDrop = ({
                     await fetchLogs(setLogs); // Ensure fetchLogs correctly uses setLogs
 
                     const fetchStartTime = performance.now();
-                    const updatedTerms = await fetchFromAPI('/wp-json/wp/v2/glossary');
+                    const updatedTerms = await fetchFromAPI('/wp/v2/glossary');
                     const fetchEndTime = performance.now();
                     const newLoadTime = Math.round(fetchEndTime - fetchStartTime);
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from '@wordpress/element';
 import { Flex, FlexItem, CheckboxControl, Spinner, TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { updateRelatedTerms, updateTermCategories, updateTermTags } from '../utils';
+import { updateRelatedTerms, updateTermCategories, updateTermTags, getRestRoot } from '../utils';
 import debounce from 'lodash/debounce';
 
 const RelatedTagsAndCatsOptimized = ({
@@ -24,6 +24,7 @@ const RelatedTagsAndCatsOptimized = ({
     const [tagsPage, setTagsPage] = useState(1);
     const [categoriesSearch, setCategoriesSearch] = useState('');
     const [tagsSearch, setTagsSearch] = useState('');
+    const [relatedTermsSearch, setRelatedTermsSearch] = useState('');
     const [hasMoreCategories, setHasMoreCategories] = useState(true);
     const [hasMoreTags, setHasMoreTags] = useState(true);
     const [selectedCategories, setSelectedCategories] = useState([]);
@@ -230,19 +231,6 @@ const RelatedTagsAndCatsOptimized = ({
         }
     }, [selectedRelatedTerms, isAutoSaveEnabled, debouncedSaveChanges, saveChanges]);
 
-    // Search handlers
-    const handleCategorySearch = useCallback((search) => {
-        setCategoriesSearch(search);
-        setCategoriesPage(1);
-        fetchCategories(1, search);
-    }, [fetchCategories]);
-
-    const handleTagSearch = useCallback((search) => {
-        setTagsSearch(search);
-        setTagsPage(1);
-        fetchTags(1, search);
-    }, [fetchTags]);
-
     // Fetch categories from REST API (only when needed - search or load more)
     const fetchCategories = useCallback(async (page = 1, search = '') => {
         // Skip if we have prefetched data and this is the initial load without search
@@ -252,8 +240,9 @@ const RelatedTagsAndCatsOptimized = ({
         
         setLoadingCategories(true);
         try {
+            const restRoot = getRestRoot();
             const response = await fetch(
-                `/wp-json/wp/v2/categories?per_page=10&page=${page}&search=${search}`,
+                `${restRoot}/wp/v2/categories?per_page=10&page=${page}&search=${search}`,
                 {
                     headers: {
                         'X-WP-Nonce': window.AceMediaGlossaryAdmin?.nonce || '',
@@ -285,8 +274,9 @@ const RelatedTagsAndCatsOptimized = ({
         
         setLoadingTags(true);
         try {
+            const restRoot = getRestRoot();
             const response = await fetch(
-                `/wp-json/wp/v2/tags?per_page=10&page=${page}&search=${search}`,
+                `${restRoot}/wp/v2/tags?per_page=10&page=${page}&search=${search}`,
                 {
                     headers: {
                         'X-WP-Nonce': window.AceMediaGlossaryAdmin?.nonce || '',
@@ -342,7 +332,8 @@ const RelatedTagsAndCatsOptimized = ({
         
         // Fallback to API call if lookup is not available
         try {
-            const response = await fetch('/wp-json/wp/v2/glossary', {
+            const restRoot = getRestRoot();
+            const response = await fetch(`${restRoot}/wp/v2/glossary`, {
                 headers: {
                     'X-WP-Nonce': window.AceMediaGlossaryAdmin?.nonce || '',
                 },
@@ -373,6 +364,32 @@ const RelatedTagsAndCatsOptimized = ({
         }
     }, [term?.id, relatedTermsLookup]);
 
+    // Search handlers
+    const handleCategorySearch = useCallback((search) => {
+        setCategoriesSearch(search);
+        setCategoriesPage(1);
+        fetchCategories(1, search);
+    }, [fetchCategories]);
+
+    const handleTagSearch = useCallback((search) => {
+        setTagsSearch(search);
+        setTagsPage(1);
+        fetchTags(1, search);
+    }, [fetchTags]);
+
+    const handleRelatedTermsSearch = useCallback((search) => {
+        setRelatedTermsSearch(search);
+    }, []);
+
+    // Filter related terms based on search
+    const filteredRelatedTerms = useMemo(() => {
+        if (!relatedTermsSearch) return availableTerms;
+        const searchLower = relatedTermsSearch.toLowerCase();
+        return availableTerms.filter(term => 
+            term.title.toLowerCase().includes(searchLower)
+        );
+    }, [availableTerms, relatedTermsSearch]);
+
     // Initial load (conditional based on prefetched data)
     useEffect(() => {
         // Only fetch if we don't have prefetched data
@@ -391,17 +408,17 @@ const RelatedTagsAndCatsOptimized = ({
     }
 
     return (
-        <div className="related-options">
+        <div className="related-options" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', alignItems: 'start' }}>
             {/* Categories Section */}
-            <div style={{ marginBottom: '20px' }}>
-                <h4>{__('Categories', 'acemedia-glossary')}</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <h4 style={{ marginTop: 0, marginBottom: '10px' }}>{__('Categories', 'acemedia-glossary')}</h4>
                 <TextControl
                     placeholder={__('Search categories...', 'acemedia-glossary')}
                     value={categoriesSearch}
                     onChange={handleCategorySearch}
                 />
                 {loadingCategories && <Spinner />}
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                <div style={{ maxHeight: '300px', overflowY: 'auto', flex: '1', border: '1px solid #ddd', padding: '10px', borderRadius: '4px' }}>
                     {categories.map(category => (
                         <CheckboxControl
                             key={category.id}
@@ -413,6 +430,7 @@ const RelatedTagsAndCatsOptimized = ({
                 </div>
                 {hasMoreCategories && !loadingCategories && (
                     <button
+                        style={{ marginTop: '10px' }}
                         onClick={() => {
                             const nextPage = categoriesPage + 1;
                             setCategoriesPage(nextPage);
@@ -425,15 +443,15 @@ const RelatedTagsAndCatsOptimized = ({
             </div>
 
             {/* Tags Section */}
-            <div style={{ marginBottom: '20px' }}>
-                <h4>{__('Tags', 'acemedia-glossary')}</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <h4 style={{ marginTop: 0, marginBottom: '10px' }}>{__('Tags', 'acemedia-glossary')}</h4>
                 <TextControl
                     placeholder={__('Search tags...', 'acemedia-glossary')}
                     value={tagsSearch}
                     onChange={handleTagSearch}
                 />
                 {loadingTags && <Spinner />}
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                <div style={{ maxHeight: '300px', overflowY: 'auto', flex: '1', border: '1px solid #ddd', padding: '10px', borderRadius: '4px' }}>
                     {tags.map(tag => (
                         <CheckboxControl
                             key={tag.id}
@@ -445,6 +463,7 @@ const RelatedTagsAndCatsOptimized = ({
                 </div>
                 {hasMoreTags && !loadingTags && (
                     <button
+                        style={{ marginTop: '10px' }}
                         onClick={() => {
                             const nextPage = tagsPage + 1;
                             setTagsPage(nextPage);
@@ -457,10 +476,15 @@ const RelatedTagsAndCatsOptimized = ({
             </div>
 
             {/* Related Terms Section */}
-            <div>
-                <h4>{__('Related Terms', 'acemedia-glossary')}</h4>
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                    {availableTerms.map(availableTerm => (
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <h4 style={{ marginTop: 0, marginBottom: '10px' }}>{__('Related Terms', 'acemedia-glossary')}</h4>
+                <TextControl
+                    placeholder={__('Search related terms...', 'acemedia-glossary')}
+                    value={relatedTermsSearch}
+                    onChange={handleRelatedTermsSearch}
+                />
+                <div style={{ maxHeight: '300px', overflowY: 'auto', flex: '1', border: '1px solid #ddd', padding: '10px', borderRadius: '4px' }}>
+                    {filteredRelatedTerms.map(availableTerm => (
                         <CheckboxControl
                             key={availableTerm.id}
                             label={availableTerm.title}

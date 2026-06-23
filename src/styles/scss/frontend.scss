@@ -73,9 +73,15 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
   
   #acemedia-glossary-root {
     padding: $spacing-30;
-  
+    --glossary-text-color: var(--wp--preset--color--contrast);
+    --glossary-heading-background: #{$gradient-light};
+    --glossary-heading-text-color: var(--wp--preset--color--contrast);
+    --glossary-card-background: #{$gradient-light};
+    --glossary-content-gap: #{$spacing-20};
+    --glossary-heading-padding: #{$spacing-30};
+
     * {
-      color: var(--wp--preset--color--contrast);
+      color: var(--glossary-text-color, var(--wp--preset--color--contrast));
     }
   
     .acemedia-glossary-frontend {
@@ -85,10 +91,12 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
   
     .glossary-search {
       margin-bottom: $spacing-40;
+      position: relative;
   
       input {
         width: 100%;
         padding: $spacing-30;
+        padding-right: 50px; // Make room for clear button
         font-size: $font-size-medium;
         border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
         border-radius: .25em;
@@ -104,109 +112,132 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
         display: block;
         margin-bottom: $spacing-20;
       }
-    }
-  
-    .glossary-index {
-      display: flex;
-      flex-wrap: wrap;
-      gap: $spacing-20;
-  
-      .glossary-anchor-links {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-  
-        a {
-          display: block;
-          padding: $spacing-20 $spacing-30;
-          border: 1px solid $border-color-default;
-          border-radius: .25em;
-          text-align: center;
-          text-decoration: none;
-          background: $gradient-light;
-          transition: background-color 0.2s ease, border-color 0.2s ease;
-  
-          &:hover {
-            background: $gradient-hover;
-            border-color: $border-color-hover;
-          }
+
+      .glossary-search-clear {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        font-size: 28px;
+        line-height: 1;
+        cursor: pointer;
+        color: color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+        padding: 0 10px;
+        transition: color 0.2s ease;
+        
+        &:hover {
+          color: color-mix(in srgb, var(--wp--preset--color--base), black 80%);
         }
-  
-        ul {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-  
-          li {
-            margin: 0 0 $spacing-20;
-  
-            &:last-child {
-              margin-bottom: 0;
-            }
-  
-            a {
-              text-decoration: none;
-              transition: color 0.2s ease;
-              color: var(--wp--preset--color--contrast) !important;
-                font-size: .8em;
-              &:hover {
-                color: var(--wp--preset--color--accent-3) !important;
-              }
-            }
+
+        &:focus {
+          outline: 2px solid color-mix(in srgb, var(--wp--preset--color--base), black 80%);
+          outline-offset: 2px;
+        }
+      }
+
+      .glossary-search-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: -#{$spacing-30};
+        background: #ffffff;
+        border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+        border-top: none;
+        border-radius: 0 0 .25em .25em;
+        list-style: none;
+        padding: 0;
+        margin-left: 0;
+        max-height: 300px;
+        overflow-y: auto;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 9999;
+
+        .glossary-search-suggestion-item {
+          padding: $spacing-20;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+          border-bottom: 1px solid #e5e5e5;
+          color: #333;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          &:hover {
+            background: #f5f5f5;
           }
         }
       }
     }
+
+    // Removed fixed header - using sticky positioning instead
   
     .glossary-terms {
-      margin-top: $spacing-50;
-  
-      h3 {
-        margin-top: $spacing-50;
-        text-align: center;
+      // Ensure parent container allows sticky positioning
+      overflow: visible;
+      contain: none;
+
+      .glossary-section {
+        // Each section creates a stacking context for its sticky header
+        position: relative;
+      }
+      
+      .glossary-section > h3 {
+        position: -webkit-sticky; // Safari support
+        position: sticky;
+        top: 110px; // Adjust based on your site header height (header + admin bar)
+        z-index: 10;
+        margin-top: 0;
+        margin-bottom: 0;
+        text-align: left;
         display: block;
-        overflow: hidden;
         padding: 0px;
+        background: var(--wp--preset--color--base);
+        border-bottom: 2px solid var(--wp--preset--color--contrast);
+        font-size: 1.5em;
+        font-weight: bold;
+        width: 50px;
+        box-sizing: border-box;
+        // Ensure the element has a background so content scrolls behind it
+      }
+
+      .glossary-group {
+        // Container for glossary items within each letter group
         margin-bottom: $spacing-30;
-        &:after {
-            content: '';
-            display: inline-block;
-            width: 20%;
-            margin-left: var(--wp--preset--spacing--20);
-            height: 1px;
-            background: var(--wp--preset--color--contrast);
-            vertical-align: super;
-            opacity: .5;
-        }
-        &::before {
-            content: '';
-            display: inline-block;
-            width: 20%;
-            margin-right: var(--wp--preset--spacing--20);
-            height: 1px;
-            background: var(--wp--preset--color--contrast);
-            vertical-align: super;
-            opacity: .5;
-        }
+        margin-left: 50px;
       }
   
       .glossary-item-card {
-        background: $gradient-light;
+        background: var(--glossary-card-background, #{$gradient-light});
         border: 1px solid $border-color-default;
         border-radius: .25em;
-        margin-bottom: $spacing-30;
+        margin-bottom: var(--glossary-content-gap, #{$spacing-30});
         box-shadow: $shadow-default;
         transition: box-shadow 0.2s ease, border-color 0.2s ease;
   
         &:hover {
           box-shadow: $shadow-hover;
           border-color: $border-color-hover;
-          background: $gradient-hover;
+          background: var(--glossary-card-background, #{$gradient-hover});
         }
         .components-card-header {
-            padding: $spacing-30;
+            padding: var(--glossary-heading-padding, #{$spacing-30});
+            background: var(--glossary-heading-background, #{$gradient-light});
+            color: var(--glossary-heading-text-color, var(--wp--preset--color--contrast));
             text-shadow: 0px 1px 0px var(--wp--preset--color--base);
+      display: flex;
+      align-items: center;
+      gap: var(--glossary-content-gap, #{$spacing-20});
         }
+    .components-card-header h4 {
+      color: inherit;
+      margin: 0;
+      display: flex;
+      align-items: center;
+    }
         .components-card-body {
             padding: $spacing-30;
             text-shadow: 0px 1px 0px var(--wp--preset--color--base);
@@ -290,37 +321,80 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
   
 
 .glossary-alphanumeric-index {
-
     margin-bottom: $spacing-40;
+    
     > div {
-        gap: 2px;
+        display: grid;
+        gap: $spacing-20;
         text-align: center;
-        align-items: center;
-        align-content: center;
-        justify-content: center;
-    }
-    a {
-        display: inline-block;
-        border-radius: .25em;
-        padding: 8px 10px;
-        border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
-        background: $gradient-light;
-        text-decoration: none;
-        text-shadow: 0px 1px 0px var(--wp--preset--color--base);
-        font-size: .6em;
-        &:hover {
-            background: $gradient-hover;
-            border-color: color-mix(in srgb, var(--wp--preset--color--base), black 80%);
+        
+        // Desktop: single row
+        grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+        
+        // Mobile & Tablet: multi-row grid
+        @media (max-width: 1024px) {
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        }
+        
+        @media (max-width: 768px) {
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: $spacing-20;
         }
     }
-    span {
+    
+    a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4em;
+        border-radius: .25em;
+        padding: 1rem $spacing-30;
+        border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+        background: var(--glossary-heading-background, #{$gradient-light});
+        color: var(--glossary-heading-text-color, var(--wp--preset--color--contrast)) !important;
+        text-decoration: none;
+        text-shadow: 0px 1px 0px var(--wp--preset--color--base);
+        font-size: 1.2em;
+        font-weight: bold;
+        transition: all 0.2s ease;
+        line-height: 1;
+        @media (max-width: 1024px) {
+            font-size: 1.4em;
+            padding: $spacing-40;
+        }
+        
+        @media (max-width: 768px) {
+            font-size: 1.3em;
+        }
+        
+        &:hover {
+            border-color: color-mix(in srgb, var(--wp--preset--color--base), black 80%);
+            transform: translateY(-2px);
+            box-shadow: $shadow-hover;
+        }
+
+        .alphanumeric-count {
+            display: inline-block;
+            font-size: 0.5em;
+            font-weight: 600;
+            background: color-mix(in srgb, var(--wp--preset--color--contrast), transparent 80%);
+            color: var(--wp--preset--color--base);
+            padding: 0.3em 0.6em;
+            border-radius: 1em;
+            line-height: 1;
+            min-width: 1.8em;
+            text-align: center;
+            background: #EFEFEF;
+            border-radius: 20px;
+        }
+    }
+    
+    span.alphanumeric-link {
         opacity: 0;
         display: inline-block;
         padding: 0px;
         width: 5px;
-    }
-    a {
-        font-weight: bold;
     }
 }
 

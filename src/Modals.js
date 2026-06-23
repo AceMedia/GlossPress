@@ -1,135 +1,186 @@
-import { useState, useEffect, useRef, useCallback, memo } from '@wordpress/element';
-import { Modal, Button, TextControl, TextareaControl } from '@wordpress/components';
+import { useState, useEffect, useCallback, memo } from '@wordpress/element';
+import { Modal, Button, TextControl, TextareaControl, ToggleControl, PanelRow, Card, CardBody } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import RelatedTagsAndCatsOptimized from './Cards/RelatedTagsAndCatsOptimized';
+import BlockEditor from './components/BlockEditor';
 
 const Modals = ({
     isModalOpen,
     isCssModalOpen,
-    newTermTitle,
-    newTermContent,
+    newTermData,
     customCss,
+    prefetchedCategories,
+    prefetchedTags,
+    relatedTermsLookup,
+    hasMorePrefetchedCategories,
+    hasMorePrefetchedTags,
     setIsModalOpen,
     setIsCssModalOpen,
-    setNewTermTitle,
-    setNewTermContent,
+    setNewTermData,
     setCustomCss,
     setTerms,
-    setModifiedTerms,
-    setUnsavedChanges,
+    setRelatedTermsLookup,
     setMessage,
     saveCss,
     apiFetch,
 }) => {
-    const editorRef = useRef(null);
+    const editorId = 'glossary-new-term-editor';
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [localEditorContent, setLocalEditorContent] = useState('');
 
-    useEffect(() => {
-        if (isModalOpen && editorRef.current) {
-            wp.attachEditor(editorRef.current); // Attach the block editor to the textarea
-
-            // Observe manual and programmatic changes to the textarea
-            const textareaElement = editorRef.current;
-
-            const originalValueDescriptor = Object.getOwnPropertyDescriptor(
-                HTMLTextAreaElement.prototype,
-                'value'
-            );
-
-            // Override the `value` property to intercept programmatic changes
-            Object.defineProperty(textareaElement, 'value', {
-                get: originalValueDescriptor.get,
-                set: function (newValue) {
-                    console.log(`Programmatic update detected: ${newValue}`);
-                    setNewTermContent(newValue); // Update the state
-                    originalValueDescriptor.set.call(this, newValue); // Call the original setter
-                },
-            });
-
-            // Listen for manual input changes
-            const inputListener = (event) => {
-                const updatedValue = event.target.value;
-                console.log(`Manual input detected: ${updatedValue}`);
-                setNewTermContent(updatedValue); // Update the state
-            };
-
-            textareaElement.addEventListener('input', inputListener);
-
-            return () => {
-                // Cleanup listeners and restore the original property descriptor
-                textareaElement.removeEventListener('input', inputListener);
-                Object.defineProperty(textareaElement, 'value', originalValueDescriptor);
-            };
-        }
-    }, [isModalOpen, setNewTermContent]);
-
-    const handleAddTerm = useCallback(async () => {
-        const tempId = Date.now();
-        const newTermData = {
-            id: tempId,
-            title: newTermTitle || __('Untitled Term', 'acemedia-glossary'),
-            content: newTermContent || '',
+    const resetNewTermData = useCallback(() => {
+        setNewTermData({
+            id: Date.now(),
+            title: '',
+            content: '',
+            autoHighlight: false,
+            enablePostRelations: false,
             relatedTerms: [],
             categories: [],
             tags: [],
+            categoryIds: [],
+            tagIds: [],
             date: new Date().toISOString(),
             modified: new Date().toISOString(),
             isOpen: false,
-        };
+            isLoaded: true,
+        });
+    }, [setNewTermData]);
 
-        // Add the new term with a temporary ID
-        setTerms((prevTerms) => [...prevTerms, newTermData]);
-        setModifiedTerms((prev) => new Set([...prev, tempId]));
-        setUnsavedChanges(true);
+    const updateNewTerm = useCallback((key, value) => {
+        setNewTermData((prev) => {
+            if (key === 'content' && prev.content === value) {
+                return prev;
+            }
+            if (key === 'title' && prev.title === value) {
+                return prev;
+            }
+            if (key === 'autoHighlight' && prev.autoHighlight === value) {
+                return prev;
+            }
+
+            const next = { ...prev, [key]: value };
+
+            if (key === 'categories') {
+                next.categoryIds = Array.isArray(value) ? value.map((cat) => cat.id) : [];
+            }
+
+            if (key === 'tags') {
+                next.tagIds = Array.isArray(value) ? value.map((tag) => tag.id) : [];
+            }
+
+            return next;
+        });
+    }, [setNewTermData]);
+
+    const handleEditorContentChange = useCallback((content) => {
+        setLocalEditorContent(content);
+    }, []);
+
+    const handleEditorFocus = useCallback(() => {
+        // Focus handler if needed
+    }, []);
+
+    // Sync local content to newTermData before save
+    useEffect(() => {
+        if (localEditorContent !== undefined && localEditorContent !== newTermData.content) {
+            updateNewTerm('content', localEditorContent);
+        }
+    }, [localEditorContent, newTermData.content, updateNewTerm]);
+
+    // Initialize local content when modal opens
+    useEffect(() => {
+        if (isModalOpen) {
+            setLocalEditorContent(newTermData.content || '');
+        }
+    }, [isModalOpen, newTermData.content]);
+
+    const handleCloseModal = useCallback(() => {
+        setIsModalOpen(false);
+        resetNewTermData();
+    }, [resetNewTermData, setIsModalOpen]);
+
+    const handleAddTerm = useCallback(async () => {
+        const categories = Array.isArray(newTermData.categories)
+            ? newTermData.categories.map((cat) => cat.id)
+            : [];
+        const tags = Array.isArray(newTermData.tags)
+            ? newTermData.tags.map((tag) => tag.id)
+            : [];
+        const relatedTerms = Array.isArray(newTermData.relatedTerms)
+            ? newTermData.relatedTerms.map((id) => parseInt(id, 10)).filter(Boolean)
+            : [];
+
+        const title = (newTermData.title || '').trim() || __('Untitled Term', 'acemedia-glossary');
+
+        setIsSubmitting(true);
 
         try {
-            // Send the new term data to the server
-          
-            // Send the new term data to the server
-            const response = await apiFetch({
-                path: '/wp-json/wp/v2/glossary',
+        const response = await apiFetch({
+                path: '/wp/v2/glossary',
                 method: 'POST',
                 data: {
-                    title: newTermData.title,
-                    content: newTermData.content,
+                    title,
+                    content: newTermData.content || '',
+                    relatedTerms,
+                    categories,
+                    tags,
+                    autoHighlight: !!newTermData.autoHighlight,
+                    enablePostRelations: !!newTermData.enablePostRelations,
                     status: 'publish',
                 },
                 headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
             });
 
-            // Update the term ID with the one received from the server
-            setTerms((prevTerms) =>
-                prevTerms.map((term) =>
-                    term.id === tempId ? { ...term, id: response.id } : term
-                )
-            );
-            setModifiedTerms((prev) => {
-                const newSet = new Set(prev);
-                newSet.delete(tempId);
-                newSet.add(response.id);
-                return newSet;
-            });
-            setUnsavedChanges(false);
+            const now = new Date().toISOString();
+
+            setTerms((prevTerms) => [
+                ...prevTerms,
+                {
+                    id: response.id,
+                    title,
+                    date: now,
+                    modified: now,
+                    categoryIds: categories,
+                    tagIds: tags,
+                    autoHighlight: !!newTermData.autoHighlight,
+                    enablePostRelations: !!newTermData.enablePostRelations,
+                    isOpen: false,
+                    isLoaded: false,
+                },
+            ]);
+
+            setRelatedTermsLookup((prevLookup) => ({
+                ...prevLookup,
+                [response.id]: title,
+            }));
+
             setMessage(__('Term added successfully.', 'acemedia-glossary'));
+            setTimeout(() => setMessage(''), 3000);
+
+            handleCloseModal();
         } catch (error) {
             console.error('Error adding term:', error);
             setMessage(__('Failed to add the term. Please try again.', 'acemedia-glossary'));
+            setTimeout(() => setMessage(''), 3000);
         } finally {
-            setIsModalOpen(false);
-            setNewTermTitle('');
-            setNewTermContent('');
+            setIsSubmitting(false);
         }
     }, [
-        newTermTitle,
-        newTermContent,
-        setTerms,
-        setModifiedTerms,
-        setUnsavedChanges,
+        apiFetch,
+        handleCloseModal,
+        newTermData.autoHighlight,
+        newTermData.categories,
+        newTermData.content,
+        newTermData.relatedTerms,
+        newTermData.tags,
+        newTermData.title,
         setMessage,
-        setIsModalOpen,
-        setNewTermTitle,
-        setNewTermContent,
+        setRelatedTermsLookup,
+        setTerms,
     ]);
 
-    const handleSaveCustomCss = async () => {
+    const handleSaveCustomCss = useCallback(async () => {
         if (customCss.trim()) {
             const responseMessage = await saveCss(customCss.trim());
             setMessage(responseMessage);
@@ -138,55 +189,99 @@ const Modals = ({
             console.error(__('Custom CSS cannot be empty.', 'acemedia-glossary'));
         }
         setIsCssModalOpen(false);
-    };
+    }, [customCss, saveCss, setIsCssModalOpen, setMessage]);
 
     return (
         <>
-            {/* Add Term Modal */}
             {isModalOpen && (
                 <Modal
                     title={__('Add New Term', 'acemedia-glossary')}
-                    onRequestClose={() => setIsModalOpen(false)}
-                    isDismissible={true}
+                    onRequestClose={handleCloseModal}
+                    isDismissible
+                    size="large"
                 >
-                    <TextControl
-                        label={__('Term', 'acemedia-glossary')}
-                        value={newTermTitle}
-                        onChange={(value) => setNewTermTitle(value)}
-                        placeholder={__('Enter term title...', 'acemedia-glossary')}
-                    />
+                    <Card className="glossary-term-card active expanded">
+                        <CardBody style={{ borderTop: '1px solid #ddd', background: '#f9f9f9' }}>
+                            <TextControl
+                                label={__('Term Title', 'acemedia-glossary')}
+                                value={newTermData.title}
+                                onChange={(value) => updateNewTerm('title', value)}
+                                placeholder={__('Enter term title...', 'acemedia-glossary')}
+                            />
 
-                    <textarea
-                        id="isolated-block-editor"
-                        ref={editorRef}
-                        defaultValue={newTermContent}
-                        style={{ minHeight: '300px', width: '100%' }}
-                    ></textarea>
+                            <div className="glossary-editor-container">
+                                <label className="components-base-control__label" htmlFor={editorId}>
+                                    {__('Content', 'acemedia-glossary')}
+                                </label>
+                                <BlockEditor
+                                    termId={newTermData?.id ?? 'new-term'}
+                                    content={localEditorContent || ''}
+                                    onChange={handleEditorContentChange}
+                                    onFocus={handleEditorFocus}
+                                    textareaId={editorId}
+                                />
+                            </div>
 
-                    <Button isPrimary onClick={handleAddTerm}>
-                        {__('Add Term', 'acemedia-glossary')}
-                    </Button>
-                    <Button isSecondary onClick={() => setIsModalOpen(false)}>
-                        {__('Cancel', 'acemedia-glossary')}
-                    </Button>
+                            <PanelRow>
+                                <ToggleControl
+                                    label={__('Auto-highlight this term', 'acemedia-glossary')}
+                                    help={__('When enabled, this term will be automatically highlighted with tooltips in your content.', 'acemedia-glossary')}
+                                    checked={!!newTermData.autoHighlight}
+                                    onChange={(value) => updateNewTerm('autoHighlight', value)}
+                                />
+                            </PanelRow>
+
+                            <PanelRow>
+                                <ToggleControl
+                                    label={__('Enable post relations', 'acemedia-glossary')}
+                                    help={__('When enabled, this term will show related posts and appear in post relation searches.', 'acemedia-glossary')}
+                                    checked={!!newTermData.enablePostRelations}
+                                    onChange={(value) => updateNewTerm('enablePostRelations', value)}
+                                />
+                            </PanelRow>
+
+                            <RelatedTagsAndCatsOptimized
+                                term={newTermData}
+                                isAutoSaveEnabled={false}
+                                isSaving={isSubmitting}
+                                setMessage={setMessage}
+                                updateActiveTerm={updateNewTerm}
+                                prefetchedCategories={prefetchedCategories}
+                                prefetchedTags={prefetchedTags}
+                                relatedTermsLookup={relatedTermsLookup}
+                                hasMorePrefetchedCategories={hasMorePrefetchedCategories}
+                                hasMorePrefetchedTags={hasMorePrefetchedTags}
+                            />
+                        </CardBody>
+                    </Card>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '1em' }}>
+                        <Button
+                            isPrimary
+                            onClick={handleAddTerm}
+                            disabled={isSubmitting}
+                            isBusy={isSubmitting}
+                        >
+                            {__('Add Term', 'acemedia-glossary')}
+                        </Button>
+                        <Button isSecondary onClick={handleCloseModal} disabled={isSubmitting}>
+                            {__('Cancel', 'acemedia-glossary')}
+                        </Button>
+                    </div>
                 </Modal>
             )}
 
-            {/* Edit Custom CSS Modal */}
             {isCssModalOpen && (
                 <Modal
                     title={__('Edit Custom CSS', 'acemedia-glossary')}
                     onRequestClose={() => setIsCssModalOpen(false)}
-                    isDismissible={true}
+                    isDismissible
                     size="large"
                 >
                     <TextareaControl
                         label={__('Custom CSS', 'acemedia-glossary')}
                         value={customCss}
-                        onChange={(value) => {
-                            console.log('Custom CSS input value:', value);
-                            setCustomCss(value);
-                        }}
+                        onChange={(value) => setCustomCss(value)}
                         rows={15}
                         style={{
                             fontFamily: 'monospace',
