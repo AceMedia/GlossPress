@@ -462,7 +462,8 @@ function highlight_glossary_terms($content) {
     $xpath = new DOMXPath($dom);
     $hasHighlights = false;
     
-    // Track which terms have been used (only highlight first occurrence of each term)
+    // Track which terms have been used (only the first occurrence of each
+    // term is highlighted, across the whole post)
     $used_terms = array();
     
     // Get all text nodes that are not inside glossary-highlight spans
@@ -475,76 +476,91 @@ function highlight_glossary_terms($content) {
         ]'
     );
     
-    // For each text node, find the longest matching term
+    // For each text node, mark every distinct term that appears in it. Terms
+    // are already sorted longest-first, so a longer phrase claims its span
+    // before a shorter term nested inside it can.
     foreach ($textNodes as $textNode) {
         $text = $textNode->nodeValue;
-        $best_match = null;
-        
-        // Check all terms against this text node, sorted by length (longest first)
+        $found = array();
+
         foreach ($glossary_data as $term) {
             $term_title = $term['title'];
-            
+
             // Skip if we've already highlighted this term elsewhere
             if (isset($used_terms[$term_title])) {
                 continue;
             }
-            
+
             // Check if the term appears as a word boundary in this text node
             $pattern = '/\b' . preg_quote($term_title, '/') . '\b/iu';
-            
-            if (preg_match($pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
-                // Since terms are sorted by length, first match is the longest
-                $best_match = array(
-                    'term' => $term_title,
-                    'definition' => esc_attr($term['definition']),
-                    'offset' => $matches[0][1],
-                    'length' => strlen($matches[0][0]),
-                    'matched_text' => $matches[0][0]
-                );
-                break; // Found longest match for this text node
+
+            if (!preg_match($pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
+                continue;
             }
+
+            $offset = $matches[0][1];
+            $length = strlen($matches[0][0]);
+
+            // Don't let a shorter term land inside a span already claimed by a
+            // longer one in this same node.
+            $overlaps = false;
+            foreach ($found as $claimed) {
+                if ($offset < $claimed['offset'] + $claimed['length'] &&
+                    $claimed['offset'] < $offset + $length) {
+                    $overlaps = true;
+                    break;
+                }
+            }
+            if ($overlaps) {
+                continue;
+            }
+
+            $found[] = array(
+                'term'         => $term_title,
+                'definition'   => esc_attr($term['definition']),
+                'offset'       => $offset,
+                'length'       => $length,
+                'matched_text' => $matches[0][0],
+            );
         }
-        
-        // Apply the best match if found
-        if ($best_match !== null) {
-            $offset = $best_match['offset'];
-            $length = $best_match['length'];
-            $matched_text = $best_match['matched_text'];
-            
-            // Split the text node into three parts
-            $before = substr($text, 0, $offset);
-            $after = substr($text, $offset + $length);
-            
-            // Create new nodes
-            $parent = $textNode->parentNode;
-            
-            // Create span element
+
+        if (empty($found)) {
+            continue;
+        }
+
+        // Rebuild the node left to right so the offsets stay meaningful.
+        usort($found, function ($a, $b) {
+            return $a['offset'] - $b['offset'];
+        });
+
+        $parent = $textNode->parentNode;
+        $cursor = 0;
+
+        foreach ($found as $match) {
+            $before = substr($text, $cursor, $match['offset'] - $cursor);
+            if ($before !== '') {
+                $parent->insertBefore($dom->createTextNode($before), $textNode);
+            }
+
             $span = $dom->createElement('span');
             $span->setAttribute('class', 'glossary-highlight');
-            $span->setAttribute('data-tooltip', $best_match['definition']);
-            $span->appendChild($dom->createTextNode($matched_text));
-            
-            // Replace the text node with before text, span, and after text
-            if ($before !== '') {
-                $beforeNode = $dom->createTextNode($before);
-                $parent->insertBefore($beforeNode, $textNode);
-            }
-            
+            $span->setAttribute('data-tooltip', $match['definition']);
+            $span->appendChild($dom->createTextNode($match['matched_text']));
             $parent->insertBefore($span, $textNode);
-            
-            if ($after !== '') {
-                $afterNode = $dom->createTextNode($after);
-                $parent->insertBefore($afterNode, $textNode);
-            }
-            
-            $parent->removeChild($textNode);
-            
-            // Mark this term as used
-            $used_terms[$best_match['term']] = true;
+
+            $cursor = $match['offset'] + $match['length'];
+            $used_terms[$match['term']] = true;
             $hasHighlights = true;
         }
+
+        $after = substr($text, $cursor);
+        if ($after !== '') {
+            $parent->insertBefore($dom->createTextNode($after), $textNode);
+        }
+
+        $parent->removeChild($textNode);
     }
-    
+
     // Extract the content from the wrapper div
     $body = $dom->getElementsByTagName('div')->item(0);
     $content = '';

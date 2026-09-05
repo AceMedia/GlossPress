@@ -34,17 +34,24 @@
 
 
 
+    // Themes that don't register the base/contrast presets would otherwise make
+    // every color-mix() below invalid, so the browser drops it and inputs, borders
+    // and count pills render unstyled. Falling back to the inherited text colour
+    // keeps the block legible on light and dark themes alike.
+    $c-base: var(--wp--preset--color--base, var(--glossary-fallback-base, #ffffff));
+    $c-contrast: var(--wp--preset--color--contrast, currentColor);
+
     // Gradient Variables
 $gradient-light: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--wp--preset--color--base), white 5%) 0%,
-    color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%
+    color-mix(in srgb, #{$c-base}, white 5%) 0%,
+    color-mix(in srgb, #{$c-base}, black 10%) 100%
   );
   
   $gradient-hover: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--wp--preset--color--base), white 10%) 0%,
-    color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%
+    color-mix(in srgb, #{$c-base}, white 10%) 0%,
+    color-mix(in srgb, #{$c-base}, black 10%) 100%
   );
 
 
@@ -52,36 +59,42 @@ $gradient-light: linear-gradient(
     // Gradient Variables
     $gradient-input: linear-gradient(
         to top,
-        color-mix(in srgb, var(--wp--preset--color--base), white 5%) 70%,
-        color-mix(in srgb, var(--wp--preset--color--base), black 10%) 100%
+        color-mix(in srgb, #{$c-base}, white 5%) 70%,
+        color-mix(in srgb, #{$c-base}, black 10%) 100%
       );
 
   
   // Border Variables
-  $border-color-default: color-mix(in srgb, var(--wp--preset--color--base), black 50%);
-  $border-color-hover: color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+  $border-color-default: color-mix(in srgb, #{$c-base}, black 50%);
+  $border-color-hover: color-mix(in srgb, #{$c-base}, black 60%);
   
 
   // Shadow Variables
   $shadow-default: // $shadow-natural, 
 inset 0px 1px 0px rgba(255, 255, 255, 0.15), 
-inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%);
+inset 0px -1px 2px color-mix(in srgb, #{$c-base}, black 25%);
 $shadow-hover: // $shadow-deep, 
 inset 0px 1px 0px rgba(255, 255, 255, 0.25), 
-inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%);
+inset 0px -1px 2px color-mix(in srgb, #{$c-base}, black 25%);
 
   
+  #acemedia-glossary-root,
+  .acemedia-glossary-frontend,
+  .glossary-alphanumeric-index {
+    --glossary-fallback-base: color-mix(in srgb, currentColor, transparent 90%);
+  }
+
   #acemedia-glossary-root {
     padding: $spacing-30;
-    --glossary-text-color: var(--wp--preset--color--contrast);
+    --glossary-text-color: #{$c-contrast};
     --glossary-heading-background: #{$gradient-light};
-    --glossary-heading-text-color: var(--wp--preset--color--contrast);
+    --glossary-heading-text-color: #{$c-contrast};
     --glossary-card-background: #{$gradient-light};
     --glossary-content-gap: #{$spacing-20};
     --glossary-heading-padding: #{$spacing-30};
 
     * {
-      color: var(--glossary-text-color, var(--wp--preset--color--contrast));
+      color: var(--glossary-text-color, #{$c-contrast});
     }
   
     .acemedia-glossary-frontend {
@@ -98,13 +111,19 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
         padding: $spacing-30;
         padding-right: 50px; // Make room for clear button
         font-size: $font-size-medium;
-        border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+        border: 1px solid color-mix(in srgb, #{$c-base}, black 60%);
         border-radius: .25em;
         background: $gradient-input;
+        color: #{$c-contrast};
         box-shadow: inset 0px 0px 3px rgba(#000000, 0.25);
+
+        &::placeholder {
+          color: color-mix(in srgb, currentColor, transparent 45%);
+          opacity: 1;
+        }
         &:focus {
           outline: none;
-          border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 80%);
+          border: 1px solid color-mix(in srgb, #{$c-base}, black 80%);
         }
       }
   
@@ -123,16 +142,16 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
         font-size: 28px;
         line-height: 1;
         cursor: pointer;
-        color: color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+        color: color-mix(in srgb, #{$c-base}, black 60%);
         padding: 0 10px;
         transition: color 0.2s ease;
         
         &:hover {
-          color: color-mix(in srgb, var(--wp--preset--color--base), black 80%);
+          color: color-mix(in srgb, #{$c-base}, black 80%);
         }
 
         &:focus {
-          outline: 2px solid color-mix(in srgb, var(--wp--preset--color--base), black 80%);
+          outline: 2px solid color-mix(in srgb, #{$c-base}, black 80%);
           outline-offset: 2px;
         }
       }
@@ -144,7 +163,7 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
         right: 0;
         margin-top: -#{$spacing-30};
         background: #ffffff;
-        border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+        border: 1px solid color-mix(in srgb, #{$c-base}, black 60%);
         border-top: none;
         border-radius: 0 0 .25em .25em;
         list-style: none;
@@ -195,8 +214,8 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
         text-align: left;
         display: block;
         padding: 0px;
-        background: var(--wp--preset--color--base);
-        border-bottom: 2px solid var(--wp--preset--color--contrast);
+        background: #{$c-base};
+        border-bottom: 2px solid #{$c-contrast};
         font-size: 1.5em;
         font-weight: bold;
         width: 50px;
@@ -226,8 +245,8 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
         .components-card-header {
             padding: var(--glossary-heading-padding, #{$spacing-30});
             background: var(--glossary-heading-background, #{$gradient-light});
-            color: var(--glossary-heading-text-color, var(--wp--preset--color--contrast));
-            text-shadow: 0px 1px 0px var(--wp--preset--color--base);
+            color: var(--glossary-heading-text-color, #{$c-contrast});
+            text-shadow: 0px 1px 0px #{$c-base};
       display: flex;
       align-items: center;
       gap: var(--glossary-content-gap, #{$spacing-20});
@@ -240,7 +259,7 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
     }
         .components-card-body {
             padding: $spacing-30;
-            text-shadow: 0px 1px 0px var(--wp--preset--color--base);
+            text-shadow: 0px 1px 0px #{$c-base};
         }
         h4 {
           cursor: pointer;
@@ -350,11 +369,11 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
         gap: 0.4em;
         border-radius: .25em;
         padding: 1rem $spacing-30;
-        border: 1px solid color-mix(in srgb, var(--wp--preset--color--base), black 60%);
+        border: 1px solid color-mix(in srgb, #{$c-base}, black 60%);
         background: var(--glossary-heading-background, #{$gradient-light});
-        color: var(--glossary-heading-text-color, var(--wp--preset--color--contrast)) !important;
+        color: var(--glossary-heading-text-color, #{$c-contrast}) !important;
         text-decoration: none;
-        text-shadow: 0px 1px 0px var(--wp--preset--color--base);
+        text-shadow: 0px 1px 0px #{$c-base};
         font-size: 1.2em;
         font-weight: bold;
         transition: all 0.2s ease;
@@ -369,7 +388,7 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
         }
         
         &:hover {
-            border-color: color-mix(in srgb, var(--wp--preset--color--base), black 80%);
+            border-color: color-mix(in srgb, #{$c-base}, black 80%);
             transform: translateY(-2px);
             box-shadow: $shadow-hover;
         }
@@ -378,14 +397,12 @@ inset 0px -1px 2px color-mix(in srgb, var(--wp--preset--color--base), black 25%)
             display: inline-block;
             font-size: 0.5em;
             font-weight: 600;
-            background: color-mix(in srgb, var(--wp--preset--color--contrast), transparent 80%);
-            color: var(--wp--preset--color--base);
+            background: color-mix(in srgb, currentColor, transparent 82%);
+            color: currentColor;
             padding: 0.3em 0.6em;
-            border-radius: 1em;
             line-height: 1;
             min-width: 1.8em;
             text-align: center;
-            background: #EFEFEF;
             border-radius: 20px;
         }
     }
