@@ -30,6 +30,20 @@ class AceMediaGlossary {
         define('ACEMEDIA_GLOSSARY_VERSION', '1.0.0');
     }
 
+    /**
+     * Cache-busting version for a built asset.
+     *
+     * The plugin version alone doesn't change between builds, so a rebuilt CSS or
+     * JS file can sit behind a long-lived CDN cache indefinitely. Falling back to
+     * the file's modification time means every deploy publishes a fresh URL.
+     */
+    public static function assetVersion($relative_path) {
+        $file = ACEMEDIA_GLOSSARY_PATH . ltrim($relative_path, '/');
+        $mtime = file_exists($file) ? filemtime($file) : false;
+
+        return $mtime ? ACEMEDIA_GLOSSARY_VERSION . '.' . $mtime : ACEMEDIA_GLOSSARY_VERSION;
+    }
+
     private function loadDependencies() {
         require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-post-type.php';
     require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-style-settings.php';
@@ -248,7 +262,7 @@ class AceMediaGlossary {
             'acemedia-glossary-frontend',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-frontend.js',
             array('wp-element'), // Ensure React is available
-            ACEMEDIA_GLOSSARY_VERSION,
+            self::assetVersion('build/glossary-frontend.js'),
             true
         );
     
@@ -296,7 +310,7 @@ class AceMediaGlossary {
                 'acemedia-glossary-admin',
                 ACEMEDIA_GLOSSARY_URL . 'build/glossary-admin.css',
                 array('wp-components'),
-                ACEMEDIA_GLOSSARY_VERSION
+                self::assetVersion('build/glossary-admin.css')
             );
         }
     }

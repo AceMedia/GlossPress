@@ -86,7 +86,7 @@ class AceMediaGlossary_Shortcode {
             'acemedia-glossary-frontend',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-frontend.js',
             array('wp-element', 'wp-components', 'wp-i18n', 'wp-api-fetch'),
-            ACEMEDIA_GLOSSARY_VERSION,
+            AceMediaGlossary::assetVersion('build/glossary-frontend.js'),
             true
         );
 
@@ -96,7 +96,7 @@ class AceMediaGlossary_Shortcode {
             'acemedia-glossary-frontend',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-frontend.css',
             array(),
-            ACEMEDIA_GLOSSARY_VERSION
+            AceMediaGlossary::assetVersion('build/glossary-frontend.css')
         );
 
 
@@ -381,14 +381,14 @@ function acemedia_glossary_enqueue_tooltip_assets() {
             'acemedia-glossary-tooltips',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-tooltips.css',
             array(),
-            ACEMEDIA_GLOSSARY_VERSION
+            AceMediaGlossary::assetVersion('build/glossary-tooltips.css')
         );
 
         wp_enqueue_script(
             'acemedia-glossary-tooltips',
             ACEMEDIA_GLOSSARY_URL . 'build/glossary-tooltips.js',
             ['wp-element', 'wp-components'], // Dependencies
-            ACEMEDIA_GLOSSARY_VERSION,
+            AceMediaGlossary::assetVersion('build/glossary-tooltips.js'),
             true // Load in the footer
         );
     });
@@ -589,7 +589,7 @@ function acemedia_register_glossary_block() {
         'acemedia-glossary-block',
         ACEMEDIA_GLOSSARY_URL . 'build/glossary-block.js',
         array('wp-blocks', 'wp-editor', 'wp-element', 'wp-components', 'wp-i18n', 'wp-api-fetch'),
-        ACEMEDIA_GLOSSARY_VERSION,
+        AceMediaGlossary::assetVersion('build/glossary-block.js'),
         true
     );
 
@@ -597,7 +597,7 @@ function acemedia_register_glossary_block() {
         'acemedia-glossary-block-editor',
         ACEMEDIA_GLOSSARY_URL . 'build/glossary-block-editor.css',
         array('wp-edit-blocks'),
-        ACEMEDIA_GLOSSARY_VERSION
+        AceMediaGlossary::assetVersion('build/glossary-block-editor.css')
     );
 
     $styles = AceMediaGlossary_Style_Settings::get_styles();
