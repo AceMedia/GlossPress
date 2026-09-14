@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AceMedia Glossary
  * Description: A glossary system with React-based admin and frontend interfaces
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: AceMedia
  */
 
@@ -27,7 +27,7 @@ class AceMediaGlossary {
     private function defineConstants() {
         define('ACEMEDIA_GLOSSARY_PATH', plugin_dir_path(__FILE__));
         define('ACEMEDIA_GLOSSARY_URL', plugin_dir_url(__FILE__));
-        define('ACEMEDIA_GLOSSARY_VERSION', '1.0.0');
+        define('ACEMEDIA_GLOSSARY_VERSION', '1.2.0');
     }
 
     /**

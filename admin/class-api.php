@@ -894,11 +894,13 @@ function export_glossary_terms() {
             'tags' => $tags_formatted, // Full tag data
             'autoHighlight' => (bool) get_post_meta($term->ID, 'auto_highlight', true),
             'enablePostRelations' => (bool) get_post_meta($term->ID, 'enable_post_relations', true),
+            'synonyms' => function_exists('acemedia_glossary_term_synonyms') ? acemedia_glossary_term_synonyms($term->ID) : array(),
         ];
     }, $terms);
 
     $settings = array(
         'autoHighlight' => get_option('acemedia_glossary_auto_highlight', 'false') === 'true',
+        'highlightPostTypes' => array_values((array) get_option('acemedia_glossary_highlight_post_types', array())),
         'archiveFeaturesEnabled' => get_option('acemedia_glossary_templates_enabled', 'true') === 'true',
         'archiveSlug' => sanitize_title(get_option('acemedia_glossary_archive_slug', 'glossary')),
         'styleSettings' => AceMediaGlossary_Style_Settings::get_styles(),
@@ -942,6 +944,11 @@ function import_glossary_terms($request) {
         if (array_key_exists('autoHighlight', $settings)) {
             $auto_highlight_enabled = (bool) $settings['autoHighlight'];
             update_option('acemedia_glossary_auto_highlight', $auto_highlight_enabled ? 'true' : 'false');
+        }
+
+        if (array_key_exists('highlightPostTypes', $settings)) {
+            $post_types = is_array($settings['highlightPostTypes']) ? $settings['highlightPostTypes'] : array();
+            update_option('acemedia_glossary_highlight_post_types', array_values(array_filter(array_map('sanitize_key', $post_types))));
         }
 
         if (array_key_exists('archiveFeaturesEnabled', $settings)) {
@@ -1160,6 +1167,9 @@ function import_glossary_terms($request) {
             $enable_post_relations = !empty($term['enablePostRelations']);
             update_post_meta($post_id, 'auto_highlight', $auto_highlight);
             update_post_meta($post_id, 'enable_post_relations', $enable_post_relations);
+            if (array_key_exists('synonyms', $term)) {
+                update_post_meta($post_id, 'synonyms', is_array($term['synonyms']) ? array_values(array_filter(array_map('sanitize_text_field', $term['synonyms']))) : array());
+            }
 
             // Handle related term references (first pass)
             $related_ids = [];

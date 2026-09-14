@@ -57,6 +57,76 @@ class AceMediaGlossary_PostType {
             'exclude_from_search' => !$frontend_enabled,
             'taxonomies' => array('category', 'post_tag'),  // Enable categories and tags
         ));
+
+        self::registerGroupTaxonomy();
+        self::registerMeta();
+    }
+
+    /**
+     * A private grouping taxonomy for organising the glossary itself
+     * (e.g. "Dialect", "Places"). Unlike categories and tags it plays NO part
+     * in deciding which posts a term highlights on, so a site can group its
+     * terms without polluting the post categories or narrowing where terms
+     * apply.
+     */
+    private static function registerGroupTaxonomy() {
+        if (taxonomy_exists('glossary_group')) {
+            return;
+        }
+
+        register_taxonomy('glossary_group', array('acemedia_glossary'), array(
+            'labels' => array(
+                'name'          => 'Glossary Groups',
+                'singular_name' => 'Glossary Group',
+                'search_items'  => 'Search Glossary Groups',
+                'all_items'     => 'All Glossary Groups',
+                'edit_item'     => 'Edit Glossary Group',
+                'add_new_item'  => 'Add New Glossary Group',
+            ),
+            'hierarchical'      => true,
+            'public'            => false,
+            'show_ui'           => true,
+            'show_in_rest'      => true,
+            'show_admin_column' => true,
+            'rewrite'           => false,
+            'query_var'         => false,
+        ));
+    }
+
+    /**
+     * Alternative spellings a term also highlights on ("Hendo's", "gennel").
+     */
+    private static function registerMeta() {
+        register_post_meta('acemedia_glossary', 'synonyms', array(
+            'type'         => 'array',
+            'single'       => true,
+            'default'      => array(),
+            'show_in_rest' => array(
+                'schema' => array(
+                    'type'  => 'array',
+                    'items' => array('type' => 'string'),
+                ),
+            ),
+            'sanitize_callback' => function ($value) {
+                if (is_string($value)) {
+                    $value = preg_split('/[\r\n,]+/', $value);
+                }
+                if (!is_array($value)) {
+                    return array();
+                }
+                $clean = array();
+                foreach ($value as $synonym) {
+                    $synonym = trim(sanitize_text_field((string) $synonym));
+                    if ($synonym !== '') {
+                        $clean[] = $synonym;
+                    }
+                }
+                return array_values(array_unique($clean));
+            },
+            'auth_callback' => function () {
+                return current_user_can('edit_posts');
+            },
+        ));
     }
     
 

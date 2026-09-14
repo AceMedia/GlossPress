@@ -2,7 +2,7 @@
 
 A comprehensive glossary system for WordPress with intelligent auto-highlighting, related posts, and a React-based admin interface.
 
-**Version:** 1.0.0  
+**Version:** 1.2.0  
 **Author:** AceMedia
 
 ---
@@ -317,7 +317,20 @@ add_filter('acemedia_glossary_related_post_types', function($post_types) {
 
 // Modify content before auto-highlighting
 add_filter('the_content', 'your_function', 9); // Run before highlight_glossary_terms (priority 10)
+
+// Limit auto-highlighting to certain post types (option or filter; empty = all singular views)
+update_option('acemedia_glossary_highlight_post_types', array('post'));
+add_filter('acemedia_glossary_highlight_post_types', function($post_types) {
+    return array('post', 'article');
+});
+
+// Veto highlighting for a specific post
+add_filter('acemedia_glossary_should_highlight', function($should, $post) {
+    return $should && !has_term('no-glossary', 'post_tag', $post);
+}, 10, 2);
 ```
+
+The highlighter is skipped automatically for REST API responses, `/wp-json/` requests, feeds, embeds, AJAX, cron and excerpt generation.
 
 ### Custom Post Meta
 
@@ -325,6 +338,7 @@ Each glossary term has the following meta fields:
 - `auto_highlight` (bool) - Enable auto-highlighting
 - `enable_post_relations` (bool) - Enable related posts
 - `related_terms` (array) - IDs of related glossary terms
+- `synonyms` (array) - Alternative spellings that also trigger the highlight (e.g. `["Hendo's"]`)
 
 ### Code Locations
 
@@ -370,7 +384,7 @@ npm run dev
 
 Glossary terms use the standard WordPress post structure:
 - Post Type: `acemedia_glossary`
-- Taxonomies: WordPress built-in categories and tags
+- Taxonomies: WordPress built-in categories and tags (control where terms highlight) plus the private `glossary_group` taxonomy (organisation only)
 - Meta: Stored in `wp_postmeta` table
 
 ---
@@ -388,6 +402,18 @@ Proprietary - AceMedia © 2025
 ---
 
 ## Changelog
+
+### Version 1.2.0
+- Auto-highlighting can be scoped to specific post types with the `acemedia_glossary_highlight_post_types` option (array of post type names; empty keeps the old "every singular view" behaviour) and the filter of the same name. A second filter, `acemedia_glossary_should_highlight`, gives the final say per post.
+- The highlighter never runs for REST API responses, `/wp-json/` requests, feeds, embeds, AJAX, cron or excerpt generation, so structured data and API clients always receive untouched content.
+- Terms accept alternative spellings through a `synonyms` post meta array (exposed in the REST API and in export/import). Matching any synonym highlights the term with the same tooltip.
+- New private `glossary_group` taxonomy for organising terms inside the glossary. Unlike categories and tags it does not restrict which posts a term appears on.
+- Settings export/import carries `highlightPostTypes`.
+
+### Version 1.1.0
+- Consolidated feature set across forks
+- Every distinct term in a paragraph is highlighted; themes with no colour presets are handled
+- Built assets are versioned by modification time so rebuilds bust CDN caches
 
 ### Version 1.0.0
 - Initial release

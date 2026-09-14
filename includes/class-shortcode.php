@@ -323,6 +323,99 @@ add_action('set_object_terms', function ($object_id) {
 }, 10, 1);
 
 /**
+ * Alternative spellings for a term (e.g. "Hendo's" for Henderson's Relish,
+ * "gennel" for ginnel). Stored in the `synonyms` post meta as an array or a
+ * newline/comma separated string. Matching any synonym highlights the term.
+ */
+function acemedia_glossary_term_synonyms($post_id) {
+    $raw = get_post_meta($post_id, 'synonyms', true);
+    if (is_string($raw)) {
+        $raw = preg_split('/[\r\n,]+/', $raw);
+    }
+    if (!is_array($raw)) {
+        return array();
+    }
+    $synonyms = array();
+    foreach ($raw as $synonym) {
+        $synonym = trim(wp_strip_all_tags((string) $synonym));
+        if ($synonym !== '') {
+            $synonyms[] = $synonym;
+        }
+    }
+    return array_values(array_unique($synonyms));
+}
+
+/**
+ * Post types the auto-highlighter may rewrite. An empty list means every
+ * singular view (the pre-1.2 behaviour). Set the
+ * `acemedia_glossary_highlight_post_types` option to an array of post type
+ * names to scope it, or use the filter of the same name.
+ */
+function acemedia_glossary_highlight_post_types() {
+    $post_types = get_option('acemedia_glossary_highlight_post_types', array());
+    if (is_string($post_types)) {
+        $post_types = preg_split('/[\s,]+/', $post_types);
+    }
+    if (!is_array($post_types)) {
+        $post_types = array();
+    }
+    $post_types = array_values(array_filter(array_map('sanitize_key', $post_types)));
+
+    /**
+     * Filters the post types eligible for glossary auto-highlighting.
+     *
+     * @param string[] $post_types Post type names; empty means all singular views.
+     */
+    $post_types = apply_filters('acemedia_glossary_highlight_post_types', $post_types);
+
+    return is_array($post_types) ? $post_types : array();
+}
+
+/**
+ * Whether the auto-highlighter should touch the content for the current
+ * request. Public so themes and other plugins can share the decision.
+ */
+function acemedia_glossary_should_highlight($post = null) {
+    if (get_option('acemedia_glossary_auto_highlight', 'false') !== 'true') {
+        return false;
+    }
+
+    // Never rewrite REST, feed, AJAX or excerpt output: those are consumed by
+    // machines (schema, API clients, meta descriptions), not by readers.
+    if ((defined('REST_REQUEST') && REST_REQUEST) || (function_exists('wp_is_serving_rest_request') && wp_is_serving_rest_request()) || wp_doing_ajax() || wp_doing_cron()) {
+        return false;
+    }
+    if (isset($_SERVER['REQUEST_URI']) && strpos((string) $_SERVER['REQUEST_URI'], '/wp-json/') !== false) {
+        return false;
+    }
+    if (is_feed() || is_embed() || doing_filter('get_the_excerpt') || doing_filter('wp_trim_excerpt')) {
+        return false;
+    }
+
+    if (!is_singular() || is_front_page() || is_archive()) {
+        return false;
+    }
+
+    $post = $post ? get_post($post) : get_post();
+    if (!$post instanceof WP_Post) {
+        return false;
+    }
+
+    $allowed = acemedia_glossary_highlight_post_types();
+    if (!empty($allowed) && !in_array($post->post_type, $allowed, true)) {
+        return false;
+    }
+
+    /**
+     * Final say on whether this post gets auto-highlighted.
+     *
+     * @param bool    $should Default decision.
+     * @param WP_Post $post   The post being rendered.
+     */
+    return (bool) apply_filters('acemedia_glossary_should_highlight', true, $post);
+}
+
+/**
  * The auto-highlight term set, cached globally (identical for every page render)
  * and busted by the terms-version stamp. Returns each enabled term with its
  * stripped definition and taxonomy ids, pre-sorted longest-title-first so longer
@@ -349,15 +442,24 @@ function acemedia_glossary_get_highlight_terms() {
         }
         $terms[] = array(
             'title'      => $glossary_post->post_title,
+            'synonyms'   => acemedia_glossary_term_synonyms($glossary_post->ID),
             'definition' => wp_strip_all_tags($glossary_post->post_content),
             'categories' => wp_get_post_categories($glossary_post->ID),
             'tags'       => wp_get_post_tags($glossary_post->ID, array('fields' => 'ids')),
         );
     }
 
-    // Sort by title length descending to prioritise longer terms.
-    usort($terms, function ($a, $b) {
-        return strlen($b['title']) - strlen($a['title']);
+    // Sort by the longest matchable form (title or synonym) descending so
+    // longer phrases are claimed before anything nested inside them.
+    $longest = function ($term) {
+        $max = strlen($term['title']);
+        foreach ($term['synonyms'] as $synonym) {
+            $max = max($max, strlen($synonym));
+        }
+        return $max;
+    };
+    usort($terms, function ($a, $b) use ($longest) {
+        return $longest($b) - $longest($a);
     });
 
     set_transient($cache_key, $terms, 12 * HOUR_IN_SECONDS);
@@ -395,16 +497,10 @@ function acemedia_glossary_enqueue_tooltip_assets() {
 }
 
 function highlight_glossary_terms($content) {
-    // Check if auto_highlight is enabled (correct option name)
-    $auto_highlight_enabled = get_option('acemedia_glossary_auto_highlight', 'false') === 'true';
-
-    if (!$auto_highlight_enabled || !is_singular() || is_front_page() || is_archive()) {
-        return $content; // Skip processing if auto_highlight is disabled
-    }
-
-    // Get the current post's categories and tags
     global $post;
-    if (!$post instanceof WP_Post) {
+
+    // Skips disabled, REST/feed/excerpt, non-singular and out-of-scope post types.
+    if (!acemedia_glossary_should_highlight($post)) {
         return $content;
     }
     $current_post_categories = wp_get_post_categories($post->ID);
@@ -439,6 +535,7 @@ function highlight_glossary_terms($content) {
         if ($has_shared_category || $has_shared_tag || (empty($term['categories']) && empty($term['tags']))) {
             $glossary_data[] = array(
                 'title'      => $term['title'],
+                'synonyms'   => isset($term['synonyms']) ? $term['synonyms'] : array(),
                 'definition' => $term['definition'],
             );
         }
@@ -491,8 +588,16 @@ function highlight_glossary_terms($content) {
                 continue;
             }
 
-            // Check if the term appears as a word boundary in this text node
-            $pattern = '/\b' . preg_quote($term_title, '/') . '\b/iu';
+            // Check if the term (or one of its synonyms) appears as a whole
+            // word in this text node. Longest form first so "Hendo's" is not
+            // cut to "Hendo" by a shorter alternative.
+            $forms = array_merge(array($term_title), $term['synonyms']);
+            usort($forms, function ($a, $b) {
+                return strlen($b) - strlen($a);
+            });
+            $pattern = '/\b(?:' . implode('|', array_map(function ($form) {
+                return preg_quote($form, '/');
+            }, $forms)) . ')\b/iu';
 
             if (!preg_match($pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
                 continue;

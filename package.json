@@ -1,6 +1,6 @@
 {
   "name": "ace-glossary-plugin",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Ace Glossary Plugin with React-based admin and frontend.",
   "author": "Shane Rounce",
   "license": "GPL-2.0-or-later",
