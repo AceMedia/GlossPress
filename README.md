@@ -413,6 +413,7 @@ Proprietary - AceMedia © 2025
 - New private `glossary_group` taxonomy for organising terms inside the glossary. Unlike categories and tags it does not restrict which posts a term appears on.
 - Settings export/import carries `highlightPostTypes`.
 - New `acemedia_glossary_tooltip_mode` option (and filter): `components` keeps the React and wp-components tooltip; `light` serves a 2 KB vanilla CSS/JS tooltip instead, saving roughly 1 MB of scripts and styles on every highlighted page. Style it with the `--glossary-tooltip-bg`, `--glossary-tooltip-color`, `--glossary-tooltip-term-color` and `--glossary-highlight-underline` custom properties.
+- Highlight spans carry a `data-term` attribute with the canonical term title (useful when a synonym matched), and text inside links, buttons, code and pre blocks is left alone.
 - Tooltip definitions are no longer double-encoded (apostrophes and ampersands showed as entities).
 
 ### Version 1.1.0

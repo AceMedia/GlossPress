@@ -22,7 +22,7 @@
 		t.textContent = '';
 		var term = document.createElement('span');
 		term.className = 'glossary-tooltip__term';
-		term.textContent = el.textContent;
+		term.textContent = el.getAttribute('data-term') || el.textContent;
 		t.appendChild(term);
 		t.appendChild(document.createTextNode(text));
 		el.setAttribute('aria-describedby', t.id);

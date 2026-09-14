@@ -593,13 +593,16 @@ function highlight_glossary_terms($content) {
     // term is highlighted, across the whole post)
     $used_terms = array();
     
-    // Get all text nodes that are not inside glossary-highlight spans
-    // and not inside heading elements (h1–h6)
+    // Get all text nodes that are not inside glossary-highlight spans,
+    // heading elements (h1-h6), links, buttons or code/pre blocks.
     $textNodes = $xpath->query(
         '//text()[
             not(ancestor::span[@class="glossary-highlight"]) and
             not(ancestor::h1) and not(ancestor::h2) and not(ancestor::h3) and
-            not(ancestor::h4) and not(ancestor::h5) and not(ancestor::h6)
+            not(ancestor::h4) and not(ancestor::h5) and not(ancestor::h6) and
+            not(ancestor::a) and not(ancestor::button) and
+            not(ancestor::code) and not(ancestor::pre) and
+            not(ancestor::script) and not(ancestor::style)
         ]'
     );
     
@@ -679,6 +682,7 @@ function highlight_glossary_terms($content) {
 
             $span = $dom->createElement('span');
             $span->setAttribute('class', 'glossary-highlight');
+            $span->setAttribute('data-term', $match['term']);
             $span->setAttribute('data-tooltip', $match['definition']);
             $span->appendChild($dom->createTextNode($match['matched_text']));
             $parent->insertBefore($span, $textNode);
