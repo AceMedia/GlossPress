@@ -443,7 +443,10 @@ function acemedia_glossary_get_highlight_terms() {
         $terms[] = array(
             'title'      => $glossary_post->post_title,
             'synonyms'   => acemedia_glossary_term_synonyms($glossary_post->ID),
-            'definition' => wp_strip_all_tags($glossary_post->post_content),
+            // Plain text, entities decoded: DOMDocument escapes the attribute
+            // itself, so pre-encoded &#039; or &amp; would otherwise render
+            // literally inside the tooltip.
+            'definition' => html_entity_decode(wp_strip_all_tags($glossary_post->post_content), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
             'categories' => wp_get_post_categories($glossary_post->ID),
             'tags'       => wp_get_post_tags($glossary_post->ID, array('fields' => 'ids')),
         );
@@ -622,7 +625,7 @@ function highlight_glossary_terms($content) {
 
             $found[] = array(
                 'term'         => $term_title,
-                'definition'   => esc_attr($term['definition']),
+                'definition'   => $term['definition'],
                 'offset'       => $offset,
                 'length'       => $length,
                 'matched_text' => $matches[0][0],
