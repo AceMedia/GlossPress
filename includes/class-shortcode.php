@@ -473,8 +473,35 @@ function acemedia_glossary_get_highlight_terms() {
  * Registers the tooltip CSS/JS. Called on both cache miss and cache hit so the
  * assets are present whenever the cached output contains highlights.
  */
+function acemedia_glossary_tooltip_mode() {
+    $mode = get_option('acemedia_glossary_tooltip_mode', 'components');
+    /**
+     * Filters the tooltip renderer: 'components' (React + wp-components, the
+     * original) or 'light' (a few KB of vanilla CSS/JS, no React).
+     */
+    $mode = apply_filters('acemedia_glossary_tooltip_mode', $mode);
+    return $mode === 'light' ? 'light' : 'components';
+}
+
 function acemedia_glossary_enqueue_tooltip_assets() {
     add_action('wp_enqueue_scripts', function () {
+        if (acemedia_glossary_tooltip_mode() === 'light') {
+            wp_enqueue_style(
+                'acemedia-glossary-tooltips',
+                ACEMEDIA_GLOSSARY_URL . 'assets/tooltips-light.css',
+                array(),
+                AceMediaGlossary::assetVersion('assets/tooltips-light.css')
+            );
+            wp_enqueue_script(
+                'acemedia-glossary-tooltips',
+                ACEMEDIA_GLOSSARY_URL . 'assets/tooltips-light.js',
+                array(),
+                AceMediaGlossary::assetVersion('assets/tooltips-light.js'),
+                true
+            );
+            return;
+        }
+
         wp_enqueue_style(
             'wp-components',
             includes_url('/css/dist/components/style.css'),

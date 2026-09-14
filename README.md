@@ -328,6 +328,9 @@ add_filter('acemedia_glossary_highlight_post_types', function($post_types) {
 add_filter('acemedia_glossary_should_highlight', function($should, $post) {
     return $should && !has_term('no-glossary', 'post_tag', $post);
 }, 10, 2);
+
+// Serve the lightweight tooltip instead of React + wp-components
+update_option('acemedia_glossary_tooltip_mode', 'light');
 ```
 
 The highlighter is skipped automatically for REST API responses, `/wp-json/` requests, feeds, embeds, AJAX, cron and excerpt generation.
@@ -409,6 +412,8 @@ Proprietary - AceMedia © 2025
 - Terms accept alternative spellings through a `synonyms` post meta array (exposed in the REST API and in export/import). Matching any synonym highlights the term with the same tooltip.
 - New private `glossary_group` taxonomy for organising terms inside the glossary. Unlike categories and tags it does not restrict which posts a term appears on.
 - Settings export/import carries `highlightPostTypes`.
+- New `acemedia_glossary_tooltip_mode` option (and filter): `components` keeps the React and wp-components tooltip; `light` serves a 2 KB vanilla CSS/JS tooltip instead, saving roughly 1 MB of scripts and styles on every highlighted page. Style it with the `--glossary-tooltip-bg`, `--glossary-tooltip-color`, `--glossary-tooltip-term-color` and `--glossary-highlight-underline` custom properties.
+- Tooltip definitions are no longer double-encoded (apostrophes and ampersands showed as entities).
 
 ### Version 1.1.0
 - Consolidated feature set across forks

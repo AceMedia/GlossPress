@@ -1,0 +1,44 @@
+/* GlossPress light tooltips: no React, no wp-components. Override the custom
+   properties from your theme to restyle. */
+.glossary-highlight{
+	border-bottom:1px dotted var(--glossary-highlight-underline,var(--wp--preset--color--accent-1,currentColor));
+	cursor:help;
+	position:relative;
+	text-decoration:none;
+}
+.glossary-highlight:after{
+	content:"\24D8";
+	font-size:.72em;
+	font-weight:400;
+	margin-left:.15em;
+	opacity:.7;
+	vertical-align:super;
+	line-height:0;
+}
+.glossary-highlight:focus-visible{
+	outline:2px solid var(--glossary-highlight-underline,var(--wp--preset--color--accent-1,currentColor));
+	outline-offset:2px;
+}
+.glossary-tooltip{
+	position:absolute;
+	z-index:99999;
+	max-width:min(26rem,calc(100vw - 2rem));
+	padding:.8em 1em;
+	border-radius:8px;
+	background:var(--glossary-tooltip-bg,#1f1d1a);
+	color:var(--glossary-tooltip-color,#fff);
+	font-size:.85rem;
+	line-height:1.45;
+	text-align:left;
+	box-shadow:0 8px 24px rgba(0,0,0,.35);
+	pointer-events:none;
+	opacity:0;
+	transition:opacity .12s ease;
+}
+.glossary-tooltip.is-visible{opacity:1}
+.glossary-tooltip__term{
+	display:block;
+	font-weight:700;
+	margin-bottom:.25em;
+	color:var(--glossary-tooltip-term-color,var(--wp--preset--color--accent-2,inherit));
+}
