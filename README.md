@@ -46,13 +46,14 @@ GlossPress allows you to create and manage a glossary of terms that can be:
 - **Shortcode Support** - Use `[glossary]` shortcode anywhere
 - **Related Terms** - Link related glossary terms together
 - **Responsive Design** - Works on all devices
-- **SEO-Friendly** - Includes Schema.org structured data
+- **Crawlable** - Every definition is rendered on the server, so crawlers see the full glossary with or without JavaScript
+- **SEO-Friendly** - One Schema.org `DefinedTermSet` per glossary page, listing your priority terms
 
 ### 🎨 Customization
 - Custom colors for headings, backgrounds, and text
 - Adjustable spacing and padding
 - Multiple sort options (alphabetical, newest, oldest)
-- Masonry grid layout for visual appeal
+- Card grid with a sticky A to Z rail on wide screens and a pinned letter strip on phones
 
 ---
 
@@ -141,6 +142,15 @@ The Related Posts feature shows posts that contain specific glossary terms.
   1. **Exact term match** in title or content (highest priority)
   2. **Shared categories/tags** (fallback)
 - Same category/tag filtering rules apply
+- Related posts load when a reader presses **Show related articles** on the term
+
+### Priority Terms
+
+Tick **Priority term** on a term to include it in the glossary page's structured data
+(`DefinedTermSet` / `DefinedTerm` JSON-LD). Keep it to the terms that matter most: the
+list is capped at 50 (filter `acemedia_glossary_schema_term_limit` to change it).
+Priority only affects the structured data; every definition is always in the page HTML.
+The flag is stored in the `priority` post meta and exposed over REST.
 
 ### Displaying Your Glossary
 

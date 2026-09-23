@@ -257,18 +257,11 @@ class AceMediaGlossary {
     }
 
     public function enqueueFrontendScripts() {
-        // Enqueue frontend script for React UI
-        wp_register_script(
-            'acemedia-glossary-frontend',
-            ACEMEDIA_GLOSSARY_URL . 'build/glossary-frontend.js',
-            array('wp-element'), // Ensure React is available
-            self::assetVersion('build/glossary-frontend.js'),
-            true
-        );
-    
-        // Check if the glossary block or shortcode is present
-        if ($this->hasGlossaryContent()) {
-            wp_enqueue_script('acemedia-glossary-frontend');
+        // Enqueue early where we can tell the glossary is on the page, so the
+        // stylesheet lands in <head> on classic themes too. The block and
+        // shortcode enqueue again on render as a fallback.
+        if ($this->hasGlossaryContent() || is_post_type_archive('acemedia_glossary')) {
+            AceMediaGlossary_Shortcode::enqueueAssets();
         }
     }
     

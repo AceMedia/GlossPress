@@ -1,432 +1,410 @@
+// GlossPress front end: a server-rendered glossary with a search box, an A to Z
+// index (a sticky rail on wide screens, a pinned strip on small ones) and one
+// card per term. Colours come from the shared style settings when set:
+//   --glossary-heading-background  accent (letter tiles, active letter, focus)
+//   --glossary-heading-text-color  text on the accent
+//   --glossary-card-background     term card surface
+//   --glossary-text-color          term card text
+//   --glossary-content-gap         gap between cards
+//   --glossary-heading-padding     card padding
 
+$rail-breakpoint: 64em;
 
-    // Map each CSS custom property to a corresponding SCSS variable
-    $aspect-ratio-square: var(--wp--preset--aspect-ratio--square);
-    $aspect-ratio-4-3: var(--wp--preset--aspect-ratio--4-3);
-    $aspect-ratio-3-4: var(--wp--preset--aspect-ratio--3-4);
-    $aspect-ratio-3-2: var(--wp--preset--aspect-ratio--3-2);
-    $aspect-ratio-2-3: var(--wp--preset--aspect-ratio--2-3);
-    $aspect-ratio-16-9: var(--wp--preset--aspect-ratio--16-9);
-    $aspect-ratio-9-16: var(--wp--preset--aspect-ratio--9-16);
-  
-    $font-size-small: var(--wp--preset--font-size--small);
-    $font-size-medium: var(--wp--preset--font-size--medium);
-    $font-size-large: var(--wp--preset--font-size--large);
-    $font-size-x-large: var(--wp--preset--font-size--x-large);
-    $font-size-xx-large: var(--wp--preset--font-size--xx-large);
-  
-    $font-family-manrope: var(--wp--preset--font-family--manrope);
-    $font-family-fira-code: var(--wp--preset--font-family--fira-code);
-  
-    $spacing-20: var(--wp--preset--spacing--20);
-    $spacing-30: var(--wp--preset--spacing--30);
-    $spacing-40: var(--wp--preset--spacing--40);
-    $spacing-50: var(--wp--preset--spacing--50);
-    $spacing-60: var(--wp--preset--spacing--60);
-    $spacing-70: var(--wp--preset--spacing--70);
-    $spacing-80: var(--wp--preset--spacing--80);
-  
-    $shadow-natural: var(--wp--preset--shadow--natural);
-    $shadow-deep: var(--wp--preset--shadow--deep);
-    $shadow-sharp: var(--wp--preset--shadow--sharp);
-    $shadow-outlined: var(--wp--preset--shadow--outlined);
-    $shadow-crisp: var(--wp--preset--shadow--crisp);
+.acemedia-glossary {
+	--g-accent: var(--glossary-heading-background, var(--wp--preset--color--primary, #1f6f4a));
+	--g-on-accent: var(--glossary-heading-text-color, #fff);
+	--g-surface: var(--glossary-card-background, color-mix(in srgb, currentColor 4%, transparent));
+	--g-base: var(--wp--preset--color--base, #fff);
+	--g-line: color-mix(in srgb, currentColor 14%, transparent);
+	--g-soft: color-mix(in srgb, currentColor 6%, transparent);
+	--g-gap: var(--glossary-content-gap, 1rem);
+	--g-pad: var(--glossary-heading-padding, 1.25rem);
+	--g-sticky: var(--glossary-sticky-top, 0px);
+	--g-label: 1.75rem; // label line plus its gap, hidden when the strip pins
 
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	row-gap: 1.5rem;
+	margin-block: 1.5rem 3rem;
+	// A side gutter only when the block runs edge to edge (a template with no
+	// padding on a phone); zero whenever the layout already leaves 1rem.
+	padding-inline: max(0px, calc(1rem - (100vw - 100%) / 2));
 
+	[hidden] {
+		display: none !important;
+	}
 
-    // Themes that don't register the base/contrast presets would otherwise make
-    // every color-mix() below invalid, so the browser drops it and inputs, borders
-    // and count pills render unstyled. Falling back to the inherited text colour
-    // keeps the block legible on light and dark themes alike.
-    $c-base: var(--wp--preset--color--base, var(--glossary-fallback-base, #ffffff));
-    $c-contrast: var(--wp--preset--color--contrast, currentColor);
+	a:focus-visible,
+	button:focus-visible,
+	h2:focus-visible {
+		outline: 3px solid var(--g-accent);
+		outline-offset: 2px;
+	}
 
-    // Gradient Variables
-$gradient-light: linear-gradient(
-    to bottom,
-    color-mix(in srgb, #{$c-base}, white 5%) 0%,
-    color-mix(in srgb, #{$c-base}, black 10%) 100%
-  );
-  
-  $gradient-hover: linear-gradient(
-    to bottom,
-    color-mix(in srgb, #{$c-base}, white 10%) 0%,
-    color-mix(in srgb, #{$c-base}, black 10%) 100%
-  );
-
-
-
-    // Gradient Variables
-    $gradient-input: linear-gradient(
-        to top,
-        color-mix(in srgb, #{$c-base}, white 5%) 70%,
-        color-mix(in srgb, #{$c-base}, black 10%) 100%
-      );
-
-  
-  // Border Variables
-  $border-color-default: color-mix(in srgb, #{$c-base}, black 50%);
-  $border-color-hover: color-mix(in srgb, #{$c-base}, black 60%);
-  
-
-  // Shadow Variables
-  $shadow-default: // $shadow-natural, 
-inset 0px 1px 0px rgba(255, 255, 255, 0.15), 
-inset 0px -1px 2px color-mix(in srgb, #{$c-base}, black 25%);
-$shadow-hover: // $shadow-deep, 
-inset 0px 1px 0px rgba(255, 255, 255, 0.25), 
-inset 0px -1px 2px color-mix(in srgb, #{$c-base}, black 25%);
-
-  
-  #acemedia-glossary-root,
-  .acemedia-glossary-frontend,
-  .glossary-alphanumeric-index {
-    --glossary-fallback-base: color-mix(in srgb, currentColor, transparent 90%);
-  }
-
-  #acemedia-glossary-root {
-    padding: $spacing-30;
-    --glossary-text-color: #{$c-contrast};
-    --glossary-heading-background: #{$gradient-light};
-    --glossary-heading-text-color: #{$c-contrast};
-    --glossary-card-background: #{$gradient-light};
-    --glossary-content-gap: #{$spacing-20};
-    --glossary-heading-padding: #{$spacing-30};
-
-    * {
-      color: var(--glossary-text-color, #{$c-contrast});
-    }
-  
-    .acemedia-glossary-frontend {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-  
-    .glossary-search {
-      margin-bottom: $spacing-40;
-      position: relative;
-  
-      input {
-        width: 100%;
-        padding: $spacing-30;
-        padding-right: 50px; // Make room for clear button
-        font-size: $font-size-medium;
-        border: 1px solid color-mix(in srgb, #{$c-base}, black 60%);
-        border-radius: .25em;
-        background: $gradient-input;
-        color: #{$c-contrast};
-        box-shadow: inset 0px 0px 3px rgba(#000000, 0.25);
-
-        &::placeholder {
-          color: color-mix(in srgb, currentColor, transparent 45%);
-          opacity: 1;
-        }
-        &:focus {
-          outline: none;
-          border: 1px solid color-mix(in srgb, #{$c-base}, black 80%);
-        }
-      }
-  
-      label {
-        display: block;
-        margin-bottom: $spacing-20;
-      }
-
-      .glossary-search-clear {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: transparent;
-        border: none;
-        font-size: 28px;
-        line-height: 1;
-        cursor: pointer;
-        color: color-mix(in srgb, #{$c-base}, black 60%);
-        padding: 0 10px;
-        transition: color 0.2s ease;
-        
-        &:hover {
-          color: color-mix(in srgb, #{$c-base}, black 80%);
-        }
-
-        &:focus {
-          outline: 2px solid color-mix(in srgb, #{$c-base}, black 80%);
-          outline-offset: 2px;
-        }
-      }
-
-      .glossary-search-suggestions {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        margin-top: -#{$spacing-30};
-        background: #ffffff;
-        border: 1px solid color-mix(in srgb, #{$c-base}, black 60%);
-        border-top: none;
-        border-radius: 0 0 .25em .25em;
-        list-style: none;
-        padding: 0;
-        margin-left: 0;
-        max-height: 300px;
-        overflow-y: auto;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 9999;
-
-        .glossary-search-suggestion-item {
-          padding: $spacing-20;
-          cursor: pointer;
-          transition: background-color 0.2s ease;
-          border-bottom: 1px solid #e5e5e5;
-          color: #333;
-
-          &:last-child {
-            border-bottom: none;
-          }
-
-          &:hover {
-            background: #f5f5f5;
-          }
-        }
-      }
-    }
-
-    // Removed fixed header - using sticky positioning instead
-  
-    .glossary-terms {
-      // Ensure parent container allows sticky positioning
-      overflow: visible;
-      contain: none;
-
-      .glossary-section {
-        // Each section creates a stacking context for its sticky header
-        position: relative;
-      }
-      
-      .glossary-section > h3 {
-        position: -webkit-sticky; // Safari support
-        position: sticky;
-        top: 110px; // Adjust based on your site header height (header + admin bar)
-        z-index: 10;
-        margin-top: 0;
-        margin-bottom: 0;
-        text-align: left;
-        display: block;
-        padding: 0px;
-        background: #{$c-base};
-        border-bottom: 2px solid #{$c-contrast};
-        font-size: 1.5em;
-        font-weight: bold;
-        width: 50px;
-        box-sizing: border-box;
-        // Ensure the element has a background so content scrolls behind it
-      }
-
-      .glossary-group {
-        // Container for glossary items within each letter group
-        margin-bottom: $spacing-30;
-        margin-left: 50px;
-      }
-  
-      .glossary-item-card {
-        background: var(--glossary-card-background, #{$gradient-light});
-        border: 1px solid $border-color-default;
-        border-radius: .25em;
-        margin-bottom: var(--glossary-content-gap, #{$spacing-30});
-        box-shadow: $shadow-default;
-        transition: box-shadow 0.2s ease, border-color 0.2s ease;
-  
-        &:hover {
-          box-shadow: $shadow-hover;
-          border-color: $border-color-hover;
-          background: var(--glossary-card-background, #{$gradient-hover});
-        }
-        .components-card-header {
-            padding: var(--glossary-heading-padding, #{$spacing-30});
-            background: var(--glossary-heading-background, #{$gradient-light});
-            color: var(--glossary-heading-text-color, #{$c-contrast});
-            text-shadow: 0px 1px 0px #{$c-base};
-      display: flex;
-      align-items: center;
-      gap: var(--glossary-content-gap, #{$spacing-20});
-        }
-    .components-card-header h4 {
-      color: inherit;
-      margin: 0;
-      display: flex;
-      align-items: center;
-    }
-        .components-card-body {
-            padding: $spacing-30;
-            text-shadow: 0px 1px 0px #{$c-base};
-        }
-        h4 {
-          cursor: pointer;
-          margin: 0;
-          transition: color 0.2s ease;
-          padding: 0px;
-          font-size: $font-size-large;
-          font-weight: bold;
-  
-          &:hover {
-            color: var(--wp--preset--color--vivid-red);
-          }
-        }
-        > div {
-            font-size: var(--wp--preset--font-size--medium);
-            p {
-                margin: 0 0 var(--wp--preset--spacing--30);
-            }
-        }
-        .see-also,
-        .categories-tags,
-        .related-posts {
-          margin-top: $spacing-20;
-          font-size: $font-size-small;
-  
-          strong {
-            font-weight: bold;
-          }
-        }
-      }
-    }
-  }
-  
-  .glossary-anchor-links {
-  
-    display: flex;
-    flex-wrap: wrap;
-    a {
-      box-shadow: $shadow-default;
-  
-      &:hover {
-        box-shadow: $shadow-hover;
-      }
-    }
-
-
-    > .components-flex-item {
-        flex: 1 1 calc(25% - $spacing-30); // Default: 25% width on desktop
-        max-width: calc(25% - $spacing-30); // Prevent items from exceeding 25%
-        box-sizing: border-box;
-        .glossary-anchor-link {
-            font-weight: bold;
-            color: var(--wp--preset--color--accent-3) !important;
-            padding: var(--wp--preset--spacing--20) 0px !important;
-            line-height: 1;
-        }
-        .glossary-term-link {
-            padding: .5em 1em !important;
-            font-weight: bold;
-            text-align: left !important;
-            padding: var(--wp--preset--spacing--20);
-        }
-    
-      }
-
-  }
-  
-  .glossary-item {
-    flex: 1 1 calc(25% - 1em); /* Default: 25% width */
-    box-sizing: border-box;
-  
-    &:hover {
-      background: $gradient-hover;
-      border: 1px solid $border-color-hover;
-      box-shadow: $shadow-hover;
-    }
-  }
-  
-
-.glossary-alphanumeric-index {
-    margin-bottom: $spacing-40;
-    
-    > div {
-        display: grid;
-        gap: $spacing-20;
-        text-align: center;
-        
-        // Desktop: single row
-        grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-        
-        // Mobile & Tablet: multi-row grid
-        @media (max-width: 1024px) {
-            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-        }
-        
-        @media (max-width: 768px) {
-            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-            gap: $spacing-20;
-        }
-    }
-    
-    a {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 0.4em;
-        border-radius: .25em;
-        padding: 1rem $spacing-30;
-        border: 1px solid color-mix(in srgb, #{$c-base}, black 60%);
-        background: var(--glossary-heading-background, #{$gradient-light});
-        color: var(--glossary-heading-text-color, #{$c-contrast}) !important;
-        text-decoration: none;
-        text-shadow: 0px 1px 0px #{$c-base};
-        font-size: 1.2em;
-        font-weight: bold;
-        transition: all 0.2s ease;
-        line-height: 1;
-        @media (max-width: 1024px) {
-            font-size: 1.4em;
-            padding: $spacing-40;
-        }
-        
-        @media (max-width: 768px) {
-            font-size: 1.3em;
-        }
-        
-        &:hover {
-            border-color: color-mix(in srgb, #{$c-base}, black 80%);
-            transform: translateY(-2px);
-            box-shadow: $shadow-hover;
-        }
-
-        .alphanumeric-count {
-            display: inline-block;
-            font-size: 0.5em;
-            font-weight: 600;
-            background: color-mix(in srgb, currentColor, transparent 82%);
-            color: currentColor;
-            padding: 0.3em 0.6em;
-            line-height: 1;
-            min-width: 1.8em;
-            text-align: center;
-            border-radius: 20px;
-        }
-    }
-    
-    span.alphanumeric-link {
-        opacity: 0;
-        display: inline-block;
-        padding: 0px;
-        width: 5px;
-    }
+	h2:focus:not(:focus-visible) {
+		outline: none;
+	}
 }
 
+.acemedia-glossary .glossary-label {
+	display: block;
+	margin: 0 0 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	line-height: 1.25rem;
+	text-transform: uppercase;
+}
 
+// Search -------------------------------------------------------------------
 
-  @media (max-width: 1024px) {
-    .glossary-item {
-      flex: 1 1 calc(50% - $spacing-20); // 50% width on tablets
-      max-width: calc(50% - $spacing-20);
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .glossary-item {
-      flex: 1 1 calc(100% - $spacing-20); // 100% width on mobile
-      max-width: calc(100% - $spacing-20);
-    }
-  }
+.glossary-search__field {
+	position: relative;
+}
+
+.glossary-search__icon {
+	position: absolute;
+	top: 50%;
+	left: 1rem;
+	transform: translateY(-50%);
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.acemedia-glossary .glossary-search__input {
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0;
+	padding: 0.875rem 1rem 0.875rem 3rem;
+	border: 2px solid var(--g-line);
+	border-radius: 0.75rem;
+	background: var(--g-base);
+	color: inherit;
+	font: inherit;
+	font-size: 1.0625rem;
+	line-height: 1.4;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+	&::placeholder {
+		color: inherit;
+		opacity: 0.55;
+	}
+
+	&::-webkit-search-cancel-button {
+		width: 1rem;
+		height: 1rem;
+		background: currentColor;
+		cursor: pointer;
+		opacity: 0.6;
+		-webkit-appearance: none;
+		appearance: none;
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z'/%3E%3C/svg%3E") center / contain no-repeat;
+	}
+
+	&:focus {
+		border-color: var(--g-accent);
+		box-shadow: 0 0 0 4px color-mix(in srgb, var(--g-accent) 22%, transparent);
+		outline: none;
+	}
+}
+
+.glossary-search__status {
+	min-height: 1.25rem;
+	margin: 0.5rem 0 0;
+	font-size: 0.875rem;
+	opacity: 0.8;
+
+	&:empty {
+		display: none;
+	}
+}
+
+// A to Z: a strip pinned under the site header on small screens -----------
+
+.glossary-az {
+	position: sticky;
+	top: calc(var(--g-sticky) - var(--g-label));
+	z-index: 5;
+	margin-inline: -0.25rem;
+	padding: 0 0.25rem 0.5rem;
+	background: var(--g-base);
+	box-shadow: 0 1px 0 var(--g-line);
+}
+
+.acemedia-glossary .glossary-az__list {
+	display: flex;
+	gap: 0.375rem;
+	margin: 0;
+	padding: 0;
+	overflow-x: auto;
+	list-style: none;
+	scrollbar-width: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+
+	li {
+		flex: none;
+		margin: 0;
+		padding: 0;
+	}
+}
+
+.acemedia-glossary .glossary-az__link {
+	display: grid;
+	box-sizing: border-box;
+	width: 2.5rem;
+	height: 2.5rem;
+	border: 1px solid var(--g-line);
+	border-radius: 0.625rem;
+	color: inherit;
+	font-size: 0.9375rem;
+	font-weight: 700;
+	line-height: 1;
+	text-decoration: none;
+	place-items: center;
+	transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+	&:hover {
+		border-color: var(--g-accent);
+		background: color-mix(in srgb, var(--g-accent) 12%, transparent);
+	}
+
+	&.is-active {
+		border-color: var(--g-accent);
+		background: var(--g-accent);
+		color: var(--g-on-accent);
+	}
+
+	&.is-empty,
+	&.is-dimmed {
+		border-color: transparent;
+		opacity: 0.3;
+		pointer-events: none;
+	}
+}
+
+// Letter sections and term cards -----------------------------------------
+
+.glossary-letter + .glossary-letter {
+	margin-top: 2.5rem;
+}
+
+.glossary-letter,
+.glossary-term {
+	scroll-margin-top: calc(var(--g-sticky) + 4rem);
+}
+
+.glossary-letter__head {
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	margin-bottom: 1rem;
+
+	&::after {
+		flex: 1;
+		height: 1px;
+		background: var(--g-line);
+		content: "";
+	}
+}
+
+.acemedia-glossary .glossary-letter__title {
+	display: grid;
+	flex: none;
+	width: 3rem;
+	height: 3rem;
+	margin: 0;
+	padding: 0;
+	border-radius: 0.75rem;
+	background: var(--g-accent);
+	color: var(--g-on-accent);
+	font-size: 1.5rem;
+	line-height: 1;
+	place-items: center;
+}
+
+.is-searching .glossary-letter__count {
+	visibility: hidden;
+}
+
+.glossary-letter__count {
+	font-size: 0.8125rem;
+	font-weight: 600;
+	opacity: 0.7;
+	white-space: nowrap;
+}
+
+.glossary-letter__terms {
+	display: grid;
+	gap: var(--g-gap);
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+}
+
+.glossary-term {
+	box-sizing: border-box;
+	padding: var(--g-pad);
+	border: 1px solid var(--g-line);
+	border-radius: 0.875rem;
+	background: var(--g-surface);
+	color: var(--glossary-text-color, currentColor);
+	transition: box-shadow 0.3s ease;
+
+	&.is-target {
+		box-shadow: 0 0 0 3px var(--g-accent);
+	}
+
+	a {
+		color: inherit;
+		text-decoration: underline;
+		text-decoration-color: color-mix(in srgb, var(--g-accent) 70%, transparent);
+		text-decoration-thickness: 2px;
+		text-underline-offset: 0.2em;
+
+		&:hover {
+			text-decoration-color: currentColor;
+		}
+	}
+}
+
+.acemedia-glossary .glossary-term__title {
+	margin: 0 0 0.5rem;
+	color: inherit;
+	font-size: 1.125rem;
+	line-height: 1.3;
+
+	&::before {
+		display: block;
+		width: 1.75rem;
+		height: 3px;
+		margin-bottom: 0.625rem;
+		border-radius: 2px;
+		background: var(--g-accent);
+		content: "";
+	}
+}
+
+.glossary-term__definition {
+	font-size: 1rem;
+	line-height: 1.6;
+
+	> * {
+		margin-block: 0 0.75em;
+	}
+
+	> :last-child {
+		margin-bottom: 0;
+	}
+}
+
+.acemedia-glossary .glossary-term__meta {
+	margin: 0.875rem 0 0;
+	font-size: 0.875rem;
+	line-height: 1.5;
+}
+
+.glossary-term__label {
+	margin-right: 0.25rem;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	opacity: 0.75;
+	text-transform: uppercase;
+}
+
+.acemedia-glossary .glossary-term__related-toggle {
+	margin: 0.875rem 0 0;
+	padding: 0.4375rem 0.875rem;
+	border: 1.5px solid var(--g-accent);
+	border-radius: 999px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+
+	&:hover {
+		background: color-mix(in srgb, var(--g-accent) 12%, transparent);
+	}
+
+	&:disabled {
+		cursor: progress;
+		opacity: 0.7;
+	}
+}
+
+.acemedia-glossary .glossary-term__related {
+	margin: 0.5rem 0 0;
+	padding-left: 1.1rem;
+	font-size: 0.875rem;
+	line-height: 1.5;
+}
+
+.acemedia-glossary .glossary-empty {
+	margin: 0;
+	padding: 2rem;
+	border: 1px dashed var(--g-line);
+	border-radius: 0.875rem;
+	text-align: center;
+}
+
+// Wide screens: the A to Z becomes a rail down the side ----------------------
+
+@media (min-width: $rail-breakpoint) {
+	.acemedia-glossary {
+		grid-template-columns: 3.5rem minmax(0, 1fr);
+		column-gap: clamp(1.5rem, 3vw, 3rem);
+
+		> .glossary-search,
+		> .glossary-sections,
+		> .glossary-empty {
+			grid-column: 2;
+		}
+	}
+
+	.glossary-az {
+		// Rows shrink on short screens so all 27 always fit.
+		--g-row: clamp(1.125rem, calc((100vh - var(--g-sticky) - 7rem) / 27), 2rem);
+
+		top: calc(var(--g-sticky) + 1rem);
+		grid-column: 1;
+		grid-row: 1 / span 3;
+		align-self: start;
+		margin: 0;
+		padding: 0;
+		background: none;
+		box-shadow: none;
+
+		.glossary-label {
+			margin-bottom: 0.375rem;
+			font-size: 0.625rem;
+			line-height: 1.2;
+			text-align: center;
+		}
+	}
+
+	.acemedia-glossary .glossary-az__list {
+		flex-direction: column;
+		gap: 1px;
+		padding: 0.25rem;
+		overflow: visible;
+		border-radius: 0.875rem;
+		background: var(--g-soft);
+	}
+
+	.acemedia-glossary .glossary-az__link {
+		width: 100%;
+		height: var(--g-row);
+		border: 0;
+		border-radius: 0.5rem;
+		font-size: min(0.875rem, calc(var(--g-row) * 0.6));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.acemedia-glossary * {
+		transition: none !important;
+	}
+}
