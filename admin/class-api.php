@@ -561,6 +561,7 @@ function get_glossary_terms($request) {
             'tagIds' => $tags ?: [],
             'autoHighlight' => (bool) get_post_meta($term->ID, 'auto_highlight', true),
             'enablePostRelations' => (bool) get_post_meta($term->ID, 'enable_post_relations', true),
+            'priority' => (bool) get_post_meta($term->ID, 'priority', true),
             'isOpen' => false,
             'isLoaded' => false, // Flag to track if full data is loaded
         ];
@@ -641,6 +642,12 @@ function save_glossary_term($request) {
     
     // Save enable-post-relations setting
     update_post_meta($post_id, 'enable_post_relations', $enable_post_relations);
+
+    // Priority terms go in the glossary's structured data. Only touched when
+    // sent, so older clients that don't know the flag can't clear it.
+    if (array_key_exists('priority', $data)) {
+        update_post_meta($post_id, 'priority', (bool) $data['priority']);
+    }
 
     // Handle bidirectional relationships
     $added_relations = array_diff($related_terms, $current_related);
@@ -894,6 +901,7 @@ function export_glossary_terms() {
             'tags' => $tags_formatted, // Full tag data
             'autoHighlight' => (bool) get_post_meta($term->ID, 'auto_highlight', true),
             'enablePostRelations' => (bool) get_post_meta($term->ID, 'enable_post_relations', true),
+            'priority' => (bool) get_post_meta($term->ID, 'priority', true),
             'synonyms' => function_exists('acemedia_glossary_term_synonyms') ? acemedia_glossary_term_synonyms($term->ID) : array(),
         ];
     }, $terms);
@@ -1167,6 +1175,9 @@ function import_glossary_terms($request) {
             $enable_post_relations = !empty($term['enablePostRelations']);
             update_post_meta($post_id, 'auto_highlight', $auto_highlight);
             update_post_meta($post_id, 'enable_post_relations', $enable_post_relations);
+            if (array_key_exists('priority', $term)) {
+                update_post_meta($post_id, 'priority', !empty($term['priority']));
+            }
             if (array_key_exists('synonyms', $term)) {
                 update_post_meta($post_id, 'synonyms', is_array($term['synonyms']) ? array_values(array_filter(array_map('sanitize_text_field', $term['synonyms']))) : array());
             }
@@ -1347,6 +1358,7 @@ function get_single_glossary_term($request) {
         'tags' => $tags_formatted,
         'autoHighlight' => (bool) get_post_meta($term->ID, 'auto_highlight', true),
         'enablePostRelations' => (bool) get_post_meta($term->ID, 'enable_post_relations', true),
+        'priority' => (bool) get_post_meta($term->ID, 'priority', true),
         'isOpen' => false,
         'isLoaded' => true,
     ];

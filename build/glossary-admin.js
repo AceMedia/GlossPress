@@ -24978,6 +24978,7 @@ const Modals = ({
       content: '',
       autoHighlight: false,
       enablePostRelations: false,
+      priority: false,
       relatedTerms: [],
       categories: [],
       tags: [],
@@ -25055,6 +25056,7 @@ const Modals = ({
           tags,
           autoHighlight: !!newTermData.autoHighlight,
           enablePostRelations: !!newTermData.enablePostRelations,
+          priority: !!newTermData.priority,
           status: 'publish'
         },
         headers: {
@@ -25071,6 +25073,7 @@ const Modals = ({
         tagIds: tags,
         autoHighlight: !!newTermData.autoHighlight,
         enablePostRelations: !!newTermData.enablePostRelations,
+        priority: !!newTermData.priority,
         isOpen: false,
         isLoaded: false
       }]);
@@ -25088,7 +25091,7 @@ const Modals = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [apiFetch, handleCloseModal, newTermData.autoHighlight, newTermData.categories, newTermData.content, newTermData.relatedTerms, newTermData.tags, newTermData.title, setMessage, setRelatedTermsLookup, setTerms]);
+  }, [apiFetch, handleCloseModal, newTermData.autoHighlight, newTermData.priority, newTermData.categories, newTermData.content, newTermData.relatedTerms, newTermData.tags, newTermData.title, setMessage, setRelatedTermsLookup, setTerms]);
   const handleSaveCustomCss = (0,external_wp_element_namespaceObject.useCallback)(async () => {
     if (customCss.trim()) {
       const responseMessage = await saveCss(customCss.trim());
@@ -25143,6 +25146,13 @@ const Modals = ({
               help: (0,external_wp_i18n_namespaceObject.__)('When enabled, this term will show related posts and appear in post relation searches.', 'acemedia-glossary'),
               checked: !!newTermData.enablePostRelations,
               onChange: value => updateNewTerm('enablePostRelations', value)
+            })
+          }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.PanelRow, {
+            children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.ToggleControl, {
+              label: (0,external_wp_i18n_namespaceObject.__)('Priority term', 'acemedia-glossary'),
+              help: (0,external_wp_i18n_namespaceObject.__)('Priority terms are listed in the page\'s structured data (DefinedTermSet), up to 50. Every definition is always in the page HTML either way.', 'acemedia-glossary'),
+              checked: !!newTermData.priority,
+              onChange: value => updateNewTerm('priority', value)
             })
           }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(Cards_RelatedTagsAndCatsOptimized, {
             term: newTermData,
@@ -25619,6 +25629,19 @@ const CardsOptimized = ({
                     },
                     children: "RELATED"
                   })
+                }), term.priority && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Tooltip, {
+                  text: (0,external_wp_i18n_namespaceObject.__)('Priority term: listed in structured data', 'acemedia-glossary'),
+                  children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("span", {
+                    style: {
+                      fontSize: '10px',
+                      background: '#1e1e1e',
+                      color: '#fff',
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      fontWeight: 'bold'
+                    },
+                    children: "PRIORITY"
+                  })
                 })]
               })
             }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
@@ -25740,6 +25763,14 @@ const CardsOptimized = ({
                 onChange: value => updateActiveTerm('enablePostRelations', value),
                 disabled: activeTerm.isLoading
               })
+            }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.PanelRow, {
+              children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.ToggleControl, {
+                label: (0,external_wp_i18n_namespaceObject.__)('Priority term', 'acemedia-glossary'),
+                help: (0,external_wp_i18n_namespaceObject.__)('Priority terms are listed in the page\'s structured data (DefinedTermSet), up to 50. Every definition is always in the page HTML either way.', 'acemedia-glossary'),
+                checked: activeTerm.priority || false,
+                onChange: value => updateActiveTerm('priority', value),
+                disabled: activeTerm.isLoading
+              })
             })]
           }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(Cards_RelatedTagsAndCatsOptimized, {
             term: activeTerm,
@@ -25835,6 +25866,7 @@ const createBlankTerm = () => ({
   content: '',
   autoHighlight: false,
   enablePostRelations: false,
+  priority: false,
   relatedTerms: [],
   categories: [],
   tags: [],
@@ -26102,7 +26134,7 @@ const GlossaryAdminApp = () => {
     if (hasTermChanges) {
       console.log('  📝 Saving', modifiedTerms.size, 'modified terms');
       Array.from(modifiedTerms).forEach(termId => {
-        var _effectiveDraftData$t, _ref, _effectiveDraftData$c, _ref2, _effectiveDraftData$r, _baseData$categories, _baseData$tags, _ref3, _effectiveDraftData$a, _ref4, _effectiveDraftData$e;
+        var _effectiveDraftData$t, _ref, _effectiveDraftData$c, _ref2, _effectiveDraftData$r, _baseData$categories, _baseData$tags, _ref3, _effectiveDraftData$a, _ref4, _effectiveDraftData$e, _ref5, _effectiveDraftData$p;
         const draftData = termDrafts[termId] || {};
         const isActiveTermTarget = activeTerm && activeTerm.id === termId;
         const liveEditorValue = isActiveTermTarget ? activeEditorTextareaRef.current?.value : undefined;
@@ -26129,7 +26161,8 @@ const GlossaryAdminApp = () => {
           categories: effectiveDraftData.categories ? effectiveDraftData.categories.map(cat => typeof cat === 'object' ? cat.id : cat) : ((_baseData$categories = baseData.categories) !== null && _baseData$categories !== void 0 ? _baseData$categories : []).map(cat => typeof cat === 'object' ? cat.id : cat),
           tags: effectiveDraftData.tags ? effectiveDraftData.tags.map(tag => typeof tag === 'object' ? tag.id : tag) : ((_baseData$tags = baseData.tags) !== null && _baseData$tags !== void 0 ? _baseData$tags : []).map(tag => typeof tag === 'object' ? tag.id : tag),
           autoHighlight: (_ref3 = (_effectiveDraftData$a = effectiveDraftData.autoHighlight) !== null && _effectiveDraftData$a !== void 0 ? _effectiveDraftData$a : baseData.autoHighlight) !== null && _ref3 !== void 0 ? _ref3 : false,
-          enablePostRelations: (_ref4 = (_effectiveDraftData$e = effectiveDraftData.enablePostRelations) !== null && _effectiveDraftData$e !== void 0 ? _effectiveDraftData$e : baseData.enablePostRelations) !== null && _ref4 !== void 0 ? _ref4 : false
+          enablePostRelations: (_ref4 = (_effectiveDraftData$e = effectiveDraftData.enablePostRelations) !== null && _effectiveDraftData$e !== void 0 ? _effectiveDraftData$e : baseData.enablePostRelations) !== null && _ref4 !== void 0 ? _ref4 : false,
+          priority: (_ref5 = (_effectiveDraftData$p = effectiveDraftData.priority) !== null && _effectiveDraftData$p !== void 0 ? _effectiveDraftData$p : baseData.priority) !== null && _ref5 !== void 0 ? _ref5 : false
         };
         console.log('    🚀 Sending to API:', {
           id: termData.id,
@@ -26538,7 +26571,7 @@ const GlossaryAdminApp = () => {
 
   // Function to load a single term with full data
   const loadSingleTerm = (0,external_wp_element_namespaceObject.useCallback)(async termId => {
-    var _termSummary$id, _ref5, _draftSnapshot$conten;
+    var _termSummary$id, _ref6, _draftSnapshot$conten;
     if (activeTerm && activeTerm.id === termId && activeTerm.isLoaded) {
       return activeTerm; // Already loaded
     }
@@ -26548,7 +26581,7 @@ const GlossaryAdminApp = () => {
       ...termSummary,
       ...draftSnapshot,
       id: (_termSummary$id = termSummary.id) !== null && _termSummary$id !== void 0 ? _termSummary$id : termId,
-      content: (_ref5 = (_draftSnapshot$conten = draftSnapshot.content) !== null && _draftSnapshot$conten !== void 0 ? _draftSnapshot$conten : termSummary.content) !== null && _ref5 !== void 0 ? _ref5 : '',
+      content: (_ref6 = (_draftSnapshot$conten = draftSnapshot.content) !== null && _draftSnapshot$conten !== void 0 ? _draftSnapshot$conten : termSummary.content) !== null && _ref6 !== void 0 ? _ref6 : '',
       isOpen: true,
       isLoaded: false,
       isLoading: true
@@ -26592,6 +26625,7 @@ const GlossaryAdminApp = () => {
             content: activeTermData.content,
             autoHighlight: !!activeTermData.autoHighlight,
             enablePostRelations: !!activeTermData.enablePostRelations,
+            priority: !!activeTermData.priority,
             relatedTerms: Array.isArray(activeTermData.relatedTerms) ? [...activeTermData.relatedTerms] : [],
             categories: Array.isArray(activeTermData.categories) ? [...activeTermData.categories] : [],
             tags: Array.isArray(activeTermData.tags) ? [...activeTermData.tags] : [],
@@ -26694,7 +26728,7 @@ const GlossaryAdminApp = () => {
     setUnsavedChanges(true);
 
     // Update these specific fields in the terms list immediately for UI feedback
-    if (key === 'autoHighlight' || key === 'enablePostRelations') {
+    if (key === 'autoHighlight' || key === 'enablePostRelations' || key === 'priority') {
       setTerms(prevTerms => {
         const termIndex = prevTerms.findIndex(term => term.id === activeTerm.id);
         if (termIndex === -1) return prevTerms;

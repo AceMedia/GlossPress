@@ -377,6 +377,24 @@ const CardsOptimized = ({
                                                     </span>
                                                 </Tooltip>
                                             )}
+                                            {term.priority && (
+                                                <Tooltip
+                                                    text={__('Priority term: listed in structured data', 'acemedia-glossary')}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            fontSize: '10px',
+                                                            background: '#1e1e1e',
+                                                            color: '#fff',
+                                                            padding: '2px 6px',
+                                                            borderRadius: '3px',
+                                                            fontWeight: 'bold',
+                                                        }}
+                                                    >
+                                                        PRIORITY
+                                                    </span>
+                                                </Tooltip>
+                                            )}
                                         </div>
                                     </div>
 
@@ -481,6 +499,16 @@ const CardsOptimized = ({
                                                 help={__('When enabled, this term will show related posts and appear in post relation searches.', 'acemedia-glossary')}
                                                 checked={activeTerm.enablePostRelations || false}
                                                 onChange={(value) => updateActiveTerm('enablePostRelations', value)}
+                                                disabled={activeTerm.isLoading}
+                                            />
+                                        </PanelRow>
+
+                                        <PanelRow>
+                                            <ToggleControl
+                                                label={__('Priority term', 'acemedia-glossary')}
+                                                help={__('Priority terms are listed in the page\'s structured data (DefinedTermSet), up to 50. Every definition is always in the page HTML either way.', 'acemedia-glossary')}
+                                                checked={activeTerm.priority || false}
+                                                onChange={(value) => updateActiveTerm('priority', value)}
                                                 disabled={activeTerm.isLoading}
                                             />
                                         </PanelRow>

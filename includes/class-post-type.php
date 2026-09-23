@@ -94,9 +94,21 @@ class AceMediaGlossary_PostType {
     }
 
     /**
-     * Alternative spellings a term also highlights on ("Hendo's", "gennel").
+     * Alternative spellings a term also highlights on ("Hendo's", "gennel"),
+     * and the priority flag that puts a term in the glossary's structured data.
      */
     private static function registerMeta() {
+        register_post_meta('acemedia_glossary', 'priority', array(
+            'type'              => 'boolean',
+            'single'            => true,
+            'default'           => false,
+            'show_in_rest'      => true,
+            'sanitize_callback' => 'rest_sanitize_boolean',
+            'auth_callback'     => function () {
+                return current_user_can('edit_posts');
+            },
+        ));
+
         register_post_meta('acemedia_glossary', 'synonyms', array(
             'type'         => 'array',
             'single'       => true,

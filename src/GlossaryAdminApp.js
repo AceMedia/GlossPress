@@ -42,6 +42,7 @@ const createBlankTerm = () => ({
     content: '',
     autoHighlight: false,
     enablePostRelations: false,
+    priority: false,
     relatedTerms: [],
     categories: [],
     tags: [],
@@ -381,6 +382,7 @@ const GlossaryAdminApp = () => {
                         : (baseData.tags ?? []).map((tag) => (typeof tag === 'object' ? tag.id : tag)),
                     autoHighlight: effectiveDraftData.autoHighlight ?? baseData.autoHighlight ?? false,
                     enablePostRelations: effectiveDraftData.enablePostRelations ?? baseData.enablePostRelations ?? false,
+                    priority: effectiveDraftData.priority ?? baseData.priority ?? false,
                 };
 
                 console.log('    🚀 Sending to API:', {
@@ -958,6 +960,7 @@ useEffect(() => {
                         content: activeTermData.content,
                         autoHighlight: !!activeTermData.autoHighlight,
                         enablePostRelations: !!activeTermData.enablePostRelations,
+                        priority: !!activeTermData.priority,
                         relatedTerms: Array.isArray(activeTermData.relatedTerms) ? [...activeTermData.relatedTerms] : [],
                         categories: Array.isArray(activeTermData.categories) ? [...activeTermData.categories] : [],
                         tags: Array.isArray(activeTermData.tags) ? [...activeTermData.tags] : [],
@@ -1060,7 +1063,7 @@ useEffect(() => {
         setUnsavedChanges(true);
         
         // Update these specific fields in the terms list immediately for UI feedback
-        if (key === 'autoHighlight' || key === 'enablePostRelations') {
+        if (key === 'autoHighlight' || key === 'enablePostRelations' || key === 'priority') {
             setTerms(prevTerms => {
                 const termIndex = prevTerms.findIndex(term => term.id === activeTerm.id);
                 if (termIndex === -1) return prevTerms;

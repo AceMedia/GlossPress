@@ -35,6 +35,7 @@ const Modals = ({
             content: '',
             autoHighlight: false,
             enablePostRelations: false,
+            priority: false,
             relatedTerms: [],
             categories: [],
             tags: [],
@@ -127,6 +128,7 @@ const Modals = ({
                     tags,
                     autoHighlight: !!newTermData.autoHighlight,
                     enablePostRelations: !!newTermData.enablePostRelations,
+                    priority: !!newTermData.priority,
                     status: 'publish',
                 },
                 headers: { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce },
@@ -145,6 +147,7 @@ const Modals = ({
                     tagIds: tags,
                     autoHighlight: !!newTermData.autoHighlight,
                     enablePostRelations: !!newTermData.enablePostRelations,
+                    priority: !!newTermData.priority,
                     isOpen: false,
                     isLoaded: false,
                 },
@@ -170,6 +173,7 @@ const Modals = ({
         apiFetch,
         handleCloseModal,
         newTermData.autoHighlight,
+        newTermData.priority,
         newTermData.categories,
         newTermData.content,
         newTermData.relatedTerms,
@@ -237,6 +241,15 @@ const Modals = ({
                                     help={__('When enabled, this term will show related posts and appear in post relation searches.', 'acemedia-glossary')}
                                     checked={!!newTermData.enablePostRelations}
                                     onChange={(value) => updateNewTerm('enablePostRelations', value)}
+                                />
+                            </PanelRow>
+
+                            <PanelRow>
+                                <ToggleControl
+                                    label={__('Priority term', 'acemedia-glossary')}
+                                    help={__('Priority terms are listed in the page\'s structured data (DefinedTermSet), up to 50. Every definition is always in the page HTML either way.', 'acemedia-glossary')}
+                                    checked={!!newTermData.priority}
+                                    onChange={(value) => updateNewTerm('priority', value)}
                                 />
                             </PanelRow>
 
