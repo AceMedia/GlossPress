@@ -6,16 +6,22 @@
 	var tip = null;
 	var current = null;
 	var pinned = false; // opened by a click or tap, so leaving with the mouse keeps it
-	var wasOpen = false; // whether the tapped term was already open when the tap began
+	var timer = 0;
 
 	function show(el) {
 		var text = el.getAttribute('data-tooltip');
 		if (!text) { return; }
+		clearTimeout(timer);
 		if (!tip) {
 			tip = document.createElement('div');
 			tip.className = 'glossary-tooltip';
 			tip.setAttribute('role', 'tooltip');
 			tip.id = 'glossary-tooltip';
+			// The mouse can move onto the tooltip without it closing (WCAG
+			// 1.4.13), and pressing inside it keeps focus on the term.
+			tip.addEventListener('pointerenter', function () { clearTimeout(timer); });
+			tip.addEventListener('pointerleave', leave);
+			tip.addEventListener('mousedown', function (e) { e.preventDefault(); });
 			document.body.appendChild(tip);
 		}
 		if (current !== el) {
@@ -48,7 +54,17 @@
 		tip.style.top = (top + window.scrollY) + 'px';
 	}
 
+	// The mouse left the term or the tooltip. A short grace period lets it
+	// cross the gap between them.
+	function leave(e) {
+		if (e.pointerType === 'mouse' && !pinned) {
+			clearTimeout(timer);
+			timer = setTimeout(hide, 150);
+		}
+	}
+
 	function hide() {
+		clearTimeout(timer);
 		if (!current) { return; }
 		tip.classList.remove('is-visible');
 		current.removeAttribute('aria-describedby');
@@ -67,34 +83,33 @@
 			el.addEventListener('pointerenter', function (e) {
 				if (e.pointerType === 'mouse') { show(el); }
 			});
+			// Only this term's own tooltip: leaving it must not close one that
+			// another term opened by keyboard focus.
 			el.addEventListener('pointerleave', function (e) {
-				if (e.pointerType === 'mouse' && !pinned) { hide(); }
-			});
-			el.addEventListener('pointerdown', function () {
-				wasOpen = pinned && current === el;
+				if (current === el) { leave(e); }
 			});
 			el.addEventListener('focus', function () { show(el); });
 			el.addEventListener('blur', function () {
 				if (current === el) { hide(); }
 			});
 			// A click or tap opens and pins the tooltip; another on the same
-			// term closes it. No preventDefault, so a term inside a <details>
-			// summary or a label still does its job.
+			// term closes it. A tap's focus never pins, so this works the same
+			// with or without Pointer Events. No preventDefault, so a term
+			// inside a <details> summary or a label still does its job.
 			el.addEventListener('click', function () {
-				if (wasOpen) {
+				if (pinned && current === el) {
 					hide();
 				} else {
 					show(el);
 					pinned = true;
 				}
-				wasOpen = false;
 			});
 		});
 		document.addEventListener('keydown', function (e) {
 			if (e.key === 'Escape' || e.key === 'Esc') { hide(); }
 		});
 		document.addEventListener('click', function (e) {
-			if (current && !(e.target.closest && e.target.closest('.glossary-highlight'))) { hide(); }
+			if (current && !(e.target.closest && e.target.closest('.glossary-highlight, .glossary-tooltip'))) { hide(); }
 		});
 		window.addEventListener('scroll', position, { passive: true });
 		window.addEventListener('resize', position);

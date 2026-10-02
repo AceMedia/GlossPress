@@ -608,11 +608,13 @@ function acemedia_glossary_should_highlight($post = null) {
  * Plain text with entities decoded and whitespace collapsed. DOMDocument
  * escapes attributes and text itself, so a pre-encoded &#039; or &amp; would
  * otherwise show literally in the tooltip, and a title saved as
- * "Rock &amp; Roll" would never match "Rock & Roll" in a post.
+ * "Rock &amp; Roll" would never match "Rock & Roll" in a post. Stray bytes
+ * that are not UTF-8 (old imports) are scrubbed first, or the /u regexes
+ * would fail and the term would vanish.
  */
 function acemedia_glossary_plain_text($text) {
-    $text = html_entity_decode(wp_strip_all_tags((string) $text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    return trim(preg_replace('/\s+/u', ' ', $text));
+    $text = html_entity_decode(wp_strip_all_tags(wp_check_invalid_utf8((string) $text, true)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return trim((string) preg_replace('/\s+/u', ' ', $text));
 }
 
 /**

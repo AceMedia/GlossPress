@@ -56,6 +56,10 @@
 	visibility:visible;
 	transition-delay:0s;
 }
+@media (hover:hover){
+	/* A mouse can rest on an open tooltip; taps still pass through to the page. */
+	.glossary-tooltip.is-visible{pointer-events:auto}
+}
 .glossary-tooltip__term{
 	display:block;
 	font-weight:700;
