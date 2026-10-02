@@ -2,7 +2,7 @@
 
 A comprehensive glossary system for WordPress with intelligent auto-highlighting, related posts, and a React-based admin interface.
 
-**Version:** 1.2.0  
+**Version:** 1.2.1  
 **Author:** AceMedia
 
 ---
@@ -124,8 +124,11 @@ Auto-highlighting automatically wraps glossary terms in post content with styled
 #### How It Works
 - Only the **first occurrence** of each term is highlighted per post
 - **Longest terms prioritized** - If you have "SEO" and "SEO Optimization" as separate terms, the longer one takes precedence
-- **Word boundaries respected** - "ace" won't match "place" or "aced"
-- **Case-insensitive** matching
+- **Word boundaries respected** - "ace" won't match "place" or "aced", and accented letters count as letters, so "Café" matches but "Cafés" does not
+- **Case-insensitive** matching, and a straight or curly apostrophe in a term matches either
+- **Nested terms** - a shorter term never lands inside a longer one, even after the longer one has been used, and is highlighted where it stands alone instead
+- **Skipped text** - headings, links, buttons, labels, `<summary>`, form fields, code, quotes (`<blockquote>`), captions (`<figcaption>`) and SVG are left alone. Add the class `no-glossary` to any element to keep terms out of it, or change the list with the `acemedia_glossary_skip_elements` filter
+- A term is not highlighted on its own glossary page
 
 ### Related Posts
 
@@ -341,6 +344,11 @@ add_filter('acemedia_glossary_should_highlight', function($should, $post) {
 
 // Serve the lightweight tooltip instead of React + wp-components
 update_option('acemedia_glossary_tooltip_mode', 'light');
+
+// Highlight inside quotes again (element names, lower case)
+add_filter('acemedia_glossary_skip_elements', function($elements) {
+    return array_diff($elements, array('blockquote'));
+});
 ```
 
 The highlighter is skipped automatically for REST API responses, `/wp-json/` requests, feeds, embeds, AJAX, cron and excerpt generation.
@@ -415,6 +423,14 @@ Proprietary - AceMedia © 2025
 ---
 
 ## Changelog
+
+### Version 1.2.1
+- The tooltip stylesheet is printed inline instead of as a render-blocking `<link>`, and the tooltip script loads with `defer`, so highlights cost nothing on first paint. The `acemedia-glossary-tooltips` handle keeps its name. The glossary page's stylesheet can now be inlined by WordPress too.
+- Tooltip assets now load on classic themes as well (they were added to `wp_enqueue_scripts` after it had already run).
+- Light tooltips open on the first tap on touch screens (the emulated hover and the tap's click used to cancel each other out), a click on a hovered term pins it open instead of closing it, they follow the term on resize, and once hidden they leave the accessibility tree. Clicking a term no longer cancels a surrounding `<summary>` or `<label>`.
+- Matching finds every occurrence in a text node, so a term that first appears inside a longer one is still highlighted where it stands alone. Accented words, curly apostrophes and entity-encoded titles match properly.
+- New skipped elements (`label`, `summary`, form fields, `blockquote`, `figcaption`, `svg` and more), the `no-glossary` class and the `acemedia_glossary_skip_elements` filter.
+- Removed the REST nonce meta tag and inline script printed into every page head for logged-in users. Nothing read it, and WordPress already sets up its own nonce for `wp.apiFetch`.
 
 ### Version 1.2.0
 - Auto-highlighting can be scoped to specific post types with the `acemedia_glossary_highlight_post_types` option (array of post type names; empty keeps the old "every singular view" behaviour) and the filter of the same name. A second filter, `acemedia_glossary_should_highlight`, gives the final say per post.

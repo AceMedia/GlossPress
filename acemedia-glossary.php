@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AceMedia Glossary
  * Description: A glossary system with React-based admin and frontend interfaces
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: AceMedia
  */
 
@@ -27,7 +27,7 @@ class AceMediaGlossary {
     private function defineConstants() {
         define('ACEMEDIA_GLOSSARY_PATH', plugin_dir_path(__FILE__));
         define('ACEMEDIA_GLOSSARY_URL', plugin_dir_url(__FILE__));
-        define('ACEMEDIA_GLOSSARY_VERSION', '1.2.0');
+        define('ACEMEDIA_GLOSSARY_VERSION', '1.2.1');
     }
 
     /**
@@ -76,10 +76,6 @@ class AceMediaGlossary {
         // Cache glossary sitemap URL list
         add_filter('wp_sitemaps_posts_pre_url_list', array($this, 'cacheGlossarySitemapUrls'), 10, 3);
         add_filter('wp_sitemaps_posts_url_list', array($this, 'setGlossarySitemapUrlsCache'), 10, 3);
-        
-        // Ensure REST API nonce is available for autosave
-        add_action('wp_head', array($this, 'add_rest_nonce_to_head'));
-        add_action('admin_head', array($this, 'add_rest_nonce_to_head'));
     }
 
     public function initPlugin() {
@@ -305,31 +301,6 @@ class AceMediaGlossary {
                 array('wp-components'),
                 self::assetVersion('build/glossary-admin.css')
             );
-        }
-    }
-    
-    // Add REST API nonce to ensure authentication works during autosave
-    public function add_rest_nonce_to_head() {
-        if (is_user_logged_in()) {
-            $nonce = wp_create_nonce('wp_rest');
-            ?>
-            <meta name="wp-rest-nonce" content="<?php echo $nonce; ?>" />
-            <script type="text/javascript">
-                window.wpApiSettings = window.wpApiSettings || {};
-                window.wpApiSettings.nonce = '<?php echo $nonce; ?>';
-                window.wpApiSettings.root = '<?php echo esc_url_raw(rest_url()); ?>';
-                
-                // Set up apiFetch with proper authentication
-                if (typeof wp !== 'undefined' && wp.apiFetch) {
-                    wp.apiFetch.use(wp.apiFetch.createNonceMiddleware('<?php echo $nonce; ?>'));
-                    wp.apiFetch.use(wp.apiFetch.createRootURLMiddleware('<?php echo esc_url_raw(rest_url()); ?>'));
-                }
-                
-                // Also set global variables for manual access
-                window.wpRestNonce = '<?php echo $nonce; ?>';
-                window.wpRestUrl = '<?php echo esc_url_raw(rest_url()); ?>';
-            </script>
-            <?php
         }
     }
 }

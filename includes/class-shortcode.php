@@ -87,6 +87,9 @@ class AceMediaGlossary_Shortcode {
                 array(),
                 AceMediaGlossary::assetVersion('build/glossary-frontend.css')
             );
+            // Lets WordPress print it inline when it fits the inline style
+            // budget, saving a render-blocking request on the glossary page.
+            wp_style_add_data('acemedia-glossary-frontend', 'path', ACEMEDIA_GLOSSARY_PATH . 'build/glossary-frontend.css');
 
             $custom_css = get_option('acemedia_glossary_custom_css', '');
             if (!empty($custom_css)) {
@@ -602,6 +605,17 @@ function acemedia_glossary_should_highlight($post = null) {
 }
 
 /**
+ * Plain text with entities decoded and whitespace collapsed. DOMDocument
+ * escapes attributes and text itself, so a pre-encoded &#039; or &amp; would
+ * otherwise show literally in the tooltip, and a title saved as
+ * "Rock &amp; Roll" would never match "Rock & Roll" in a post.
+ */
+function acemedia_glossary_plain_text($text) {
+    $text = html_entity_decode(wp_strip_all_tags((string) $text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return trim(preg_replace('/\s+/u', ' ', $text));
+}
+
+/**
  * The auto-highlight term set, cached globally (identical for every page render)
  * and busted by the terms-version stamp. Returns each enabled term with its
  * stripped definition and taxonomy ids, pre-sorted longest-title-first so longer
@@ -609,7 +623,7 @@ function acemedia_glossary_should_highlight($post = null) {
  * per-term meta/taxonomy lookups that previously ran on every article view.
  */
 function acemedia_glossary_get_highlight_terms() {
-    $cache_key = 'acemedia_glossary_hl_terms_' . acemedia_glossary_terms_version();
+    $cache_key = 'acemedia_glossary_hl_terms_' . md5(acemedia_glossary_terms_version() . '|' . ACEMEDIA_GLOSSARY_VERSION);
     $terms = get_transient($cache_key);
     if (is_array($terms)) {
         return $terms;
@@ -627,12 +641,9 @@ function acemedia_glossary_get_highlight_terms() {
             continue; // Skip terms that don't have auto-highlight enabled
         }
         $terms[] = array(
-            'title'      => $glossary_post->post_title,
-            'synonyms'   => acemedia_glossary_term_synonyms($glossary_post->ID),
-            // Plain text, entities decoded: DOMDocument escapes the attribute
-            // itself, so pre-encoded &#039; or &amp; would otherwise render
-            // literally inside the tooltip.
-            'definition' => html_entity_decode(wp_strip_all_tags($glossary_post->post_content), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            'title'      => acemedia_glossary_plain_text($glossary_post->post_title),
+            'synonyms'   => array_values(array_filter(array_map('acemedia_glossary_plain_text', acemedia_glossary_term_synonyms($glossary_post->ID)), 'strlen')),
+            'definition' => acemedia_glossary_plain_text($glossary_post->post_content),
             'categories' => wp_get_post_categories($glossary_post->ID),
             'tags'       => wp_get_post_tags($glossary_post->ID, array('fields' => 'ids')),
         );
@@ -656,8 +667,8 @@ function acemedia_glossary_get_highlight_terms() {
 }
 
 /**
- * Registers the tooltip CSS/JS. Called on both cache miss and cache hit so the
- * assets are present whenever the cached output contains highlights.
+ * Tooltip renderer: 'components' (React + wp-components, the original) or
+ * 'light' (a few KB of vanilla CSS/JS, no React).
  */
 function acemedia_glossary_tooltip_mode() {
     $mode = get_option('acemedia_glossary_tooltip_mode', 'components');
@@ -669,47 +680,266 @@ function acemedia_glossary_tooltip_mode() {
     return $mode === 'light' ? 'light' : 'components';
 }
 
-function acemedia_glossary_enqueue_tooltip_assets() {
-    add_action('wp_enqueue_scripts', function () {
-        if (acemedia_glossary_tooltip_mode() === 'light') {
-            wp_enqueue_style(
-                'acemedia-glossary-tooltips',
-                ACEMEDIA_GLOSSARY_URL . 'assets/tooltips-light.css',
-                array(),
-                AceMediaGlossary::assetVersion('assets/tooltips-light.css')
-            );
-            wp_enqueue_script(
-                'acemedia-glossary-tooltips',
-                ACEMEDIA_GLOSSARY_URL . 'assets/tooltips-light.js',
-                array(),
-                AceMediaGlossary::assetVersion('assets/tooltips-light.js'),
-                true
-            );
-            return;
-        }
+/**
+ * One of the plugin's own stylesheets as a string, with comments and spare
+ * whitespace stripped, read from disk at most once per request.
+ */
+function acemedia_glossary_inline_css($relative_path) {
+    static $css = array();
+    if (!isset($css[$relative_path])) {
+        $file = ACEMEDIA_GLOSSARY_PATH . ltrim($relative_path, '/');
+        $text = is_readable($file) ? (string) file_get_contents($file) : '';
+        $text = preg_replace('#/\*.*?\*/#s', '', $text);
+        $text = preg_replace('/\s+/', ' ', $text);
+        $css[$relative_path] = trim(preg_replace('/\s*([{};])\s*/', '$1', $text));
+    }
+    return $css[$relative_path];
+}
 
+/**
+ * Enqueues the tooltip CSS/JS. Called on both cache miss and cache hit so the
+ * assets are present whenever the content has highlights.
+ *
+ * Block themes render the content before wp_head, so the assets wait for
+ * wp_enqueue_scripts and the CSS lands in <head>. Classic themes render it
+ * after wp_head, when that hook has already run, so the assets are enqueued
+ * straight away and WordPress prints them in the footer instead of never.
+ */
+function acemedia_glossary_enqueue_tooltip_assets() {
+    if (did_action('wp_enqueue_scripts')) {
+        acemedia_glossary_load_tooltip_assets();
+    } elseif (!has_action('wp_enqueue_scripts', 'acemedia_glossary_load_tooltip_assets')) {
+        add_action('wp_enqueue_scripts', 'acemedia_glossary_load_tooltip_assets');
+    }
+}
+
+function acemedia_glossary_load_tooltip_assets() {
+    $light = acemedia_glossary_tooltip_mode() === 'light';
+    $css = $light ? 'assets/tooltips-light.css' : 'build/glossary-tooltips.css';
+    $js = $light ? 'assets/tooltips-light.js' : 'build/glossary-tooltips.js';
+
+    if (!$light) {
         wp_enqueue_style(
             'wp-components',
             includes_url('/css/dist/components/style.css'),
             [],
             null // No versioning to match WP core
         );
+    }
 
-        wp_enqueue_style(
-            'acemedia-glossary-tooltips',
-            ACEMEDIA_GLOSSARY_URL . 'build/glossary-tooltips.css',
-            array(),
-            AceMediaGlossary::assetVersion('build/glossary-tooltips.css')
-        );
+    // The tooltip CSS is a kilobyte or two, so it is printed inline instead of
+    // costing a render-blocking request. The handle keeps its name, so a theme
+    // that dequeues it or lists it as a dependency carries on working.
+    if (!wp_style_is('acemedia-glossary-tooltips', 'registered')) {
+        wp_register_style('acemedia-glossary-tooltips', false, array(), null);
+        wp_add_inline_style('acemedia-glossary-tooltips', acemedia_glossary_inline_css($css));
+    }
+    wp_enqueue_style('acemedia-glossary-tooltips');
 
-        wp_enqueue_script(
-            'acemedia-glossary-tooltips',
-            ACEMEDIA_GLOSSARY_URL . 'build/glossary-tooltips.js',
-            ['wp-element', 'wp-components'], // Dependencies
-            AceMediaGlossary::assetVersion('build/glossary-tooltips.js'),
-            true // Load in the footer
-        );
+    // Deferred: nothing needs the tooltips until a term is hovered, focused or
+    // tapped. Before WordPress 6.3 the args array is read as a truthy
+    // $in_footer, so the script still loads in the footer there.
+    wp_enqueue_script(
+        'acemedia-glossary-tooltips',
+        ACEMEDIA_GLOSSARY_URL . $js,
+        $light ? array() : array('wp-element', 'wp-components'),
+        AceMediaGlossary::assetVersion($js),
+        array('in_footer' => true, 'strategy' => 'defer')
+    );
+}
+
+/**
+ * Elements whose text is never highlighted: headings, links and form
+ * controls (a tooltip there fights the click, and inside <summary> or <label>
+ * it used to swallow it), code, quoted and captioned material, and elements
+ * that cannot hold a <span> at all. Wrap anything else in class="no-glossary"
+ * to keep terms out of it.
+ *
+ * @return string[] Lower-case element names.
+ */
+function acemedia_glossary_skip_elements() {
+    $elements = array(
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'a', 'button', 'label', 'summary', 'select', 'option', 'textarea',
+        'code', 'pre', 'kbd', 'samp',
+        'blockquote', 'figcaption',
+        'script', 'style', 'noscript', 'template', 'title', 'svg', 'math', 'iframe', 'object',
+    );
+
+    /**
+     * Filters the elements whose text the auto-highlighter leaves alone.
+     *
+     * @param string[] $elements Lower-case element names.
+     */
+    $elements = apply_filters('acemedia_glossary_skip_elements', $elements);
+
+    return array_values(array_filter(array_map(function ($name) {
+        return preg_replace('/[^a-z0-9]/', '', strtolower((string) $name));
+    }, (array) $elements)));
+}
+
+/**
+ * Regex for one term: its title and synonyms, longest first, as whole words.
+ * A letter or digit on either side blocks the match in any script, which \b
+ * does not do next to é or ß, and a straight or curly apostrophe in a term
+ * matches either, since wptexturize has curled the post's quotes by now.
+ *
+ * @param array $term Term with 'title' and optional 'synonyms'.
+ * @return string Pattern, or '' when the term has nothing to match.
+ */
+function acemedia_glossary_term_pattern($term) {
+    $forms = array_merge(array($term['title']), isset($term['synonyms']) ? (array) $term['synonyms'] : array());
+    $forms = array_values(array_unique(array_filter(array_map('trim', $forms), 'strlen')));
+    if (!$forms) {
+        return '';
+    }
+    usort($forms, function ($a, $b) {
+        return strlen($b) - strlen($a);
     });
+
+    $apostrophe = "['\u{2019}]";
+    $forms = array_map(function ($form) use ($apostrophe) {
+        return strtr(preg_quote($form, '/'), array("'" => $apostrophe, "\u{2019}" => $apostrophe));
+    }, $forms);
+
+    return '/(?<![\p{L}\p{N}_])(?:' . implode('|', $forms) . ')(?![\p{L}\p{N}_])/iu';
+}
+
+/**
+ * Wraps the first free occurrence of each term in span.glossary-highlight.
+ *
+ * Terms arrive longest first, so a longer phrase claims its text before a
+ * shorter term nested inside it can. Every occurrence is claimed, not only
+ * the highlighted one, so once "Parkour Park" has been used, "Parkour" still
+ * never lands inside a later "Parkour Park", and a term that first turns up
+ * inside a longer one is highlighted where it stands alone instead.
+ *
+ * @param string $content       Post HTML.
+ * @param array  $glossary_data Terms with 'title', 'synonyms' and 'definition'.
+ * @return array 'html' (the content, untouched when nothing matched) and 'has'.
+ */
+function acemedia_glossary_highlight_html($content, $glossary_data) {
+    $patterns = array();
+    foreach ($glossary_data as $i => $term) {
+        $pattern = acemedia_glossary_term_pattern($term);
+        if ($pattern !== '') {
+            $patterns[$i] = $pattern;
+        }
+    }
+    if (!$patterns || trim($content) === '') {
+        return array('html' => $content, 'has' => false);
+    }
+
+    // Parse inside a wrapper div, with an encoding hint so UTF-8 survives.
+    $dom = new DOMDocument('1.0', 'UTF-8');
+    $previous = libxml_use_internal_errors(true);
+    $dom->loadHTML('<?xml encoding="utf-8" ?><div>' . $content . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    $skip = array_map(function ($name) {
+        return 'self::' . $name;
+    }, acemedia_glossary_skip_elements());
+    $skip[] = 'contains(concat(" ", normalize-space(@class), " "), " glossary-highlight ")';
+    $skip[] = 'contains(concat(" ", normalize-space(@class), " "), " no-glossary ")';
+
+    $xpath = new DOMXPath($dom);
+    $text_nodes = $xpath->query('//text()[not(ancestor::*[' . implode(' or ', $skip) . '])]');
+    if (!$text_nodes) {
+        return array('html' => $content, 'has' => false);
+    }
+
+    // Only the first occurrence of each term is highlighted, across the post.
+    $used = array();
+    $has = false;
+
+    foreach ($text_nodes as $text_node) {
+        $text = $text_node->nodeValue;
+        if (trim($text) === '') {
+            continue;
+        }
+
+        $claimed = array();
+        $found = array();
+        foreach ($patterns as $i => $pattern) {
+            if (!preg_match_all($pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
+                continue;
+            }
+            $title = $glossary_data[$i]['title'];
+            foreach ($matches[0] as $match) {
+                $offset = $match[1];
+                $end = $offset + strlen($match[0]);
+                foreach ($claimed as $range) {
+                    if ($offset < $range[1] && $range[0] < $end) {
+                        continue 2;
+                    }
+                }
+                $claimed[] = array($offset, $end);
+
+                if (!isset($used[$title])) {
+                    $used[$title] = true;
+                    $found[] = array(
+                        'term'         => $title,
+                        'definition'   => $glossary_data[$i]['definition'],
+                        'offset'       => $offset,
+                        'length'       => $end - $offset,
+                        'matched_text' => $match[0],
+                    );
+                }
+            }
+        }
+
+        if (empty($found)) {
+            continue;
+        }
+
+        // Rebuild the node left to right so the offsets stay meaningful.
+        usort($found, function ($a, $b) {
+            return $a['offset'] - $b['offset'];
+        });
+
+        $parent = $text_node->parentNode;
+        $cursor = 0;
+
+        foreach ($found as $match) {
+            $before = substr($text, $cursor, $match['offset'] - $cursor);
+            if ($before !== '') {
+                $parent->insertBefore($dom->createTextNode($before), $text_node);
+            }
+
+            $span = $dom->createElement('span');
+            $span->setAttribute('class', 'glossary-highlight');
+            $span->setAttribute('data-term', $match['term']);
+            $span->setAttribute('data-tooltip', $match['definition']);
+            $span->appendChild($dom->createTextNode($match['matched_text']));
+            $parent->insertBefore($span, $text_node);
+
+            $cursor = $match['offset'] + $match['length'];
+            $has = true;
+        }
+
+        $after = substr($text, $cursor);
+        if ($after !== '') {
+            $parent->insertBefore($dom->createTextNode($after), $text_node);
+        }
+
+        $parent->removeChild($text_node);
+    }
+
+    if (!$has) {
+        return array('html' => $content, 'has' => false);
+    }
+
+    // Extract the content from the wrapper div.
+    $html = '';
+    $wrapper = $dom->getElementsByTagName('div')->item(0);
+    if ($wrapper) {
+        foreach ($wrapper->childNodes as $child) {
+            $html .= $dom->saveHTML($child);
+        }
+    }
+
+    return array('html' => $html, 'has' => true);
 }
 
 function highlight_glossary_terms($content) {
@@ -722,15 +952,19 @@ function highlight_glossary_terms($content) {
     $current_post_categories = wp_get_post_categories($post->ID);
     $current_post_tags = wp_get_post_tags($post->ID, array('fields' => 'ids'));
 
-    $terms_version = acemedia_glossary_terms_version();
+    // A term's own page does not explain the term to itself.
+    $self_title = $post->post_type === 'acemedia_glossary' ? acemedia_glossary_plain_text($post->post_title) : '';
 
     // Output cache: the rewritten content depends only on the exact input
-    // content, the term-set version, and this post's taxonomy (which decides
-    // applicable terms). A hit skips the term scan AND the DOMDocument rewrite.
+    // content, the term-set version, the plugin version (the matching rules),
+    // the skipped elements, this post's taxonomy (which decides applicable
+    // terms) and, on a term's own page, that term. A hit skips the term scan
+    // AND the DOMDocument rewrite.
     $output_cache_key = 'acemedia_glossary_hl_' . md5(
-        $terms_version . '|' . md5($content) . '|' .
+        acemedia_glossary_terms_version() . '|' . ACEMEDIA_GLOSSARY_VERSION . '|' .
+        implode(',', acemedia_glossary_skip_elements()) . '|' . md5($content) . '|' .
         implode(',', $current_post_categories) . '|' .
-        implode(',', $current_post_tags)
+        implode(',', $current_post_tags) . '|' . $self_title
     );
     $cached = get_transient($output_cache_key);
     if (is_array($cached) && array_key_exists('html', $cached)) {
@@ -745,6 +979,9 @@ function highlight_glossary_terms($content) {
     // none, meaning apply everywhere). Already sorted longest-first.
     $glossary_data = array();
     foreach (acemedia_glossary_get_highlight_terms() as $term) {
+        if ($self_title !== '' && strcasecmp($term['title'], $self_title) === 0) {
+            continue;
+        }
         $has_shared_category = !empty(array_intersect($current_post_categories, $term['categories']));
         $has_shared_tag = !empty(array_intersect($current_post_tags, $term['tags']));
 
@@ -757,152 +994,17 @@ function highlight_glossary_terms($content) {
         }
     }
 
-    // If no terms apply, cache the passthrough so we don't rescan next time.
-    if (empty($glossary_data)) {
-        set_transient($output_cache_key, array('html' => $content, 'has' => false), 12 * HOUR_IN_SECONDS);
-        return $content;
-    }
+    $result = empty($glossary_data)
+        ? array('html' => $content, 'has' => false)
+        : acemedia_glossary_highlight_html($content, $glossary_data);
 
-    // Use DOMDocument for safe HTML parsing and manipulation
-    $dom = new DOMDocument('1.0', 'UTF-8');
-    // Suppress warnings for malformed HTML
-    libxml_use_internal_errors(true);
-    
-    // Add UTF-8 meta tag and wrap in div to ensure proper parsing
-    $dom->loadHTML('<?xml encoding="utf-8" ?><div>' . $content . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-    libxml_clear_errors();
-    
-    $xpath = new DOMXPath($dom);
-    $hasHighlights = false;
-    
-    // Track which terms have been used (only the first occurrence of each
-    // term is highlighted, across the whole post)
-    $used_terms = array();
-    
-    // Get all text nodes that are not inside glossary-highlight spans,
-    // heading elements (h1-h6), links, buttons or code/pre blocks.
-    $textNodes = $xpath->query(
-        '//text()[
-            not(ancestor::span[@class="glossary-highlight"]) and
-            not(ancestor::h1) and not(ancestor::h2) and not(ancestor::h3) and
-            not(ancestor::h4) and not(ancestor::h5) and not(ancestor::h6) and
-            not(ancestor::a) and not(ancestor::button) and
-            not(ancestor::code) and not(ancestor::pre) and
-            not(ancestor::script) and not(ancestor::style)
-        ]'
-    );
-    
-    // For each text node, mark every distinct term that appears in it. Terms
-    // are already sorted longest-first, so a longer phrase claims its span
-    // before a shorter term nested inside it can.
-    foreach ($textNodes as $textNode) {
-        $text = $textNode->nodeValue;
-        $found = array();
-
-        foreach ($glossary_data as $term) {
-            $term_title = $term['title'];
-
-            // Skip if we've already highlighted this term elsewhere
-            if (isset($used_terms[$term_title])) {
-                continue;
-            }
-
-            // Check if the term (or one of its synonyms) appears as a whole
-            // word in this text node. Longest form first so "Hendo's" is not
-            // cut to "Hendo" by a shorter alternative.
-            $forms = array_merge(array($term_title), $term['synonyms']);
-            usort($forms, function ($a, $b) {
-                return strlen($b) - strlen($a);
-            });
-            $pattern = '/\b(?:' . implode('|', array_map(function ($form) {
-                return preg_quote($form, '/');
-            }, $forms)) . ')\b/iu';
-
-            if (!preg_match($pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
-                continue;
-            }
-
-            $offset = $matches[0][1];
-            $length = strlen($matches[0][0]);
-
-            // Don't let a shorter term land inside a span already claimed by a
-            // longer one in this same node.
-            $overlaps = false;
-            foreach ($found as $claimed) {
-                if ($offset < $claimed['offset'] + $claimed['length'] &&
-                    $claimed['offset'] < $offset + $length) {
-                    $overlaps = true;
-                    break;
-                }
-            }
-            if ($overlaps) {
-                continue;
-            }
-
-            $found[] = array(
-                'term'         => $term_title,
-                'definition'   => $term['definition'],
-                'offset'       => $offset,
-                'length'       => $length,
-                'matched_text' => $matches[0][0],
-            );
-        }
-
-        if (empty($found)) {
-            continue;
-        }
-
-        // Rebuild the node left to right so the offsets stay meaningful.
-        usort($found, function ($a, $b) {
-            return $a['offset'] - $b['offset'];
-        });
-
-        $parent = $textNode->parentNode;
-        $cursor = 0;
-
-        foreach ($found as $match) {
-            $before = substr($text, $cursor, $match['offset'] - $cursor);
-            if ($before !== '') {
-                $parent->insertBefore($dom->createTextNode($before), $textNode);
-            }
-
-            $span = $dom->createElement('span');
-            $span->setAttribute('class', 'glossary-highlight');
-            $span->setAttribute('data-term', $match['term']);
-            $span->setAttribute('data-tooltip', $match['definition']);
-            $span->appendChild($dom->createTextNode($match['matched_text']));
-            $parent->insertBefore($span, $textNode);
-
-            $cursor = $match['offset'] + $match['length'];
-            $used_terms[$match['term']] = true;
-            $hasHighlights = true;
-        }
-
-        $after = substr($text, $cursor);
-        if ($after !== '') {
-            $parent->insertBefore($dom->createTextNode($after), $textNode);
-        }
-
-        $parent->removeChild($textNode);
-    }
-
-    // Extract the content from the wrapper div
-    $body = $dom->getElementsByTagName('div')->item(0);
-    $content = '';
-    if ($body) {
-        foreach ($body->childNodes as $child) {
-            $content .= $dom->saveHTML($child);
-        }
-    }
-    
-    // Enqueue the tooltip script and styles if matches were found
-    if ($hasHighlights) {
+    if ($result['has']) {
         acemedia_glossary_enqueue_tooltip_assets();
     }
 
-    set_transient($output_cache_key, array('html' => $content, 'has' => $hasHighlights), 12 * HOUR_IN_SECONDS);
+    set_transient($output_cache_key, $result, 12 * HOUR_IN_SECONDS);
 
-    return $content;
+    return $result['html'];
 }
 
 // Hook into the_content filter

@@ -7,8 +7,11 @@
 	text-decoration:none;
 }
 .glossary-highlight:after{
-	/* A small circled "i" drawn with CSS, so no icon font or glyph is needed. */
+	/* A small circled "i" drawn with CSS, so no icon font or glyph is needed.
+	   The empty alternative text keeps screen readers from reading out "i";
+	   browsers without that syntax keep the plain declaration above it. */
 	content:"i";
+	content:"i"/"";
 	display:inline-block;
 	box-sizing:border-box;
 	width:1em;
@@ -43,9 +46,16 @@
 	box-shadow:0 8px 24px rgba(0,0,0,.35);
 	pointer-events:none;
 	opacity:0;
-	transition:opacity .12s ease;
+	/* Hidden for real once it has faded, so screen readers do not find a
+	   stale tooltip at the end of the page. */
+	visibility:hidden;
+	transition:opacity .12s ease,visibility 0s linear .12s;
 }
-.glossary-tooltip.is-visible{opacity:1}
+.glossary-tooltip.is-visible{
+	opacity:1;
+	visibility:visible;
+	transition-delay:0s;
+}
 .glossary-tooltip__term{
 	display:block;
 	font-weight:700;
