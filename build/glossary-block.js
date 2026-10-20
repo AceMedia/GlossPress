@@ -35,6 +35,21 @@
 /******/ 	
 /************************************************************************/
 
+;// ./src/rest-url.js
+/** Join a WordPress REST root and route with either plain or pretty permalinks. */
+const buildRestUrl = (path, root) => {
+  const base = root || window.AceMediaGlossaryAdmin?.restRoot || window.wpApiSettings?.root || '/wp-json/';
+  const url = new URL(base, window.location.href);
+  const [route, ...queryParts] = String(path).replace(/^\/+/, '').split('?');
+  if (url.searchParams.has('rest_route')) {
+    const prefix = url.searchParams.get('rest_route').replace(/\/+$/, '');
+    url.searchParams.set('rest_route', `${prefix}/${route}`);
+  } else {
+    url.pathname = `${url.pathname.replace(/\/+$/, '')}/${route}`;
+  }
+  new URLSearchParams(queryParts.join('?')).forEach((value, key) => url.searchParams.set(key, value));
+  return url.toString();
+};
 ;// external ["wp","blocks"]
 const external_wp_blocks_namespaceObject = window["wp"]["blocks"];
 ;// external ["wp","blockEditor"]
@@ -51,6 +66,7 @@ const external_wp_element_namespaceObject = window["wp"]["element"];
 ;// external "ReactJSXRuntime"
 const external_ReactJSXRuntime_namespaceObject = window["ReactJSXRuntime"];
 ;// ./src/glossary-block.js
+
 
 
 
@@ -94,6 +110,7 @@ const sanitizeColorValue = value => {
   return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(trimmed) ? trimmed : '';
 };
 (0,external_wp_blocks_namespaceObject.registerBlockType)('acemedia/glossary', {
+  apiVersion: 3,
   title: (0,external_wp_i18n_namespaceObject.__)('Glossary', 'acemedia-glossary'),
   description: (0,external_wp_i18n_namespaceObject.__)('Display a glossary of terms.', 'acemedia-glossary'),
   category: 'widgets',
@@ -167,7 +184,7 @@ const sanitizeColorValue = value => {
       const normalized = path.startsWith('/') ? path : `/${path}`;
       if (restRoot) {
         return {
-          url: `${restRoot}${normalized}`,
+          url: buildRestUrl(normalized, restRoot),
           ...extra
         };
       }

@@ -267,6 +267,7 @@ class AceMediaGlossary_Shortcode {
         $posts = get_posts(array(
             'post_type' => 'acemedia_glossary',
             'post_status' => 'publish',
+            'has_password' => false,
             'posts_per_page' => -1,
             'orderby' => 'title',
             'order' => 'ASC',
@@ -326,7 +327,9 @@ class AceMediaGlossary_Shortcode {
 
         ob_start();
         ?>
-<div id="acemedia-glossary-root" class="acemedia-glossary" data-strings="<?php echo esc_attr(wp_json_encode(self::scriptStrings())); ?>"<?php echo self::styleAttribute($atts); ?>>
+<div id="acemedia-glossary-root" class="acemedia-glossary" data-strings="<?php echo esc_attr(wp_json_encode(self::scriptStrings())); ?>"<?php
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- styleAttribute validates each CSS value and escapes the complete attribute.
+echo self::styleAttribute($atts); ?>>
 <?php if ($total === 0) : ?>
 <p class="glossary-empty"><?php esc_html_e('No glossary terms found.', 'acemedia-glossary'); ?></p>
 <?php else : ?>
@@ -334,6 +337,7 @@ class AceMediaGlossary_Shortcode {
 <label class="glossary-label" for="glossary-search-input"><?php esc_html_e('Search the glossary', 'acemedia-glossary'); ?></label>
 <div class="glossary-search__field">
 <svg class="glossary-search__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.06-1.06-4.43-4.43A6.5 6.5 0 0 0 10.5 4zm0 1.5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z" fill="currentColor"/></svg>
+<?php /* translators: %s: Number of glossary terms available to search. */ ?>
 <input type="search" id="glossary-search-input" class="glossary-search__input" placeholder="<?php echo esc_attr(sprintf(_n('Search %s term', 'Search %s terms', $total, 'acemedia-glossary'), number_format_i18n($total))); ?>" autocomplete="off" spellcheck="false">
 </div>
 <p class="glossary-search__status" role="status" aria-live="polite"></p>
@@ -357,6 +361,7 @@ endforeach; ?>
 <section class="glossary-letter" id="<?php echo esc_attr($letter_id); ?>" data-letter="<?php echo esc_attr($letter); ?>">
 <div class="glossary-letter__head">
 <h2 class="glossary-letter__title" tabindex="-1"><?php echo esc_html($letter); ?></h2>
+<?php /* translators: %s: Number of terms under this letter. */ ?>
 <span class="glossary-letter__count"><?php echo esc_html(sprintf(_n('%s term', '%s terms', $count, 'acemedia-glossary'), number_format_i18n($count))); ?></span>
 </div>
 <div class="glossary-letter__terms">
@@ -404,20 +409,22 @@ endforeach; ?>
         ?>
 <article class="glossary-term" id="<?php echo esc_attr($term['anchor']); ?>">
 <h3 class="glossary-term__title"><?php echo esc_html($term['title']); ?></h3>
-<div class="glossary-term__definition"><?php echo $definition !== '' ? $definition : '<p>' . esc_html__('No definition yet.', 'acemedia-glossary') . '</p>'; ?></div>
+<div class="glossary-term__definition"><?php
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Stored WordPress post content uses core save-time KSES permissions; retain rendered block HTML.
+echo $definition !== '' ? $definition : '<p>' . esc_html__('No definition yet.', 'acemedia-glossary') . '</p>'; ?></div>
 <?php if (!empty($see_also)) : ?>
 <p class="glossary-term__meta"><span class="glossary-term__label"><?php esc_html_e('See also', 'acemedia-glossary'); ?></span> <?php
-            echo implode(', ', array_map(function ($related) {
+            echo wp_kses_post(implode(', ', array_map(function ($related) {
                 return '<a href="#' . esc_attr($related['anchor']) . '">' . esc_html($related['title']) . '</a>';
-            }, $see_also));
+            }, $see_also)));
         ?></p>
 <?php endif; ?>
 <?php foreach ($taxonomy_links as $label => $taxonomy_terms) : ?>
 <p class="glossary-term__meta"><span class="glossary-term__label"><?php echo esc_html($label); ?></span> <?php
-            echo implode(', ', array_map(function ($taxonomy_term) {
+            echo wp_kses_post(implode(', ', array_map(function ($taxonomy_term) {
                 $link = get_term_link($taxonomy_term);
                 return is_wp_error($link) ? esc_html($taxonomy_term->name) : '<a href="' . esc_url($link) . '">' . esc_html($taxonomy_term->name) . '</a>';
-            }, $taxonomy_terms));
+            }, $taxonomy_terms)));
         ?></p>
 <?php endforeach; ?>
 <?php if ($related_url) : ?>
@@ -474,7 +481,7 @@ function acemedia_glossary_terms_version() {
 }
 
 function acemedia_glossary_bump_terms_version() {
-    update_option('acemedia_glossary_terms_version', (string) time(), false);
+    update_option('acemedia_glossary_terms_version', wp_generate_uuid4(), false);
 }
 add_action('save_post_acemedia_glossary', 'acemedia_glossary_bump_terms_version');
 add_action('trashed_post', function ($post_id) {
@@ -574,7 +581,7 @@ function acemedia_glossary_should_highlight($post = null) {
     if ((defined('REST_REQUEST') && REST_REQUEST) || (function_exists('wp_is_serving_rest_request') && wp_is_serving_rest_request()) || wp_doing_ajax() || wp_doing_cron()) {
         return false;
     }
-    if (isset($_SERVER['REQUEST_URI']) && strpos((string) $_SERVER['REQUEST_URI'], '/wp-json/') !== false) {
+    if (isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) && strpos(sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])), '/wp-json/') !== false) {
         return false;
     }
     if (is_feed() || is_embed() || doing_filter('get_the_excerpt') || doing_filter('wp_trim_excerpt')) {
@@ -635,6 +642,7 @@ function acemedia_glossary_get_highlight_terms() {
         'post_type'   => 'acemedia_glossary',
         'numberposts' => -1,
         'post_status' => 'publish',
+            'has_password' => false,
     ]);
 
     $terms = array();
@@ -821,6 +829,9 @@ function acemedia_glossary_term_pattern($term) {
  * @return array 'html' (the content, untouched when nothing matched) and 'has'.
  */
 function acemedia_glossary_highlight_html($content, $glossary_data) {
+    if (!class_exists('DOMDocument') || !class_exists('DOMXPath')) {
+        return array('html' => $content, 'has' => false);
+    }
     $patterns = array();
     foreach ($glossary_data as $i => $term) {
         $pattern = acemedia_glossary_term_pattern($term);
@@ -835,7 +846,7 @@ function acemedia_glossary_highlight_html($content, $glossary_data) {
     // Parse inside a wrapper div, with an encoding hint so UTF-8 survives.
     $dom = new DOMDocument('1.0', 'UTF-8');
     $previous = libxml_use_internal_errors(true);
-    $dom->loadHTML('<?xml encoding="utf-8" ?><div>' . $content . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    $dom->loadHTML('<?xml encoding="utf-8" ?><div>' . $content . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NONET);
     libxml_clear_errors();
     libxml_use_internal_errors($previous);
 
@@ -1046,6 +1057,7 @@ function acemedia_register_glossary_block() {
     );
 
     register_block_type('acemedia/glossary', array(
+        'api_version' => 3,
         'editor_script'   => 'acemedia-glossary-block',
         'editor_style'    => 'acemedia-glossary-block-editor',
         'style'           => 'acemedia-glossary-block-frontend',

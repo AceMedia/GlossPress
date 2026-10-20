@@ -1,3 +1,4 @@
+import { buildRestUrl } from './rest-url';
 import apiFetch from '@wordpress/api-fetch';
 
 export const getRestRoot = () => {
@@ -123,7 +124,7 @@ export const fetchFromAPI = async (path, method = 'GET', data = null, headers = 
     } else if (restRoot) {
         const cleanRoot = restRoot.replace(/\/+$/, '');
         const cleanPath = normalizedPath.replace(/^\/+/, '');
-        requestArgs = { url: `${cleanRoot}/${cleanPath}`, headers: baseHeaders, ...options };
+        requestArgs = { url: buildRestUrl(cleanPath, cleanRoot), headers: baseHeaders, ...options };
     } else {
         requestArgs = { path: normalizedPath.replace(/^\/+/, ''), headers: baseHeaders, ...options };
     }
@@ -169,7 +170,7 @@ export const clearLogs = async () => {
         });
 
         if (response?.success || response?.message) {
-            console.log('Logs cleared successfully.');
+            ;
         } else {
             console.warn('Logs cleared (no explicit success message returned).');
         }
@@ -183,7 +184,7 @@ export const clearLogs = async () => {
  * @param {string} css - Custom CSS string.
  */
 export const saveCss = async (css) => {
-    console.log('Saving custom CSS:', css);
+    ;
     try {
         if (typeof css !== 'string' || css.trim() === '') {
             throw new Error('CSS must be a valid non-empty string.');
@@ -197,7 +198,7 @@ export const saveCss = async (css) => {
         );
 
         if (response?.success) {
-            console.log('Custom CSS saved successfully:', response.message);
+            ;
             return response.message; // Return the success message
         } else {
             console.error('Failed to save CSS:', response?.message || 'Unknown error');

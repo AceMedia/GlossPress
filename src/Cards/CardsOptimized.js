@@ -91,13 +91,13 @@ const CardsOptimized = ({
         const prevTermId = activeTermIdRef.current;
         const prevContent = lastEditorContentRef.current;
 
-        console.log('Content effect - termId:', termId, 'prevTermId:', prevTermId, 'content:', content?.substring(0, 50), 'prevContent:', prevContent?.substring(0, 50), 'isEditing:', isEditingRef.current);
+        ;
 
         // Term changed OR content loaded after term opened
         const termChanged = prevTermId !== termId && activeTerm?.isOpen;
         const contentArrived = termId === prevTermId && !prevContent && content && activeTerm?.isOpen;
         
-        console.log('termChanged:', termChanged, 'contentArrived:', contentArrived);
+        ;
         
         // Reset editing flag when term changes OR when fresh content arrives from API
         if (termChanged || contentArrived) {
@@ -105,7 +105,7 @@ const CardsOptimized = ({
         }
         
         if ((termChanged || contentArrived) && !isEditingRef.current) {
-            console.log('✅ Loading content into editor:', termId, content?.substring(0, 100));
+            ;
             setLocalEditorContent(content);
             contentLoadedForTermRef.current = termId;
             
@@ -153,9 +153,9 @@ const CardsOptimized = ({
     
     // Store content updates locally WITHOUT syncing to parent (to avoid re-renders)
     const handleEditorContentUpdate = useCallback((content, textareaRef) => {
-        console.log('🔵 User is editing - content updated locally');
-        console.log('  - Content length:', content?.length || 0);
-        console.log('  - Content (first 200 chars):', content?.substring(0, 200));
+        ;
+        ;
+        ;
         isEditingRef.current = true;
         
         // Store the textarea ref so we can read from it later
@@ -179,11 +179,11 @@ const CardsOptimized = ({
             // Read directly from textarea (like blocks-everywhere does)
             const contentToSave = editorTextareaRef.current?.value || localEditorContent;
             
-            console.log('🟢 SAVE TRIGGERED - Syncing content to parent');
-            console.log('  - Term ID:', activeTerm.id);
-            console.log('  - Content from textarea:', editorTextareaRef.current?.value?.substring(0, 100));
-            console.log('  - Content length:', contentToSave?.length || 0);
-            console.log('  - Content:', contentToSave);
+            ;
+            ;
+            ;
+            ;
+            ;
             updateActiveTerm('content', contentToSave);
         }
     }, [isSaving, activeTerm, updateActiveTerm, localEditorContent]);

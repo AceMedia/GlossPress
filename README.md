@@ -1,8 +1,22 @@
+<!-- ACE_SUITE_BRAND:START -->
+<p align="center">
+  <a href="https://acemedia.ninja/"><img src="docs/branding/ace-suite-header.svg" alt="Ace Media WordPress plugins, by Shane Rounce" width="960"></a>
+</p>
+
+<p align="center">
+  <a href="https://acemedia.ninja/">Ace Media</a> · <a href="https://acemedia.host/">WordPress hosting</a>
+</p>
+<!-- ACE_SUITE_BRAND:END -->
+
 # GlossPress - WordPress Glossary Plugin
+
+Release candidate 1.2.2. Requires WordPress 6.6 and PHP 7.4 or later. See [release validation](docs/release-validation.md) and [developer contracts](docs/wiki/Developer-guide.md).
+
+Part of my [Ace Media suite](https://acemedia.ninja/), with hosting at [Ace Media hosting](https://acemedia.host/). Public issues are welcome; please discuss contributions before opening a pull request. Official development remains maintained by Ace Media, without limiting GPL rights.
 
 A comprehensive glossary system for WordPress with intelligent auto-highlighting, related posts, and a React-based admin interface.
 
-**Version:** 1.2.1  
+**Version:** 1.2.2  
 **Author:** AceMedia
 
 ---
@@ -413,12 +427,12 @@ Glossary terms use the standard WordPress post structure:
 ## Support
 
 For issues, feature requests, or questions:
-- Contact: AceMedia Development Team
-- Repository: Internal
+- Contact: Shane Rounce (https://github.com/AceMedia)
+- Repository: https://github.com/AceMedia/GlossPress
 
 ## License
 
-Proprietary - AceMedia © 2025
+GPL-2.0-or-later. See [LICENSE](LICENSE).
 
 ---
 
@@ -457,3 +471,13 @@ Proprietary - AceMedia © 2025
 - Category/tag filtering
 - Gutenberg block support
 - Performance optimizations
+
+## Fictional demonstration
+
+The Lantern & Verse Picture House uses a dictionary of impossible things to show the glossary in use. All example content is fictional.
+
+![Searching the fictional glossary](docs/images/glossary-search.png)
+
+![Editing a definition and its related terms](docs/images/glossary-editor.png)
+
+Developer contracts are in [the wiki source](docs/wiki/Developer-guide.md). Public issues are welcome; please discuss a contribution before opening a pull request. Ace Media maintains official releases, with the GPL licence unchanged.

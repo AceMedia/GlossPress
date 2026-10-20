@@ -1,3 +1,4 @@
+import { buildRestUrl } from './rest-url';
 import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, useBlockProps, PanelColorSettings } from '@wordpress/block-editor';
 import {
@@ -63,6 +64,7 @@ const sanitizeColorValue = (value) => {
 };
 
 registerBlockType('acemedia/glossary', {
+    apiVersion: 3,
     title: __('Glossary', 'acemedia-glossary'),
     description: __('Display a glossary of terms.', 'acemedia-glossary'),
     category: 'widgets',
@@ -138,7 +140,7 @@ registerBlockType('acemedia/glossary', {
                 const normalized = path.startsWith('/') ? path : `/${path}`;
 
                 if (restRoot) {
-                    return { url: `${restRoot}${normalized}`, ...extra };
+                    return { url: buildRestUrl(normalized, restRoot), ...extra };
                 }
 
                 return { path: normalized, ...extra };

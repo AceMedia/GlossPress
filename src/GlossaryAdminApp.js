@@ -1,3 +1,4 @@
+import { buildRestUrl } from './rest-url';
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from '@wordpress/element';
 import { Button,  
     __experimentalToggleGroupControl as ToggleGroupControl,
@@ -312,15 +313,15 @@ const GlossaryAdminApp = () => {
     }, []);
 
     const saveTerms = useCallback((isAutoSave = false) => {
-        console.log('🔴 saveTerms() called');
-        console.log('  - unsavedChanges:', unsavedChanges);
-        console.log('  - isSavingRef.current:', isSavingRef.current);
-        console.log('  - modifiedTerms:', Array.from(modifiedTerms));
-        console.log('  - termDrafts:', termDrafts);
-        console.log('  - activeTerm:', activeTerm);
+        ;
+        ;
+        ;
+        ;
+        ;
+        ;
         
         if (!unsavedChanges || isSavingRef.current) {
-            console.log('  ⚠️ Exiting early - no changes or already saving');
+            ;
             return;
         }
 
@@ -334,12 +335,12 @@ const GlossaryAdminApp = () => {
         const hasTermChanges = modifiedTerms.size > 0;
 
         if (!hasTermChanges && !autoHighlightDirty && !archiveFeaturesDirty && !archiveSlugDirty && !styleSettingsDirty) {
-            console.log('  ⚠️ No actual changes to save');
+            ;
             setUnsavedChanges(false);
             return;
         }
 
-        console.log('  ✅ Proceeding with save...');
+        ;
         setIsSaving(true);
         isSavingRef.current = true;
 
@@ -348,7 +349,7 @@ const GlossaryAdminApp = () => {
 
         // Save all modified terms using their draft data
         if (hasTermChanges) {
-            console.log('  📝 Saving', modifiedTerms.size, 'modified terms');
+            ;
             Array.from(modifiedTerms).forEach((termId) => {
                 const draftData = termDrafts[termId] || {};
                 const isActiveTermTarget = activeTerm && activeTerm.id === termId;
@@ -358,14 +359,14 @@ const GlossaryAdminApp = () => {
                     ...(typeof liveEditorValue === 'string' ? { content: liveEditorValue } : {}),
                 };
 
-                console.log('    - Term', termId, 'draft data:', effectiveDraftData);
+                ;
 
                 // Find the original term data to merge with drafts
                 const originalTerm = terms.find(t => t.id === termId);
                 const baseData = activeTerm && activeTerm.id === termId ? activeTerm : originalTerm;
                 
                 if (!baseData) {
-                    console.log('    ⚠️ No base data for term', termId);
+                    ;
                     return;
                 }
 
@@ -385,12 +386,7 @@ const GlossaryAdminApp = () => {
                     priority: effectiveDraftData.priority ?? baseData.priority ?? false,
                 };
 
-                console.log('    🚀 Sending to API:', {
-                    id: termData.id,
-                    title: termData.title,
-                    contentLength: termData.content?.length || 0,
-                    content: termData.content
-                });
+                ;
 
                 operations.push(
                     fetchFromAPI(
@@ -399,7 +395,7 @@ const GlossaryAdminApp = () => {
                         termData,
                         { 'X-WP-Nonce': AceMediaGlossaryAdmin.nonce }
                     ).then((response) => {
-                        console.log('    ✅ API response:', response);
+                        ;
 
                         const savedId = response?.id || termData.id;
                         const savedModified = new Date().toISOString();
@@ -590,7 +586,7 @@ const GlossaryAdminApp = () => {
         })
             .then((response) => {
                 if (response.removed_references > 0) {
-                    console.log(response.message);
+                    ;
                 }
             })
             .catch((error) => {
@@ -652,7 +648,7 @@ useEffect(() => {
 const handleDownload = useCallback(() => {
     // Trigger the PHP export function via an API call
     const restRoot = getRestRoot();
-    fetch(`${restRoot}/wp/v2/glossary/export`, {
+    fetch(buildRestUrl(`wp/v2/glossary/export`, restRoot), {
         method: 'GET',
         headers: {
             'X-WP-Nonce': AceMediaGlossaryAdmin.nonce, // Adjust if you have CSRF protection
@@ -804,7 +800,7 @@ const deleteSelectedTerms = async () => {
     }
 
     try {
-        const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/bulk-delete`, {
+        const response = await fetch(buildRestUrl(`wp/v2/glossary/bulk-delete`, AceMediaGlossaryAdmin.apiUrl), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -846,7 +842,7 @@ const removeTerm = async (termId) => {
     setIsSaving(true);
 
     try {
-        const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/${termId}`, {
+        const response = await fetch(buildRestUrl(`wp/v2/glossary/${termId}`, AceMediaGlossaryAdmin.apiUrl), {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -927,10 +923,10 @@ useEffect(() => {
             // Apply any draft changes if they exist for this term
             const draftChanges = termDrafts[termId] || {};
             
-            console.log('Loading term:', termId);
-            console.log('Fresh data from API:', termData);
-            console.log('Draft changes:', draftChanges);
-            console.log('Has draft content?', !!draftChanges.content);
+            ;
+            ;
+            ;
+            ;
             
             // Ensure the term is marked as open when we set it as active
             const activeTermData = {
@@ -941,8 +937,8 @@ useEffect(() => {
                 isLoading: false,
             };
             
-            console.log('Final active term data:', activeTermData);
-            console.log('Content length:', activeTermData.content?.length || 0);
+            ;
+            ;
             
             setActiveTerm(prev => ({
                 ...prev,
@@ -1002,7 +998,7 @@ useEffect(() => {
     const updateActiveTerm = useCallback((key, value) => {
         if (!activeTerm) return;
         
-        console.log('updateActiveTerm called:', key, '=', value?.substring?.(0, 50) || value);
+        ;
         
         // For 'content' key, only update drafts to avoid re-renders while typing
         // The editor maintains its own internal state
@@ -1016,7 +1012,7 @@ useEffect(() => {
                         [key]: value
                     }
                 };
-                console.log('Updated termDrafts (content):', newDrafts[activeTerm.id]);
+                ;
                 return newDrafts;
             });
             
@@ -1027,7 +1023,7 @@ useEffect(() => {
                 }
                 const newSet = new Set(prev);
                 newSet.add(activeTerm.id);
-                console.log('Term marked as modified:', activeTerm.id);
+                ;
                 return newSet;
             });
             setUnsavedChanges(true);
@@ -1046,7 +1042,7 @@ useEffect(() => {
                     [key]: value
                 }
             };
-            console.log('Updated termDrafts:', newDrafts);
+            ;
             return newDrafts;
         });
         
@@ -1057,7 +1053,7 @@ useEffect(() => {
             }
             const newSet = new Set(prev);
             newSet.add(activeTerm.id);
-            console.log('Term marked as modified:', activeTerm.id);
+            ;
             return newSet;
         });
         setUnsavedChanges(true);

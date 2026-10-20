@@ -1,418 +1,826 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 692:
-/***/ (function(module, exports) {
+/***/ 873:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	autosize 4.0.4
-	license: MIT
-	http://www.jacklmoore.com/autosize
-*/
-(function (global, factory) {
-	if (true) {
-		!(__WEBPACK_AMD_DEFINE_ARRAY__ = [module, exports], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
-		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
-		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
-		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	} else { var mod; }
-})(this, function (module, exports) {
-	'use strict';
+var root = __webpack_require__(325);
 
-	var map = typeof Map === "function" ? new Map() : function () {
-		var keys = [];
-		var values = [];
+/** Built-in value references. */
+var Symbol = root.Symbol;
 
-		return {
-			has: function has(key) {
-				return keys.indexOf(key) > -1;
-			},
-			get: function get(key) {
-				return values[keys.indexOf(key)];
-			},
-			set: function set(key, value) {
-				if (keys.indexOf(key) === -1) {
-					keys.push(key);
-					values.push(value);
-				}
-			},
-			delete: function _delete(key) {
-				var index = keys.indexOf(key);
-				if (index > -1) {
-					keys.splice(index, 1);
-					values.splice(index, 1);
-				}
-			}
-		};
-	}();
+module.exports = Symbol;
 
-	var createEvent = function createEvent(name) {
-		return new Event(name, { bubbles: true });
-	};
-	try {
-		new Event('test');
-	} catch (e) {
-		// IE does not support `new Event()`
-		createEvent = function createEvent(name) {
-			var evt = document.createEvent('Event');
-			evt.initEvent(name, true, false);
-			return evt;
-		};
-	}
-
-	function assign(ta) {
-		if (!ta || !ta.nodeName || ta.nodeName !== 'TEXTAREA' || map.has(ta)) return;
-
-		var heightOffset = null;
-		var clientWidth = null;
-		var cachedHeight = null;
-
-		function init() {
-			var style = window.getComputedStyle(ta, null);
-
-			if (style.resize === 'vertical') {
-				ta.style.resize = 'none';
-			} else if (style.resize === 'both') {
-				ta.style.resize = 'horizontal';
-			}
-
-			if (style.boxSizing === 'content-box') {
-				heightOffset = -(parseFloat(style.paddingTop) + parseFloat(style.paddingBottom));
-			} else {
-				heightOffset = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
-			}
-			// Fix when a textarea is not on document body and heightOffset is Not a Number
-			if (isNaN(heightOffset)) {
-				heightOffset = 0;
-			}
-
-			update();
-		}
-
-		function changeOverflow(value) {
-			{
-				// Chrome/Safari-specific fix:
-				// When the textarea y-overflow is hidden, Chrome/Safari do not reflow the text to account for the space
-				// made available by removing the scrollbar. The following forces the necessary text reflow.
-				var width = ta.style.width;
-				ta.style.width = '0px';
-				// Force reflow:
-				/* jshint ignore:start */
-				ta.offsetWidth;
-				/* jshint ignore:end */
-				ta.style.width = width;
-			}
-
-			ta.style.overflowY = value;
-		}
-
-		function getParentOverflows(el) {
-			var arr = [];
-
-			while (el && el.parentNode && el.parentNode instanceof Element) {
-				if (el.parentNode.scrollTop) {
-					arr.push({
-						node: el.parentNode,
-						scrollTop: el.parentNode.scrollTop
-					});
-				}
-				el = el.parentNode;
-			}
-
-			return arr;
-		}
-
-		function resize() {
-			if (ta.scrollHeight === 0) {
-				// If the scrollHeight is 0, then the element probably has display:none or is detached from the DOM.
-				return;
-			}
-
-			var overflows = getParentOverflows(ta);
-			var docTop = document.documentElement && document.documentElement.scrollTop; // Needed for Mobile IE (ticket #240)
-
-			ta.style.height = '';
-			ta.style.height = ta.scrollHeight + heightOffset + 'px';
-
-			// used to check if an update is actually necessary on window.resize
-			clientWidth = ta.clientWidth;
-
-			// prevents scroll-position jumping
-			overflows.forEach(function (el) {
-				el.node.scrollTop = el.scrollTop;
-			});
-
-			if (docTop) {
-				document.documentElement.scrollTop = docTop;
-			}
-		}
-
-		function update() {
-			resize();
-
-			var styleHeight = Math.round(parseFloat(ta.style.height));
-			var computed = window.getComputedStyle(ta, null);
-
-			// Using offsetHeight as a replacement for computed.height in IE, because IE does not account use of border-box
-			var actualHeight = computed.boxSizing === 'content-box' ? Math.round(parseFloat(computed.height)) : ta.offsetHeight;
-
-			// The actual height not matching the style height (set via the resize method) indicates that 
-			// the max-height has been exceeded, in which case the overflow should be allowed.
-			if (actualHeight < styleHeight) {
-				if (computed.overflowY === 'hidden') {
-					changeOverflow('scroll');
-					resize();
-					actualHeight = computed.boxSizing === 'content-box' ? Math.round(parseFloat(window.getComputedStyle(ta, null).height)) : ta.offsetHeight;
-				}
-			} else {
-				// Normally keep overflow set to hidden, to avoid flash of scrollbar as the textarea expands.
-				if (computed.overflowY !== 'hidden') {
-					changeOverflow('hidden');
-					resize();
-					actualHeight = computed.boxSizing === 'content-box' ? Math.round(parseFloat(window.getComputedStyle(ta, null).height)) : ta.offsetHeight;
-				}
-			}
-
-			if (cachedHeight !== actualHeight) {
-				cachedHeight = actualHeight;
-				var evt = createEvent('autosize:resized');
-				try {
-					ta.dispatchEvent(evt);
-				} catch (err) {
-					// Firefox will throw an error on dispatchEvent for a detached element
-					// https://bugzilla.mozilla.org/show_bug.cgi?id=889376
-				}
-			}
-		}
-
-		var pageResize = function pageResize() {
-			if (ta.clientWidth !== clientWidth) {
-				update();
-			}
-		};
-
-		var destroy = function (style) {
-			window.removeEventListener('resize', pageResize, false);
-			ta.removeEventListener('input', update, false);
-			ta.removeEventListener('keyup', update, false);
-			ta.removeEventListener('autosize:destroy', destroy, false);
-			ta.removeEventListener('autosize:update', update, false);
-
-			Object.keys(style).forEach(function (key) {
-				ta.style[key] = style[key];
-			});
-
-			map.delete(ta);
-		}.bind(ta, {
-			height: ta.style.height,
-			resize: ta.style.resize,
-			overflowY: ta.style.overflowY,
-			overflowX: ta.style.overflowX,
-			wordWrap: ta.style.wordWrap
-		});
-
-		ta.addEventListener('autosize:destroy', destroy, false);
-
-		// IE9 does not fire onpropertychange or oninput for deletions,
-		// so binding to onkeyup to catch most of those events.
-		// There is no way that I know of to detect something like 'cut' in IE9.
-		if ('onpropertychange' in ta && 'oninput' in ta) {
-			ta.addEventListener('keyup', update, false);
-		}
-
-		window.addEventListener('resize', pageResize, false);
-		ta.addEventListener('input', update, false);
-		ta.addEventListener('autosize:update', update, false);
-		ta.style.overflowX = 'hidden';
-		ta.style.wordWrap = 'break-word';
-
-		map.set(ta, {
-			destroy: destroy,
-			update: update
-		});
-
-		init();
-	}
-
-	function destroy(ta) {
-		var methods = map.get(ta);
-		if (methods) {
-			methods.destroy();
-		}
-	}
-
-	function update(ta) {
-		var methods = map.get(ta);
-		if (methods) {
-			methods.update();
-		}
-	}
-
-	var autosize = null;
-
-	// Do nothing in Node.js environment and IE8 (or lower)
-	if (typeof window === 'undefined' || typeof window.getComputedStyle !== 'function') {
-		autosize = function autosize(el) {
-			return el;
-		};
-		autosize.destroy = function (el) {
-			return el;
-		};
-		autosize.update = function (el) {
-			return el;
-		};
-	} else {
-		autosize = function autosize(el, options) {
-			if (el) {
-				Array.prototype.forEach.call(el.length ? el : [el], function (x) {
-					return assign(x, options);
-				});
-			}
-			return el;
-		};
-		autosize.destroy = function (el) {
-			if (el) {
-				Array.prototype.forEach.call(el.length ? el : [el], destroy);
-			}
-			return el;
-		};
-		autosize.update = function (el) {
-			if (el) {
-				Array.prototype.forEach.call(el.length ? el : [el], update);
-			}
-			return el;
-		};
-	}
-
-	exports.default = autosize;
-	module.exports = exports['default'];
-});
 
 /***/ }),
 
-/***/ 790:
-/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
+/***/ 552:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Symbol = __webpack_require__(873),
+    getRawTag = __webpack_require__(659),
+    objectToString = __webpack_require__(350);
+
+/** `Object#toString` result references. */
+var nullTag = '[object Null]',
+    undefinedTag = '[object Undefined]';
+
+/** Built-in value references. */
+var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+/**
+ * The base implementation of `getTag` without fallbacks for buggy environments.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+function baseGetTag(value) {
+  if (value == null) {
+    return value === undefined ? undefinedTag : nullTag;
+  }
+  return (symToStringTag && symToStringTag in Object(value))
+    ? getRawTag(value)
+    : objectToString(value);
+}
+
+module.exports = baseGetTag;
+
+
+/***/ }),
+
+/***/ 128:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var trimmedEndIndex = __webpack_require__(800);
+
+/** Used to match leading whitespace. */
+var reTrimStart = /^\s+/;
+
+/**
+ * The base implementation of `_.trim`.
+ *
+ * @private
+ * @param {string} string The string to trim.
+ * @returns {string} Returns the trimmed string.
+ */
+function baseTrim(string) {
+  return string
+    ? string.slice(0, trimmedEndIndex(string) + 1).replace(reTrimStart, '')
+    : string;
+}
+
+module.exports = baseTrim;
+
+
+/***/ }),
+
+/***/ 840:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof __webpack_require__.g == 'object' && __webpack_require__.g && __webpack_require__.g.Object === Object && __webpack_require__.g;
+
+module.exports = freeGlobal;
+
+
+/***/ }),
+
+/***/ 659:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Symbol = __webpack_require__(873);
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto.toString;
+
+/** Built-in value references. */
+var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+/**
+ * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the raw `toStringTag`.
+ */
+function getRawTag(value) {
+  var isOwn = hasOwnProperty.call(value, symToStringTag),
+      tag = value[symToStringTag];
+
+  try {
+    value[symToStringTag] = undefined;
+    var unmasked = true;
+  } catch (e) {}
+
+  var result = nativeObjectToString.call(value);
+  if (unmasked) {
+    if (isOwn) {
+      value[symToStringTag] = tag;
+    } else {
+      delete value[symToStringTag];
+    }
+  }
+  return result;
+}
+
+module.exports = getRawTag;
+
+
+/***/ }),
+
+/***/ 350:
+/***/ ((module) => {
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto.toString;
+
+/**
+ * Converts `value` to a string using `Object.prototype.toString`.
+ *
+ * @private
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ */
+function objectToString(value) {
+  return nativeObjectToString.call(value);
+}
+
+module.exports = objectToString;
+
+
+/***/ }),
+
+/***/ 325:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var freeGlobal = __webpack_require__(840);
+
+/** Detect free variable `self`. */
+var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+module.exports = root;
+
+
+/***/ }),
+
+/***/ 800:
+/***/ ((module) => {
+
+/** Used to match a single whitespace character. */
+var reWhitespace = /\s/;
+
+/**
+ * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
+ * character of `string`.
+ *
+ * @private
+ * @param {string} string The string to inspect.
+ * @returns {number} Returns the index of the last non-whitespace character.
+ */
+function trimmedEndIndex(string) {
+  var index = string.length;
+
+  while (index-- && reWhitespace.test(string.charAt(index))) {}
+  return index;
+}
+
+module.exports = trimmedEndIndex;
+
+
+/***/ }),
+
+/***/ 221:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var isObject = __webpack_require__(805),
+    now = __webpack_require__(124),
+    toNumber = __webpack_require__(374);
+
+/** Error message constants. */
+var FUNC_ERROR_TEXT = 'Expected a function';
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeMax = Math.max,
+    nativeMin = Math.min;
+
+/**
+ * Creates a debounced function that delays invoking `func` until after `wait`
+ * milliseconds have elapsed since the last time the debounced function was
+ * invoked. The debounced function comes with a `cancel` method to cancel
+ * delayed `func` invocations and a `flush` method to immediately invoke them.
+ * Provide `options` to indicate whether `func` should be invoked on the
+ * leading and/or trailing edge of the `wait` timeout. The `func` is invoked
+ * with the last arguments provided to the debounced function. Subsequent
+ * calls to the debounced function return the result of the last `func`
+ * invocation.
+ *
+ * **Note:** If `leading` and `trailing` options are `true`, `func` is
+ * invoked on the trailing edge of the timeout only if the debounced function
+ * is invoked more than once during the `wait` timeout.
+ *
+ * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
+ * until to the next tick, similar to `setTimeout` with a timeout of `0`.
+ *
+ * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
+ * for details over the differences between `_.debounce` and `_.throttle`.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Function
+ * @param {Function} func The function to debounce.
+ * @param {number} [wait=0] The number of milliseconds to delay.
+ * @param {Object} [options={}] The options object.
+ * @param {boolean} [options.leading=false]
+ *  Specify invoking on the leading edge of the timeout.
+ * @param {number} [options.maxWait]
+ *  The maximum time `func` is allowed to be delayed before it's invoked.
+ * @param {boolean} [options.trailing=true]
+ *  Specify invoking on the trailing edge of the timeout.
+ * @returns {Function} Returns the new debounced function.
+ * @example
+ *
+ * // Avoid costly calculations while the window size is in flux.
+ * jQuery(window).on('resize', _.debounce(calculateLayout, 150));
+ *
+ * // Invoke `sendMail` when clicked, debouncing subsequent calls.
+ * jQuery(element).on('click', _.debounce(sendMail, 300, {
+ *   'leading': true,
+ *   'trailing': false
+ * }));
+ *
+ * // Ensure `batchLog` is invoked once after 1 second of debounced calls.
+ * var debounced = _.debounce(batchLog, 250, { 'maxWait': 1000 });
+ * var source = new EventSource('/stream');
+ * jQuery(source).on('message', debounced);
+ *
+ * // Cancel the trailing debounced invocation.
+ * jQuery(window).on('popstate', debounced.cancel);
+ */
+function debounce(func, wait, options) {
+  var lastArgs,
+      lastThis,
+      maxWait,
+      result,
+      timerId,
+      lastCallTime,
+      lastInvokeTime = 0,
+      leading = false,
+      maxing = false,
+      trailing = true;
+
+  if (typeof func != 'function') {
+    throw new TypeError(FUNC_ERROR_TEXT);
+  }
+  wait = toNumber(wait) || 0;
+  if (isObject(options)) {
+    leading = !!options.leading;
+    maxing = 'maxWait' in options;
+    maxWait = maxing ? nativeMax(toNumber(options.maxWait) || 0, wait) : maxWait;
+    trailing = 'trailing' in options ? !!options.trailing : trailing;
+  }
+
+  function invokeFunc(time) {
+    var args = lastArgs,
+        thisArg = lastThis;
+
+    lastArgs = lastThis = undefined;
+    lastInvokeTime = time;
+    result = func.apply(thisArg, args);
+    return result;
+  }
+
+  function leadingEdge(time) {
+    // Reset any `maxWait` timer.
+    lastInvokeTime = time;
+    // Start the timer for the trailing edge.
+    timerId = setTimeout(timerExpired, wait);
+    // Invoke the leading edge.
+    return leading ? invokeFunc(time) : result;
+  }
+
+  function remainingWait(time) {
+    var timeSinceLastCall = time - lastCallTime,
+        timeSinceLastInvoke = time - lastInvokeTime,
+        timeWaiting = wait - timeSinceLastCall;
+
+    return maxing
+      ? nativeMin(timeWaiting, maxWait - timeSinceLastInvoke)
+      : timeWaiting;
+  }
+
+  function shouldInvoke(time) {
+    var timeSinceLastCall = time - lastCallTime,
+        timeSinceLastInvoke = time - lastInvokeTime;
+
+    // Either this is the first call, activity has stopped and we're at the
+    // trailing edge, the system time has gone backwards and we're treating
+    // it as the trailing edge, or we've hit the `maxWait` limit.
+    return (lastCallTime === undefined || (timeSinceLastCall >= wait) ||
+      (timeSinceLastCall < 0) || (maxing && timeSinceLastInvoke >= maxWait));
+  }
+
+  function timerExpired() {
+    var time = now();
+    if (shouldInvoke(time)) {
+      return trailingEdge(time);
+    }
+    // Restart the timer.
+    timerId = setTimeout(timerExpired, remainingWait(time));
+  }
+
+  function trailingEdge(time) {
+    timerId = undefined;
+
+    // Only invoke if we have `lastArgs` which means `func` has been
+    // debounced at least once.
+    if (trailing && lastArgs) {
+      return invokeFunc(time);
+    }
+    lastArgs = lastThis = undefined;
+    return result;
+  }
+
+  function cancel() {
+    if (timerId !== undefined) {
+      clearTimeout(timerId);
+    }
+    lastInvokeTime = 0;
+    lastArgs = lastCallTime = lastThis = timerId = undefined;
+  }
+
+  function flush() {
+    return timerId === undefined ? result : trailingEdge(now());
+  }
+
+  function debounced() {
+    var time = now(),
+        isInvoking = shouldInvoke(time);
+
+    lastArgs = arguments;
+    lastThis = this;
+    lastCallTime = time;
+
+    if (isInvoking) {
+      if (timerId === undefined) {
+        return leadingEdge(lastCallTime);
+      }
+      if (maxing) {
+        // Handle invocations in a tight loop.
+        clearTimeout(timerId);
+        timerId = setTimeout(timerExpired, wait);
+        return invokeFunc(lastCallTime);
+      }
+    }
+    if (timerId === undefined) {
+      timerId = setTimeout(timerExpired, wait);
+    }
+    return result;
+  }
+  debounced.cancel = cancel;
+  debounced.flush = flush;
+  return debounced;
+}
+
+module.exports = debounce;
+
+
+/***/ }),
+
+/***/ 805:
+/***/ ((module) => {
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value;
+  return value != null && (type == 'object' || type == 'function');
+}
+
+module.exports = isObject;
+
+
+/***/ }),
+
+/***/ 346:
+/***/ ((module) => {
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return value != null && typeof value == 'object';
+}
+
+module.exports = isObjectLike;
+
+
+/***/ }),
+
+/***/ 394:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var baseGetTag = __webpack_require__(552),
+    isObjectLike = __webpack_require__(346);
+
+/** `Object#toString` result references. */
+var symbolTag = '[object Symbol]';
+
+/**
+ * Checks if `value` is classified as a `Symbol` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+ * @example
+ *
+ * _.isSymbol(Symbol.iterator);
+ * // => true
+ *
+ * _.isSymbol('abc');
+ * // => false
+ */
+function isSymbol(value) {
+  return typeof value == 'symbol' ||
+    (isObjectLike(value) && baseGetTag(value) == symbolTag);
+}
+
+module.exports = isSymbol;
+
+
+/***/ }),
+
+/***/ 124:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var root = __webpack_require__(325);
+
+/**
+ * Gets the timestamp of the number of milliseconds that have elapsed since
+ * the Unix epoch (1 January 1970 00:00:00 UTC).
+ *
+ * @static
+ * @memberOf _
+ * @since 2.4.0
+ * @category Date
+ * @returns {number} Returns the timestamp.
+ * @example
+ *
+ * _.defer(function(stamp) {
+ *   console.log(_.now() - stamp);
+ * }, _.now());
+ * // => Logs the number of milliseconds it took for the deferred invocation.
+ */
+var now = function() {
+  return root.Date.now();
+};
+
+module.exports = now;
+
+
+/***/ }),
+
+/***/ 374:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var baseTrim = __webpack_require__(128),
+    isObject = __webpack_require__(805),
+    isSymbol = __webpack_require__(394);
+
+/** Used as references for various `Number` constants. */
+var NAN = 0 / 0;
+
+/** Used to detect bad signed hexadecimal string values. */
+var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+
+/** Used to detect binary string values. */
+var reIsBinary = /^0b[01]+$/i;
+
+/** Used to detect octal string values. */
+var reIsOctal = /^0o[0-7]+$/i;
+
+/** Built-in method references without a dependency on `root`. */
+var freeParseInt = parseInt;
+
+/**
+ * Converts `value` to a number.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to process.
+ * @returns {number} Returns the number.
+ * @example
+ *
+ * _.toNumber(3.2);
+ * // => 3.2
+ *
+ * _.toNumber(Number.MIN_VALUE);
+ * // => 5e-324
+ *
+ * _.toNumber(Infinity);
+ * // => Infinity
+ *
+ * _.toNumber('3.2');
+ * // => 3.2
+ */
+function toNumber(value) {
+  if (typeof value == 'number') {
+    return value;
+  }
+  if (isSymbol(value)) {
+    return NAN;
+  }
+  if (isObject(value)) {
+    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
+    value = isObject(other) ? (other + '') : other;
+  }
+  if (typeof value != 'string') {
+    return value === 0 ? value : +value;
+  }
+  value = baseTrim(value);
+  var isBinary = reIsBinary.test(value);
+  return (isBinary || reIsOctal.test(value))
+    ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
+    : (reIsBadHex.test(value) ? NAN : +value);
+}
+
+module.exports = toNumber;
+
+
+/***/ }),
+
+/***/ 694:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 "use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 
-// NAMESPACE OBJECT: ./node_modules/@wordpress/interface/build-module/store/actions.js
-var actions_namespaceObject = {};
-__webpack_require__.r(actions_namespaceObject);
-__webpack_require__.d(actions_namespaceObject, {
-  closeModal: () => (closeModal),
-  disableComplementaryArea: () => (disableComplementaryArea),
-  enableComplementaryArea: () => (enableComplementaryArea),
-  openModal: () => (openModal),
-  pinItem: () => (pinItem),
-  setDefaultComplementaryArea: () => (setDefaultComplementaryArea),
-  setFeatureDefaults: () => (setFeatureDefaults),
-  setFeatureValue: () => (setFeatureValue),
-  toggleFeature: () => (toggleFeature),
-  unpinItem: () => (unpinItem)
-});
 
-// NAMESPACE OBJECT: ./node_modules/@wordpress/interface/build-module/store/selectors.js
-var selectors_namespaceObject = {};
-__webpack_require__.r(selectors_namespaceObject);
-__webpack_require__.d(selectors_namespaceObject, {
-  getActiveComplementaryArea: () => (getActiveComplementaryArea),
-  isComplementaryAreaLoading: () => (isComplementaryAreaLoading),
-  isFeatureActive: () => (isFeatureActive),
-  isItemPinned: () => (isItemPinned),
-  isModalActive: () => (isModalActive)
-});
 
-// NAMESPACE OBJECT: ./node_modules/@automattic/isolated-block-editor/build-module/store/editor/selectors.js
-var editor_selectors_namespaceObject = {};
-__webpack_require__.r(editor_selectors_namespaceObject);
-__webpack_require__.d(editor_selectors_namespaceObject, {
-  getCanvasStyles: () => (getCanvasStyles),
-  getCurrentPattern: () => (getCurrentPattern),
-  getCurrentPatternName: () => (getCurrentPatternName),
-  getEditorMode: () => (getEditorMode),
-  getEditorSettings: () => (getEditorSettings),
-  getIgnoredContent: () => (selectors_getIgnoredContent),
-  getNamedPattern: () => (getNamedPattern),
-  getPatterns: () => (getPatterns),
-  getPreviewDeviceType: () => (getPreviewDeviceType),
-  isEditing: () => (isEditing),
-  isEditorReady: () => (isEditorReady),
-  isEditorSidebarOpened: () => (isEditorSidebarOpened),
-  isIframePreview: () => (isIframePreview),
-  isInserterOpened: () => (isInserterOpened),
-  isListViewOpened: () => (isListViewOpened)
-});
+var ReactPropTypesSecret = __webpack_require__(925);
 
-// NAMESPACE OBJECT: ./node_modules/@automattic/isolated-block-editor/build-module/store/blocks/selectors.js
-var blocks_selectors_namespaceObject = {};
-__webpack_require__.r(blocks_selectors_namespaceObject);
-__webpack_require__.d(blocks_selectors_namespaceObject, {
-  getBlocks: () => (getBlocks),
-  getEditCount: () => (getEditCount),
-  getEditorSelection: () => (getEditorSelection),
-  hasEditorRedo: () => (hasEditorRedo),
-  hasEditorUndo: () => (hasEditorUndo)
-});
+function emptyFunction() {}
+function emptyFunctionWithReset() {}
+emptyFunctionWithReset.resetWarningCache = emptyFunction;
 
-// NAMESPACE OBJECT: ./node_modules/@automattic/isolated-block-editor/build-module/store/preferences/selectors.js
-var preferences_selectors_namespaceObject = {};
-__webpack_require__.r(preferences_selectors_namespaceObject);
-__webpack_require__.d(preferences_selectors_namespaceObject, {
-  isFeatureActive: () => (selectors_isFeatureActive)
-});
+module.exports = function() {
+  function shim(props, propName, componentName, location, propFullName, secret) {
+    if (secret === ReactPropTypesSecret) {
+      // It is still safe when called from React.
+      return;
+    }
+    var err = new Error(
+      'Calling PropTypes validators directly is not supported by the `prop-types` package. ' +
+      'Use PropTypes.checkPropTypes() to call them. ' +
+      'Read more at http://fb.me/use-check-prop-types'
+    );
+    err.name = 'Invariant Violation';
+    throw err;
+  };
+  shim.isRequired = shim;
+  function getShim() {
+    return shim;
+  };
+  // Important!
+  // Keep this list in sync with production version in `./factoryWithTypeCheckers.js`.
+  var ReactPropTypes = {
+    array: shim,
+    bigint: shim,
+    bool: shim,
+    func: shim,
+    number: shim,
+    object: shim,
+    string: shim,
+    symbol: shim,
 
-// NAMESPACE OBJECT: ./node_modules/@automattic/isolated-block-editor/build-module/store/options/selectors.js
-var options_selectors_namespaceObject = {};
-__webpack_require__.r(options_selectors_namespaceObject);
-__webpack_require__.d(options_selectors_namespaceObject, {
-  isOptionActive: () => (isOptionActive)
-});
+    any: shim,
+    arrayOf: getShim,
+    element: shim,
+    elementType: shim,
+    instanceOf: getShim,
+    node: shim,
+    objectOf: getShim,
+    oneOf: getShim,
+    oneOfType: getShim,
+    shape: getShim,
+    exact: getShim,
 
-// NAMESPACE OBJECT: ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/reusable-store/actions.js
-var reusable_store_actions_namespaceObject = {};
-__webpack_require__.r(reusable_store_actions_namespaceObject);
-__webpack_require__.d(reusable_store_actions_namespaceObject, {
-  __experimentalConvertBlockToStatic: () => (__experimentalConvertBlockToStatic),
-  __experimentalConvertBlocksToReusable: () => (__experimentalConvertBlocksToReusable),
-  __experimentalDeleteReusableBlock: () => (__experimentalDeleteReusableBlock),
-  __experimentalSetEditingReusableBlock: () => (__experimentalSetEditingReusableBlock)
-});
+    checkPropTypes: emptyFunctionWithReset,
+    resetWarningCache: emptyFunction
+  };
 
-// NAMESPACE OBJECT: ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/reusable-store/selectors.js
-var reusable_store_selectors_namespaceObject = {};
-__webpack_require__.r(reusable_store_selectors_namespaceObject);
-__webpack_require__.d(reusable_store_selectors_namespaceObject, {
-  __experimentalIsEditingReusableBlock: () => (__experimentalIsEditingReusableBlock)
-});
+  ReactPropTypes.PropTypes = ReactPropTypes;
 
-// NAMESPACE OBJECT: ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/interface-store/actions.js
-var interface_store_actions_namespaceObject = {};
-__webpack_require__.r(interface_store_actions_namespaceObject);
-__webpack_require__.d(interface_store_actions_namespaceObject, {
-  disableComplementaryArea: () => (actions_disableComplementaryArea),
-  enableComplementaryArea: () => (actions_enableComplementaryArea),
-  pinItem: () => (actions_pinItem),
-  setDefaultComplementaryArea: () => (actions_setDefaultComplementaryArea),
-  setFeatureDefaults: () => (actions_setFeatureDefaults),
-  setFeatureValue: () => (actions_setFeatureValue),
-  toggleFeature: () => (actions_toggleFeature),
-  unpinItem: () => (actions_unpinItem)
-});
+  return ReactPropTypes;
+};
 
-// NAMESPACE OBJECT: ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/interface-store/selectors.js
-var interface_store_selectors_namespaceObject = {};
-__webpack_require__.r(interface_store_selectors_namespaceObject);
-__webpack_require__.d(interface_store_selectors_namespaceObject, {
-  getActiveComplementaryArea: () => (selectors_getActiveComplementaryArea),
-  isFeatureActive: () => (interface_store_selectors_isFeatureActive),
-  isItemPinned: () => (selectors_isItemPinned)
-});
+
+/***/ }),
+
+/***/ 556:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+if (false) { var throwOnDirectAccess, ReactIs; } else {
+  // By explicitly using `prop-types` you are opting into new production behavior.
+  // http://fb.me/prop-types-in-prod
+  module.exports = __webpack_require__(694)();
+}
+
+
+/***/ }),
+
+/***/ 925:
+/***/ ((module) => {
+
+"use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+
+
+var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
+
+module.exports = ReactPropTypesSecret;
+
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/global */
+/******/ 	(() => {
+/******/ 		__webpack_require__.g = (function() {
+/******/ 			if (typeof globalThis === 'object') return globalThis;
+/******/ 			try {
+/******/ 				return this || new Function('return this')();
+/******/ 			} catch (e) {
+/******/ 				if (typeof window === 'object') return window;
+/******/ 			}
+/******/ 		})();
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+// This entry needs to be wrapped in an IIFE because it needs to be in strict mode.
+(() => {
+"use strict";
 
 ;// external ["wp","element"]
 const external_wp_element_namespaceObject = window["wp"]["element"];
-;// external ["wp","domReady"]
-const external_wp_domReady_namespaceObject = window["wp"]["domReady"];
-var external_wp_domReady_default = /*#__PURE__*/__webpack_require__.n(external_wp_domReady_namespaceObject);
+;// ./src/rest-url.js
+/** Join a WordPress REST root and route with either plain or pretty permalinks. */
+const buildRestUrl = (path, root) => {
+  const base = root || window.AceMediaGlossaryAdmin?.restRoot || window.wpApiSettings?.root || '/wp-json/';
+  const url = new URL(base, window.location.href);
+  const [route, ...queryParts] = String(path).replace(/^\/+/, '').split('?');
+  if (url.searchParams.has('rest_route')) {
+    const prefix = url.searchParams.get('rest_route').replace(/\/+$/, '');
+    url.searchParams.set('rest_route', `${prefix}/${route}`);
+  } else {
+    url.pathname = `${url.pathname.replace(/\/+$/, '')}/${route}`;
+  }
+  new URLSearchParams(queryParts.join('?')).forEach((value, key) => url.searchParams.set(key, value));
+  return url.toString();
+};
 ;// external ["wp","components"]
 const external_wp_components_namespaceObject = window["wp"]["components"];
 ;// external ["wp","i18n"]
@@ -3494,9 +3902,9 @@ const counter = api.counter;
 // EXTERNAL MODULE: ./node_modules/prop-types/index.js
 var prop_types = __webpack_require__(556);
 var prop_types_default = /*#__PURE__*/__webpack_require__.n(prop_types);
-// EXTERNAL MODULE: external "React"
-var external_React_ = __webpack_require__(609);
-var external_React_default = /*#__PURE__*/__webpack_require__.n(external_React_);
+;// external "React"
+const external_React_namespaceObject = window["React"];
+var external_React_default = /*#__PURE__*/__webpack_require__.n(external_React_namespaceObject);
 ;// ./node_modules/@fortawesome/react-fontawesome/index.es.js
 
 
@@ -16490,6 +16898,7 @@ var free_brands_svg_icons_icons = {
 
 ;// ./src/utils.js
 
+
 const getRestRoot = () => {
   if (typeof AceMediaGlossaryAdmin !== 'undefined' && AceMediaGlossaryAdmin.restRoot) {
     return AceMediaGlossaryAdmin.restRoot.replace(/\/+$/, '');
@@ -16605,7 +17014,7 @@ const fetchFromAPI = async (path, method = 'GET', data = null, headers = {}) => 
     const cleanRoot = restRoot.replace(/\/+$/, '');
     const cleanPath = normalizedPath.replace(/^\/+/, '');
     requestArgs = {
-      url: `${cleanRoot}/${cleanPath}`,
+      url: buildRestUrl(cleanPath, cleanRoot),
       headers: baseHeaders,
       ...options
     };
@@ -16653,7 +17062,7 @@ const clearLogs = async () => {
       'X-WP-Nonce': AceMediaGlossaryAdmin.nonce
     });
     if (response?.success || response?.message) {
-      console.log('Logs cleared successfully.');
+      ;
     } else {
       console.warn('Logs cleared (no explicit success message returned).');
     }
@@ -16667,7 +17076,7 @@ const clearLogs = async () => {
  * @param {string} css - Custom CSS string.
  */
 const saveCss = async css => {
-  console.log('Saving custom CSS:', css);
+  ;
   try {
     if (typeof css !== 'string' || css.trim() === '') {
       throw new Error('CSS must be a valid non-empty string.');
@@ -16678,7 +17087,7 @@ const saveCss = async css => {
       'X-WP-Nonce': AceMediaGlossaryAdmin.nonce
     });
     if (response?.success) {
-      console.log('Custom CSS saved successfully:', response.message);
+      ;
       return response.message; // Return the success message
     } else {
       console.error('Failed to save CSS:', response?.message || 'Unknown error');
@@ -16939,6 +17348,7 @@ const external_ReactJSXRuntime_namespaceObject = window["ReactJSXRuntime"];
 
 
 
+
 const TagsAndCategoriesFilter = ({
   tags,
   setTags,
@@ -16994,7 +17404,7 @@ const TagsAndCategoriesFilter = ({
     setIsFetchingTags(true);
     try {
       const restRoot = getRestRoot();
-      const response = await fetch(`${restRoot}/wp/v2/tags?per_page=10&page=${page}&search=${search}`);
+      const response = await fetch(buildRestUrl(`wp/v2/tags?per_page=10&page=${page}&search=${search}`, restRoot));
       if (!response.ok) throw new Error('Failed to fetch tags');
       const newTags = await response.json();
       setTags(prevTags => page === 1 || search ? newTags.map(tag => ({
@@ -17017,7 +17427,7 @@ const TagsAndCategoriesFilter = ({
     setIsFetchingCategories(true);
     try {
       const restRoot = getRestRoot();
-      const response = await fetch(`${restRoot}/wp/v2/categories?per_page=10&page=${page}&search=${search}`);
+      const response = await fetch(buildRestUrl(`wp/v2/categories?per_page=10&page=${page}&search=${search}`, restRoot));
       if (!response.ok) throw new Error('Failed to fetch categories');
       const newCategories = await response.json();
       setCategories(prevCategories => page === 1 || search ? newCategories.map(category => ({
@@ -17725,6 +18135,7 @@ var debounce_default = /*#__PURE__*/__webpack_require__.n(lodash_debounce);
 
 
 
+
 const RelatedTagsAndCatsOptimized = ({
   term,
   isAutoSaveEnabled,
@@ -17857,7 +18268,7 @@ const RelatedTagsAndCatsOptimized = ({
 
         // Log debug information if available
         if (response?.debug) {
-          console.log(`Debug info for ${type} update:`, response.debug);
+          ;
         }
       } catch (error) {
         console.error(`Error updating ${type}:`, error);
@@ -17959,7 +18370,7 @@ const RelatedTagsAndCatsOptimized = ({
     setLoadingCategories(true);
     try {
       const restRoot = getRestRoot();
-      const response = await fetch(`${restRoot}/wp/v2/categories?per_page=10&page=${page}&search=${search}`, {
+      const response = await fetch(buildRestUrl(`wp/v2/categories?per_page=10&page=${page}&search=${search}`, restRoot), {
         headers: {
           'X-WP-Nonce': window.AceMediaGlossaryAdmin?.nonce || ''
         }
@@ -17987,7 +18398,7 @@ const RelatedTagsAndCatsOptimized = ({
     setLoadingTags(true);
     try {
       const restRoot = getRestRoot();
-      const response = await fetch(`${restRoot}/wp/v2/tags?per_page=10&page=${page}&search=${search}`, {
+      const response = await fetch(buildRestUrl(`wp/v2/tags?per_page=10&page=${page}&search=${search}`, restRoot), {
         headers: {
           'X-WP-Nonce': window.AceMediaGlossaryAdmin?.nonce || ''
         }
@@ -18038,7 +18449,7 @@ const RelatedTagsAndCatsOptimized = ({
     // Fallback to API call if lookup is not available
     try {
       const restRoot = getRestRoot();
-      const response = await fetch(`${restRoot}/wp/v2/glossary`, {
+      const response = await fetch(buildRestUrl(`wp/v2/glossary`, restRoot), {
         headers: {
           'X-WP-Nonce': window.AceMediaGlossaryAdmin?.nonce || ''
         }
@@ -18228,6683 +18639,118 @@ const RelatedTagsAndCatsOptimized = ({
   });
 };
 /* harmony default export */ const Cards_RelatedTagsAndCatsOptimized = (RelatedTagsAndCatsOptimized);
-;// external ["wp","editor"]
-const external_wp_editor_namespaceObject = window["wp"]["editor"];
-;// external ["wp","blockLibrary"]
-const external_wp_blockLibrary_namespaceObject = window["wp"]["blockLibrary"];
-;// external ["wp","data"]
-const external_wp_data_namespaceObject = window["wp"]["data"];
-;// external ["wp","formatLibrary"]
-const external_wp_formatLibrary_namespaceObject = window["wp"]["formatLibrary"];
-;// external ["wp","keyboardShortcuts"]
-const external_wp_keyboardShortcuts_namespaceObject = window["wp"]["keyboardShortcuts"];
-// EXTERNAL MODULE: ./node_modules/classnames/index.js
-var classnames = __webpack_require__(942);
-var classnames_default = /*#__PURE__*/__webpack_require__.n(classnames);
-;// external ["wp","compose"]
-const external_wp_compose_namespaceObject = window["wp"]["compose"];
-;// external "lodash"
-const external_lodash_namespaceObject = window["lodash"];
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-container/with-focus-outside.js
-
-// @ts-nocheck
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-/**
- * Input types which are classified as button types, for use in considering
- * whether element is a (focus-normalized) button.
- *
- * @type {string[]}
- */
-const INPUT_BUTTON_TYPES = ['button', 'submit'];
-
-/**
- * Returns true if the given element is a button element subject to focus
- * normalization, or false otherwise.
- *
- * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#Clicking_and_focus
- *
- * @param {Element} element Element to test.
- *
- * @return {boolean} Whether element is a button.
- */
-function isFocusNormalizedButton(element) {
-  switch (element.nodeName) {
-    case 'A':
-    case 'BUTTON':
-      return true;
-    case 'INPUT':
-      return (0,external_lodash_namespaceObject.includes)(INPUT_BUTTON_TYPES, element.type);
-  }
-  return false;
-}
-/* harmony default export */ const with_focus_outside = ((0,external_wp_compose_namespaceObject.createHigherOrderComponent)(WrappedComponent => {
-  return class extends external_wp_element_namespaceObject.Component {
-    constructor() {
-      super(...arguments);
-      this.bindNode = this.bindNode.bind(this);
-      this.cancelBlurCheck = this.cancelBlurCheck.bind(this);
-      this.queueBlurCheck = this.queueBlurCheck.bind(this);
-      this.normalizeButtonFocus = this.normalizeButtonFocus.bind(this);
-    }
-    componentWillUnmount() {
-      clearTimeout(this.blurCheckTimeout);
-    }
-    bindNode(node) {
-      if (node) {
-        this.node = node;
-      } else {
-        delete this.node;
-        this.cancelBlurCheck();
-      }
-    }
-    queueBlurCheck(event) {
-      // React does not allow using an event reference asynchronously
-      // due to recycling behavior, except when explicitly persisted.
-      event.persist();
-
-      // Skip blur check if clicking button. See `normalizeButtonFocus`.
-      if (this.preventBlurCheck) {
-        return;
-      }
-      this.blurCheckTimeout = setTimeout(() => {
-        // If document is not focused then focus should remain
-        // inside the wrapped component and therefore we cancel
-        // this blur event thereby leaving focus in place.
-        // https://developer.mozilla.org/en-US/docs/Web/API/Document/hasFocus.
-        if (!document.hasFocus()) {
-          event.preventDefault();
-          return;
-        }
-        if ('function' === typeof this.node.handleFocusOutside) {
-          this.node.handleFocusOutside(event);
-        }
-      }, 0);
-    }
-    cancelBlurCheck() {
-      clearTimeout(this.blurCheckTimeout);
-      if (typeof this.node !== 'undefined' && 'function' === typeof this.node.handleFocus) {
-        this.node.handleFocus(event);
-      }
-    }
-
-    /**
-     * Handles a mousedown or mouseup event to respectively assign and
-     * unassign a flag for preventing blur check on button elements. Some
-     * browsers, namely Firefox and Safari, do not emit a focus event on
-     * button elements when clicked, while others do. The logic here
-     * intends to normalize this as treating click on buttons as focus.
-     *
-     * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button#Clicking_and_focus
-     *
-     * @param {MouseEvent} event Event for mousedown or mouseup.
-     */
-    normalizeButtonFocus(event) {
-      const {
-        type,
-        target
-      } = event;
-      const isInteractionEnd = (0,external_lodash_namespaceObject.includes)(['mouseup', 'touchend'], type);
-      if (isInteractionEnd) {
-        this.preventBlurCheck = false;
-      } else if (isFocusNormalizedButton(target)) {
-        this.preventBlurCheck = true;
-      }
-    }
-    render() {
-      // Disable reason: See `normalizeButtonFocus` for browser-specific
-      // focus event normalization.
-
-      /* eslint-disable jsx-a11y/no-static-element-interactions */
-      return (0,external_React_.createElement)("div", {
-        onFocus: this.cancelBlurCheck,
-        onMouseDown: this.normalizeButtonFocus,
-        onMouseUp: this.normalizeButtonFocus,
-        onTouchStart: this.normalizeButtonFocus,
-        onTouchEnd: this.normalizeButtonFocus,
-        onBlur: this.queueBlurCheck
-      }, (0,external_React_.createElement)(WrappedComponent, {
-        ref: this.bindNode,
-        ...this.props
-      }));
-      /* eslint-enable jsx-a11y/no-static-element-interactions */
-    }
-  };
-}, 'withFocusOutside'));
-//# sourceMappingURL=with-focus-outside.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-container/click-outside.js
-/**
- * WordPress dependencies
- */
-
-
-
-/**
- * Internal dependencies
- */
-
-const ClickOutsideWrapper = with_focus_outside(
-// @ts-ignore
-class extends external_wp_element_namespaceObject.Component {
-  handleFocus(ev) {
-    this.props.onFocus();
-  }
-
-  // Clicks in the media modal or popup components are considered in the editor
-  isInspectorElement(element) {
-    // Inside a colour picker popover
-    if (element.closest('.components-color-picker')) {
-      return true;
-    }
-
-    // Inside the inspector
-    if (element.closest('.block-editor-block-inspector') || element.closest('.iso-inspector')) {
-      return true;
-    }
-
-    // In the media modal
-    if (element.classList.contains('media-modal')) {
-      return true;
-    }
-    return false;
-  }
-  handleFocusOutside(ev) {
-    const target = ev.relatedTarget || ev.target;
-    if (target && this.isInspectorElement(target)) {
-      return;
-    }
-    this.props.onOutside();
-  }
-  render() {
-    return this.props.children;
-  }
-});
-/* harmony default export */ const click_outside = (ClickOutsideWrapper);
-//# sourceMappingURL=click-outside.js.map
-;// ./node_modules/is-promise/index.mjs
-function isPromise(obj) {
-  return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
-}
-
 ;// external ["wp","blocks"]
 const external_wp_blocks_namespaceObject = window["wp"]["blocks"];
-;// external ["wp","keycodes"]
-const external_wp_keycodes_namespaceObject = window["wp"]["keycodes"];
-;// external ["wp","primitives"]
-const external_wp_primitives_namespaceObject = window["wp"]["primitives"];
-;// ./node_modules/@wordpress/interface/node_modules/@wordpress/icons/build-module/library/check.js
-
-/**
- * WordPress dependencies
- */
-
-const check = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M16.7 7.1l-6.3 8.5-3.3-2.5-.9 1.2 4.5 3.4L17.9 8z"
-}));
-/* harmony default export */ const library_check = (check);
-//# sourceMappingURL=check.js.map
-;// ./node_modules/@wordpress/interface/node_modules/@wordpress/icons/build-module/library/star-filled.js
-
-/**
- * WordPress dependencies
- */
-
-const starFilled = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M11.776 4.454a.25.25 0 01.448 0l2.069 4.192a.25.25 0 00.188.137l4.626.672a.25.25 0 01.139.426l-3.348 3.263a.25.25 0 00-.072.222l.79 4.607a.25.25 0 01-.362.263l-4.138-2.175a.25.25 0 00-.232 0l-4.138 2.175a.25.25 0 01-.363-.263l.79-4.607a.25.25 0 00-.071-.222L4.754 9.881a.25.25 0 01.139-.426l4.626-.672a.25.25 0 00.188-.137l2.069-4.192z"
-}));
-/* harmony default export */ const star_filled = (starFilled);
-//# sourceMappingURL=star-filled.js.map
-;// ./node_modules/@wordpress/interface/node_modules/@wordpress/icons/build-module/library/star-empty.js
-
-/**
- * WordPress dependencies
- */
-
-const starEmpty = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  fillRule: "evenodd",
-  d: "M9.706 8.646a.25.25 0 01-.188.137l-4.626.672a.25.25 0 00-.139.427l3.348 3.262a.25.25 0 01.072.222l-.79 4.607a.25.25 0 00.362.264l4.138-2.176a.25.25 0 01.233 0l4.137 2.175a.25.25 0 00.363-.263l-.79-4.607a.25.25 0 01.072-.222l3.347-3.262a.25.25 0 00-.139-.427l-4.626-.672a.25.25 0 01-.188-.137l-2.069-4.192a.25.25 0 00-.448 0L9.706 8.646zM12 7.39l-.948 1.921a1.75 1.75 0 01-1.317.957l-2.12.308 1.534 1.495c.412.402.6.982.503 1.55l-.362 2.11 1.896-.997a1.75 1.75 0 011.629 0l1.895.997-.362-2.11a1.75 1.75 0 01.504-1.55l1.533-1.495-2.12-.308a1.75 1.75 0 01-1.317-.957L12 7.39z",
-  clipRule: "evenodd"
-}));
-/* harmony default export */ const star_empty = (starEmpty);
-//# sourceMappingURL=star-empty.js.map
-;// external ["wp","viewport"]
-const external_wp_viewport_namespaceObject = window["wp"]["viewport"];
-;// external ["wp","preferences"]
-const external_wp_preferences_namespaceObject = window["wp"]["preferences"];
-;// ./node_modules/@wordpress/interface/node_modules/@wordpress/icons/build-module/library/close-small.js
-
-/**
- * WordPress dependencies
- */
-
-const closeSmall = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M12 13.06l3.712 3.713 1.061-1.06L13.061 12l3.712-3.712-1.06-1.06L12 10.938 8.288 7.227l-1.061 1.06L10.939 12l-3.712 3.712 1.06 1.061L12 13.061z"
-}));
-/* harmony default export */ const close_small = (closeSmall);
-//# sourceMappingURL=close-small.js.map
-;// external ["wp","deprecated"]
-const external_wp_deprecated_namespaceObject = window["wp"]["deprecated"];
-var external_wp_deprecated_default = /*#__PURE__*/__webpack_require__.n(external_wp_deprecated_namespaceObject);
-;// ./node_modules/@wordpress/interface/build-module/store/actions.js
-/**
- * WordPress dependencies
- */
-
-
-
-/**
- * Set a default complementary area.
- *
- * @param {string} scope Complementary area scope.
- * @param {string} area  Area identifier.
- *
- * @return {Object} Action object.
- */
-const setDefaultComplementaryArea = (scope, area) => ({
-  type: 'SET_DEFAULT_COMPLEMENTARY_AREA',
-  scope,
-  area
-});
-
-/**
- * Enable the complementary area.
- *
- * @param {string} scope Complementary area scope.
- * @param {string} area  Area identifier.
- */
-const enableComplementaryArea = (scope, area) => ({
-  registry,
-  dispatch
-}) => {
-  // Return early if there's no area.
-  if (!area) {
-    return;
-  }
-  const isComplementaryAreaVisible = registry.select(external_wp_preferences_namespaceObject.store).get(scope, 'isComplementaryAreaVisible');
-  if (!isComplementaryAreaVisible) {
-    registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, 'isComplementaryAreaVisible', true);
-  }
-  dispatch({
-    type: 'ENABLE_COMPLEMENTARY_AREA',
-    scope,
-    area
-  });
-};
-
-/**
- * Disable the complementary area.
- *
- * @param {string} scope Complementary area scope.
- */
-const disableComplementaryArea = scope => ({
-  registry
-}) => {
-  const isComplementaryAreaVisible = registry.select(external_wp_preferences_namespaceObject.store).get(scope, 'isComplementaryAreaVisible');
-  if (isComplementaryAreaVisible) {
-    registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, 'isComplementaryAreaVisible', false);
-  }
-};
-
-/**
- * Pins an item.
- *
- * @param {string} scope Item scope.
- * @param {string} item  Item identifier.
- *
- * @return {Object} Action object.
- */
-const pinItem = (scope, item) => ({
-  registry
-}) => {
-  // Return early if there's no item.
-  if (!item) {
-    return;
-  }
-  const pinnedItems = registry.select(external_wp_preferences_namespaceObject.store).get(scope, 'pinnedItems');
-
-  // The item is already pinned, there's nothing to do.
-  if (pinnedItems?.[item] === true) {
-    return;
-  }
-  registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, 'pinnedItems', {
-    ...pinnedItems,
-    [item]: true
-  });
-};
-
-/**
- * Unpins an item.
- *
- * @param {string} scope Item scope.
- * @param {string} item  Item identifier.
- */
-const unpinItem = (scope, item) => ({
-  registry
-}) => {
-  // Return early if there's no item.
-  if (!item) {
-    return;
-  }
-  const pinnedItems = registry.select(external_wp_preferences_namespaceObject.store).get(scope, 'pinnedItems');
-  registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, 'pinnedItems', {
-    ...pinnedItems,
-    [item]: false
-  });
-};
-
-/**
- * Returns an action object used in signalling that a feature should be toggled.
- *
- * @param {string} scope       The feature scope (e.g. core/edit-post).
- * @param {string} featureName The feature name.
- */
-function toggleFeature(scope, featureName) {
-  return function ({
-    registry
-  }) {
-    external_wp_deprecated_default()(`dispatch( 'core/interface' ).toggleFeature`, {
-      since: '6.0',
-      alternative: `dispatch( 'core/preferences' ).toggle`
-    });
-    registry.dispatch(external_wp_preferences_namespaceObject.store).toggle(scope, featureName);
-  };
-}
-
-/**
- * Returns an action object used in signalling that a feature should be set to
- * a true or false value
- *
- * @param {string}  scope       The feature scope (e.g. core/edit-post).
- * @param {string}  featureName The feature name.
- * @param {boolean} value       The value to set.
- *
- * @return {Object} Action object.
- */
-function setFeatureValue(scope, featureName, value) {
-  return function ({
-    registry
-  }) {
-    external_wp_deprecated_default()(`dispatch( 'core/interface' ).setFeatureValue`, {
-      since: '6.0',
-      alternative: `dispatch( 'core/preferences' ).set`
-    });
-    registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, featureName, !!value);
-  };
-}
-
-/**
- * Returns an action object used in signalling that defaults should be set for features.
- *
- * @param {string}                  scope    The feature scope (e.g. core/edit-post).
- * @param {Object<string, boolean>} defaults A key/value map of feature names to values.
- *
- * @return {Object} Action object.
- */
-function setFeatureDefaults(scope, defaults) {
-  return function ({
-    registry
-  }) {
-    external_wp_deprecated_default()(`dispatch( 'core/interface' ).setFeatureDefaults`, {
-      since: '6.0',
-      alternative: `dispatch( 'core/preferences' ).setDefaults`
-    });
-    registry.dispatch(external_wp_preferences_namespaceObject.store).setDefaults(scope, defaults);
-  };
-}
-
-/**
- * Returns an action object used in signalling that the user opened a modal.
- *
- * @param {string} name A string that uniquely identifies the modal.
- *
- * @return {Object} Action object.
- */
-function openModal(name) {
-  return {
-    type: 'OPEN_MODAL',
-    name
-  };
-}
-
-/**
- * Returns an action object signalling that the user closed a modal.
- *
- * @return {Object} Action object.
- */
-function closeModal() {
-  return {
-    type: 'CLOSE_MODAL'
-  };
-}
-//# sourceMappingURL=actions.js.map
-;// ./node_modules/@wordpress/interface/build-module/store/selectors.js
-/**
- * WordPress dependencies
- */
-
-
-
-
-/**
- * Returns the complementary area that is active in a given scope.
- *
- * @param {Object} state Global application state.
- * @param {string} scope Item scope.
- *
- * @return {string | null | undefined} The complementary area that is active in the given scope.
- */
-const getActiveComplementaryArea = (0,external_wp_data_namespaceObject.createRegistrySelector)(select => (state, scope) => {
-  const isComplementaryAreaVisible = select(external_wp_preferences_namespaceObject.store).get(scope, 'isComplementaryAreaVisible');
-
-  // Return `undefined` to indicate that the user has never toggled
-  // visibility, this is the vanilla default. Other code relies on this
-  // nuance in the return value.
-  if (isComplementaryAreaVisible === undefined) {
-    return undefined;
-  }
-
-  // Return `null` to indicate the user hid the complementary area.
-  if (isComplementaryAreaVisible === false) {
-    return null;
-  }
-  return state?.complementaryAreas?.[scope];
-});
-const isComplementaryAreaLoading = (0,external_wp_data_namespaceObject.createRegistrySelector)(select => (state, scope) => {
-  const isVisible = select(external_wp_preferences_namespaceObject.store).get(scope, 'isComplementaryAreaVisible');
-  const identifier = state?.complementaryAreas?.[scope];
-  return isVisible && identifier === undefined;
-});
-
-/**
- * Returns a boolean indicating if an item is pinned or not.
- *
- * @param {Object} state Global application state.
- * @param {string} scope Scope.
- * @param {string} item  Item to check.
- *
- * @return {boolean} True if the item is pinned and false otherwise.
- */
-const isItemPinned = (0,external_wp_data_namespaceObject.createRegistrySelector)(select => (state, scope, item) => {
-  var _pinnedItems$item;
-  const pinnedItems = select(external_wp_preferences_namespaceObject.store).get(scope, 'pinnedItems');
-  return (_pinnedItems$item = pinnedItems?.[item]) !== null && _pinnedItems$item !== void 0 ? _pinnedItems$item : true;
-});
-
-/**
- * Returns a boolean indicating whether a feature is active for a particular
- * scope.
- *
- * @param {Object} state       The store state.
- * @param {string} scope       The scope of the feature (e.g. core/edit-post).
- * @param {string} featureName The name of the feature.
- *
- * @return {boolean} Is the feature enabled?
- */
-const isFeatureActive = (0,external_wp_data_namespaceObject.createRegistrySelector)(select => (state, scope, featureName) => {
-  external_wp_deprecated_default()(`select( 'core/interface' ).isFeatureActive( scope, featureName )`, {
-    since: '6.0',
-    alternative: `select( 'core/preferences' ).get( scope, featureName )`
-  });
-  return !!select(external_wp_preferences_namespaceObject.store).get(scope, featureName);
-});
-
-/**
- * Returns true if a modal is active, or false otherwise.
- *
- * @param {Object} state     Global application state.
- * @param {string} modalName A string that uniquely identifies the modal.
- *
- * @return {boolean} Whether the modal is active.
- */
-function isModalActive(state, modalName) {
-  return state.activeModal === modalName;
-}
-//# sourceMappingURL=selectors.js.map
-;// ./node_modules/@wordpress/interface/build-module/store/reducer.js
-/**
- * WordPress dependencies
- */
-
-function complementaryAreas(state = {}, action) {
-  switch (action.type) {
-    case 'SET_DEFAULT_COMPLEMENTARY_AREA':
-      {
-        const {
-          scope,
-          area
-        } = action;
-
-        // If there's already an area, don't overwrite it.
-        if (state[scope]) {
-          return state;
-        }
-        return {
-          ...state,
-          [scope]: area
-        };
-      }
-    case 'ENABLE_COMPLEMENTARY_AREA':
-      {
-        const {
-          scope,
-          area
-        } = action;
-        return {
-          ...state,
-          [scope]: area
-        };
-      }
-  }
-  return state;
-}
-
-/**
- * Reducer for storing the name of the open modal, or null if no modal is open.
- *
- * @param {Object} state  Previous state.
- * @param {Object} action Action object containing the `name` of the modal
- *
- * @return {Object} Updated state
- */
-function activeModal(state = null, action) {
-  switch (action.type) {
-    case 'OPEN_MODAL':
-      return action.name;
-    case 'CLOSE_MODAL':
-      return null;
-  }
-  return state;
-}
-/* harmony default export */ const reducer = ((0,external_wp_data_namespaceObject.combineReducers)({
-  complementaryAreas,
-  activeModal
-}));
-//# sourceMappingURL=reducer.js.map
-;// ./node_modules/@wordpress/interface/build-module/store/constants.js
-/**
- * The identifier for the data store.
- *
- * @type {string}
- */
-const STORE_NAME = 'core/interface';
-//# sourceMappingURL=constants.js.map
-;// ./node_modules/@wordpress/interface/build-module/store/index.js
-/**
- * WordPress dependencies
- */
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-/**
- * Store definition for the interface namespace.
- *
- * @see https://github.com/WordPress/gutenberg/blob/HEAD/packages/data/README.md#createReduxStore
- *
- * @type {Object}
- */
-const store = (0,external_wp_data_namespaceObject.createReduxStore)(STORE_NAME, {
-  reducer: reducer,
-  actions: actions_namespaceObject,
-  selectors: selectors_namespaceObject
-});
-
-// Once we build a more generic persistence plugin that works across types of stores
-// we'd be able to replace this with a register call.
-(0,external_wp_data_namespaceObject.register)(store);
-//# sourceMappingURL=index.js.map
-;// external ["wp","plugins"]
-const external_wp_plugins_namespaceObject = window["wp"]["plugins"];
-;// ./node_modules/@wordpress/interface/build-module/components/complementary-area-context/index.js
-/**
- * WordPress dependencies
- */
-
-/* harmony default export */ const complementary_area_context = ((0,external_wp_plugins_namespaceObject.withPluginContext)((context, ownProps) => {
-  return {
-    icon: ownProps.icon || context.icon,
-    identifier: ownProps.identifier || `${context.name}/${ownProps.name}`
-  };
-}));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/complementary-area-toggle/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-/**
- * Internal dependencies
- */
-
-
-function ComplementaryAreaToggle({
-  as = external_wp_components_namespaceObject.Button,
-  scope,
-  identifier,
-  icon,
-  selectedIcon,
-  name,
-  ...props
-}) {
-  const ComponentToUse = as;
-  const isSelected = (0,external_wp_data_namespaceObject.useSelect)(select => select(store).getActiveComplementaryArea(scope) === identifier, [identifier, scope]);
-  const {
-    enableComplementaryArea,
-    disableComplementaryArea
-  } = (0,external_wp_data_namespaceObject.useDispatch)(store);
-  return (0,external_React_.createElement)(ComponentToUse, {
-    icon: selectedIcon && isSelected ? selectedIcon : icon,
-    "aria-controls": identifier.replace('/', ':'),
-    onClick: () => {
-      if (isSelected) {
-        disableComplementaryArea(scope);
-      } else {
-        enableComplementaryArea(scope, identifier);
-      }
-    },
-    ...props
-  });
-}
-/* harmony default export */ const complementary_area_toggle = (complementary_area_context(ComplementaryAreaToggle));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/complementary-area-header/index.js
-
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-/**
- * Internal dependencies
- */
-
-const ComplementaryAreaHeader = ({
-  smallScreenTitle,
-  children,
-  className,
-  toggleButtonProps
-}) => {
-  const toggleButton = (0,external_React_.createElement)(complementary_area_toggle, {
-    icon: close_small,
-    ...toggleButtonProps
-  });
-  return (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)("div", {
-    className: "components-panel__header interface-complementary-area-header__small"
-  }, smallScreenTitle && (0,external_React_.createElement)("h2", {
-    className: "interface-complementary-area-header__small-title"
-  }, smallScreenTitle), toggleButton), (0,external_React_.createElement)("div", {
-    className: classnames_default()('components-panel__header', 'interface-complementary-area-header', className),
-    tabIndex: -1
-  }, children, toggleButton));
-};
-/* harmony default export */ const complementary_area_header = (ComplementaryAreaHeader);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/action-item/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-const action_item_noop = () => {};
-function ActionItemSlot({
-  name,
-  as: Component = external_wp_components_namespaceObject.ButtonGroup,
-  fillProps = {},
-  bubblesVirtually,
-  ...props
-}) {
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Slot, {
-    name: name,
-    bubblesVirtually: bubblesVirtually,
-    fillProps: fillProps
-  }, fills => {
-    if (!external_wp_element_namespaceObject.Children.toArray(fills).length) {
-      return null;
-    }
-
-    // Special handling exists for backward compatibility.
-    // It ensures that menu items created by plugin authors aren't
-    // duplicated with automatically injected menu items coming
-    // from pinnable plugin sidebars.
-    // @see https://github.com/WordPress/gutenberg/issues/14457
-    const initializedByPlugins = [];
-    external_wp_element_namespaceObject.Children.forEach(fills, ({
-      props: {
-        __unstableExplicitMenuItem,
-        __unstableTarget
-      }
-    }) => {
-      if (__unstableTarget && __unstableExplicitMenuItem) {
-        initializedByPlugins.push(__unstableTarget);
-      }
-    });
-    const children = external_wp_element_namespaceObject.Children.map(fills, child => {
-      if (!child.props.__unstableExplicitMenuItem && initializedByPlugins.includes(child.props.__unstableTarget)) {
-        return null;
-      }
-      return child;
-    });
-    return (0,external_React_.createElement)(Component, {
-      ...props
-    }, children);
-  });
-}
-function ActionItem({
-  name,
-  as: Component = external_wp_components_namespaceObject.Button,
-  onClick,
-  ...props
-}) {
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Fill, {
-    name: name
-  }, ({
-    onClick: fpOnClick
-  }) => {
-    return (0,external_React_.createElement)(Component, {
-      onClick: onClick || fpOnClick ? (...args) => {
-        (onClick || action_item_noop)(...args);
-        (fpOnClick || action_item_noop)(...args);
-      } : undefined,
-      ...props
-    });
-  });
-}
-ActionItem.Slot = ActionItemSlot;
-/* harmony default export */ const action_item = (ActionItem);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/complementary-area-more-menu-item/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-/**
- * Internal dependencies
- */
-
-
-const PluginsMenuItem = ({
-  // Menu item is marked with unstable prop for backward compatibility.
-  // They are removed so they don't leak to DOM elements.
-  // @see https://github.com/WordPress/gutenberg/issues/14457
-  __unstableExplicitMenuItem,
-  __unstableTarget,
-  ...restProps
-}) => (0,external_React_.createElement)(external_wp_components_namespaceObject.MenuItem, {
-  ...restProps
-});
-function ComplementaryAreaMoreMenuItem({
-  scope,
-  target,
-  __unstableExplicitMenuItem,
-  ...props
-}) {
-  return (0,external_React_.createElement)(complementary_area_toggle, {
-    as: toggleProps => {
-      return (0,external_React_.createElement)(action_item, {
-        __unstableExplicitMenuItem: __unstableExplicitMenuItem,
-        __unstableTarget: `${scope}/${target}`,
-        as: PluginsMenuItem,
-        name: `${scope}/plugin-more-menu`,
-        ...toggleProps
-      });
-    },
-    role: "menuitemcheckbox",
-    selectedIcon: library_check,
-    name: target,
-    scope: scope,
-    ...props
-  });
-}
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/pinned-items/index.js
-
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-function PinnedItems({
-  scope,
-  ...props
-}) {
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Fill, {
-    name: `PinnedItems/${scope}`,
-    ...props
-  });
-}
-function PinnedItemsSlot({
-  scope,
-  className,
-  ...props
-}) {
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Slot, {
-    name: `PinnedItems/${scope}`,
-    ...props
-  }, fills => fills?.length > 0 && (0,external_React_.createElement)("div", {
-    className: classnames_default()(className, 'interface-pinned-items')
-  }, fills));
-}
-PinnedItems.Slot = PinnedItemsSlot;
-/* harmony default export */ const pinned_items = (PinnedItems);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/complementary-area/index.js
-
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-
-function ComplementaryAreaSlot({
-  scope,
-  ...props
-}) {
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Slot, {
-    name: `ComplementaryArea/${scope}`,
-    ...props
-  });
-}
-function ComplementaryAreaFill({
-  scope,
-  children,
-  className,
-  id
-}) {
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Fill, {
-    name: `ComplementaryArea/${scope}`
-  }, (0,external_React_.createElement)("div", {
-    id: id,
-    className: className
-  }, children));
-}
-function useAdjustComplementaryListener(scope, identifier, activeArea, isActive, isSmall) {
-  const previousIsSmall = (0,external_wp_element_namespaceObject.useRef)(false);
-  const shouldOpenWhenNotSmall = (0,external_wp_element_namespaceObject.useRef)(false);
-  const {
-    enableComplementaryArea,
-    disableComplementaryArea
-  } = (0,external_wp_data_namespaceObject.useDispatch)(store);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    // If the complementary area is active and the editor is switching from
-    // a big to a small window size.
-    if (isActive && isSmall && !previousIsSmall.current) {
-      disableComplementaryArea(scope);
-      // Flag the complementary area to be reopened when the window size
-      // goes from small to big.
-      shouldOpenWhenNotSmall.current = true;
-    } else if (
-    // If there is a flag indicating the complementary area should be
-    // enabled when we go from small to big window size and we are going
-    // from a small to big window size.
-    shouldOpenWhenNotSmall.current && !isSmall && previousIsSmall.current) {
-      // Remove the flag indicating the complementary area should be
-      // enabled.
-      shouldOpenWhenNotSmall.current = false;
-      enableComplementaryArea(scope, identifier);
-    } else if (
-    // If the flag is indicating the current complementary should be
-    // reopened but another complementary area becomes active, remove
-    // the flag.
-    shouldOpenWhenNotSmall.current && activeArea && activeArea !== identifier) {
-      shouldOpenWhenNotSmall.current = false;
-    }
-    if (isSmall !== previousIsSmall.current) {
-      previousIsSmall.current = isSmall;
-    }
-  }, [isActive, isSmall, scope, identifier, activeArea, disableComplementaryArea, enableComplementaryArea]);
-}
-function ComplementaryArea({
-  children,
-  className,
-  closeLabel = (0,external_wp_i18n_namespaceObject.__)('Close plugin'),
-  identifier,
-  header,
-  headerClassName,
-  icon,
-  isPinnable = true,
-  panelClassName,
-  scope,
-  name,
-  smallScreenTitle,
-  title,
-  toggleShortcut,
-  isActiveByDefault
-}) {
-  const {
-    isLoading,
-    isActive,
-    isPinned,
-    activeArea,
-    isSmall,
-    isLarge,
-    showIconLabels
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    const {
-      getActiveComplementaryArea,
-      isComplementaryAreaLoading,
-      isItemPinned
-    } = select(store);
-    const {
-      get
-    } = select(external_wp_preferences_namespaceObject.store);
-    const _activeArea = getActiveComplementaryArea(scope);
-    return {
-      isLoading: isComplementaryAreaLoading(scope),
-      isActive: _activeArea === identifier,
-      isPinned: isItemPinned(scope, identifier),
-      activeArea: _activeArea,
-      isSmall: select(external_wp_viewport_namespaceObject.store).isViewportMatch('< medium'),
-      isLarge: select(external_wp_viewport_namespaceObject.store).isViewportMatch('large'),
-      showIconLabels: get('core', 'showIconLabels')
-    };
-  }, [identifier, scope]);
-  useAdjustComplementaryListener(scope, identifier, activeArea, isActive, isSmall);
-  const {
-    enableComplementaryArea,
-    disableComplementaryArea,
-    pinItem,
-    unpinItem
-  } = (0,external_wp_data_namespaceObject.useDispatch)(store);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    // Set initial visibility: For large screens, enable if it's active by
-    // default. For small screens, always initially disable.
-    if (isActiveByDefault && activeArea === undefined && !isSmall) {
-      enableComplementaryArea(scope, identifier);
-    } else if (activeArea === undefined && isSmall) {
-      disableComplementaryArea(scope, identifier);
-    }
-  }, [activeArea, isActiveByDefault, scope, identifier, isSmall, enableComplementaryArea, disableComplementaryArea]);
-  return (0,external_React_.createElement)(external_React_.Fragment, null, isPinnable && (0,external_React_.createElement)(pinned_items, {
-    scope: scope
-  }, isPinned && (0,external_React_.createElement)(complementary_area_toggle, {
-    scope: scope,
-    identifier: identifier,
-    isPressed: isActive && (!showIconLabels || isLarge),
-    "aria-expanded": isActive,
-    "aria-disabled": isLoading,
-    label: title,
-    icon: showIconLabels ? library_check : icon,
-    showTooltip: !showIconLabels,
-    variant: showIconLabels ? 'tertiary' : undefined,
-    size: "compact"
-  })), name && isPinnable && (0,external_React_.createElement)(ComplementaryAreaMoreMenuItem, {
-    target: name,
-    scope: scope,
-    icon: icon
-  }, title), isActive && (0,external_React_.createElement)(ComplementaryAreaFill, {
-    className: classnames_default()('interface-complementary-area', className),
-    scope: scope,
-    id: identifier.replace('/', ':')
-  }, (0,external_React_.createElement)(complementary_area_header, {
-    className: headerClassName,
-    closeLabel: closeLabel,
-    onClose: () => disableComplementaryArea(scope),
-    smallScreenTitle: smallScreenTitle,
-    toggleButtonProps: {
-      label: closeLabel,
-      shortcut: toggleShortcut,
-      scope,
-      identifier
-    }
-  }, header || (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)("h2", {
-    className: "interface-complementary-area-header__title"
-  }, title), isPinnable && (0,external_React_.createElement)(external_wp_components_namespaceObject.Button, {
-    className: "interface-complementary-area__pin-unpin-item",
-    icon: isPinned ? star_filled : star_empty,
-    label: isPinned ? (0,external_wp_i18n_namespaceObject.__)('Unpin from toolbar') : (0,external_wp_i18n_namespaceObject.__)('Pin to toolbar'),
-    onClick: () => (isPinned ? unpinItem : pinItem)(scope, identifier),
-    isPressed: isPinned,
-    "aria-expanded": isPinned
-  }))), (0,external_React_.createElement)(external_wp_components_namespaceObject.Panel, {
-    className: panelClassName
-  }, children)));
-}
-const ComplementaryAreaWrapped = complementary_area_context(ComplementaryArea);
-ComplementaryAreaWrapped.Slot = ComplementaryAreaSlot;
-/* harmony default export */ const complementary_area = (ComplementaryAreaWrapped);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/fullscreen-mode/index.js
-/**
- * WordPress dependencies
- */
-
-const FullscreenMode = ({
-  isActive
-}) => {
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    let isSticky = false;
-    // `is-fullscreen-mode` is set in PHP as a body class by Gutenberg, and this causes
-    // `sticky-menu` to be applied by WordPress and prevents the admin menu being scrolled
-    // even if `is-fullscreen-mode` is then removed. Let's remove `sticky-menu` here as
-    // a consequence of the FullscreenMode setup.
-    if (document.body.classList.contains('sticky-menu')) {
-      isSticky = true;
-      document.body.classList.remove('sticky-menu');
-    }
-    return () => {
-      if (isSticky) {
-        document.body.classList.add('sticky-menu');
-      }
-    };
-  }, []);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    if (isActive) {
-      document.body.classList.add('is-fullscreen-mode');
-    } else {
-      document.body.classList.remove('is-fullscreen-mode');
-    }
-    return () => {
-      if (isActive) {
-        document.body.classList.remove('is-fullscreen-mode');
-      }
-    };
-  }, [isActive]);
-  return null;
-};
-/* harmony default export */ const fullscreen_mode = (FullscreenMode);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/navigable-region/index.js
-
-/**
- * External dependencies
- */
-
-function NavigableRegion({
-  children,
-  className,
-  ariaLabel,
-  as: Tag = 'div',
-  ...props
-}) {
-  return (0,external_React_.createElement)(Tag, {
-    className: classnames_default()('interface-navigable-region', className),
-    "aria-label": ariaLabel,
-    role: "region",
-    tabIndex: "-1",
-    ...props
-  }, children);
-}
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/interface-skeleton/index.js
-
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-function useHTMLClass(className) {
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    const element = document && document.querySelector(`html:not(.${className})`);
-    if (!element) {
-      return;
-    }
-    element.classList.toggle(className);
-    return () => {
-      element.classList.toggle(className);
-    };
-  }, [className]);
-}
-const headerVariants = {
-  hidden: {
-    opacity: 0
-  },
-  hover: {
-    opacity: 1,
-    transition: {
-      type: 'tween',
-      delay: 0.2,
-      delayChildren: 0.2
-    }
-  },
-  distractionFreeInactive: {
-    opacity: 1,
-    transition: {
-      delay: 0
-    }
-  }
-};
-function InterfaceSkeleton({
-  isDistractionFree,
-  footer,
-  header,
-  editorNotices,
-  sidebar,
-  secondarySidebar,
-  notices,
-  content,
-  actions,
-  labels,
-  className,
-  enableRegionNavigation = true,
-  // Todo: does this need to be a prop.
-  // Can we use a dependency to keyboard-shortcuts directly?
-  shortcuts
-}, ref) {
-  const navigateRegionsProps = (0,external_wp_components_namespaceObject.__unstableUseNavigateRegions)(shortcuts);
-  useHTMLClass('interface-interface-skeleton__html-container');
-  const defaultLabels = {
-    /* translators: accessibility text for the top bar landmark region. */
-    header: (0,external_wp_i18n_namespaceObject._x)('Header', 'header landmark area'),
-    /* translators: accessibility text for the content landmark region. */
-    body: (0,external_wp_i18n_namespaceObject.__)('Content'),
-    /* translators: accessibility text for the secondary sidebar landmark region. */
-    secondarySidebar: (0,external_wp_i18n_namespaceObject.__)('Block Library'),
-    /* translators: accessibility text for the settings landmark region. */
-    sidebar: (0,external_wp_i18n_namespaceObject.__)('Settings'),
-    /* translators: accessibility text for the publish landmark region. */
-    actions: (0,external_wp_i18n_namespaceObject.__)('Publish'),
-    /* translators: accessibility text for the footer landmark region. */
-    footer: (0,external_wp_i18n_namespaceObject.__)('Footer')
-  };
-  const mergedLabels = {
-    ...defaultLabels,
-    ...labels
-  };
-  return (0,external_React_.createElement)("div", {
-    ...(enableRegionNavigation ? navigateRegionsProps : {}),
-    ref: (0,external_wp_compose_namespaceObject.useMergeRefs)([ref, enableRegionNavigation ? navigateRegionsProps.ref : undefined]),
-    className: classnames_default()(className, 'interface-interface-skeleton', navigateRegionsProps.className, !!footer && 'has-footer')
-  }, (0,external_React_.createElement)("div", {
-    className: "interface-interface-skeleton__editor"
-  }, !!header && (0,external_React_.createElement)(NavigableRegion, {
-    as: external_wp_components_namespaceObject.__unstableMotion.div,
-    className: "interface-interface-skeleton__header",
-    "aria-label": mergedLabels.header,
-    initial: isDistractionFree ? 'hidden' : 'distractionFreeInactive',
-    whileHover: isDistractionFree ? 'hover' : 'distractionFreeInactive',
-    animate: isDistractionFree ? 'hidden' : 'distractionFreeInactive',
-    variants: headerVariants,
-    transition: isDistractionFree ? {
-      type: 'tween',
-      delay: 0.8
-    } : undefined
-  }, header), isDistractionFree && (0,external_React_.createElement)("div", {
-    className: "interface-interface-skeleton__header"
-  }, editorNotices), (0,external_React_.createElement)("div", {
-    className: "interface-interface-skeleton__body"
-  }, !!secondarySidebar && (0,external_React_.createElement)(NavigableRegion, {
-    className: "interface-interface-skeleton__secondary-sidebar",
-    ariaLabel: mergedLabels.secondarySidebar
-  }, secondarySidebar), !!notices && (0,external_React_.createElement)("div", {
-    className: "interface-interface-skeleton__notices"
-  }, notices), (0,external_React_.createElement)(NavigableRegion, {
-    className: "interface-interface-skeleton__content",
-    ariaLabel: mergedLabels.body
-  }, content), !!sidebar && (0,external_React_.createElement)(NavigableRegion, {
-    className: "interface-interface-skeleton__sidebar",
-    ariaLabel: mergedLabels.sidebar
-  }, sidebar), !!actions && (0,external_React_.createElement)(NavigableRegion, {
-    className: "interface-interface-skeleton__actions",
-    ariaLabel: mergedLabels.actions
-  }, actions))), !!footer && (0,external_React_.createElement)(NavigableRegion, {
-    className: "interface-interface-skeleton__footer",
-    ariaLabel: mergedLabels.footer
-  }, footer));
-}
-/* harmony default export */ const interface_skeleton = ((0,external_wp_element_namespaceObject.forwardRef)(InterfaceSkeleton));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/components/index.js
-
-
-
-
-
-
-
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@wordpress/interface/build-module/index.js
-
-
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/cog.js
-
-/**
- * WordPress dependencies
- */
-
-const cog = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  fillRule: "evenodd",
-  d: "M10.289 4.836A1 1 0 0111.275 4h1.306a1 1 0 01.987.836l.244 1.466c.787.26 1.503.679 2.108 1.218l1.393-.522a1 1 0 011.216.437l.653 1.13a1 1 0 01-.23 1.273l-1.148.944a6.025 6.025 0 010 2.435l1.149.946a1 1 0 01.23 1.272l-.653 1.13a1 1 0 01-1.216.437l-1.394-.522c-.605.54-1.32.958-2.108 1.218l-.244 1.466a1 1 0 01-.987.836h-1.306a1 1 0 01-.986-.836l-.244-1.466a5.995 5.995 0 01-2.108-1.218l-1.394.522a1 1 0 01-1.217-.436l-.653-1.131a1 1 0 01.23-1.272l1.149-.946a6.026 6.026 0 010-2.435l-1.148-.944a1 1 0 01-.23-1.272l.653-1.131a1 1 0 011.217-.437l1.393.522a5.994 5.994 0 012.108-1.218l.244-1.466zM14.929 12a3 3 0 11-6 0 3 3 0 016 0z",
-  clipRule: "evenodd"
-}));
-/* harmony default export */ const library_cog = (cog);
-//# sourceMappingURL=cog.js.map
-;// external ["wp","privateApis"]
-const external_wp_privateApis_namespaceObject = window["wp"]["privateApis"];
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/unlock.js
-/**
- * WordPress dependencies
- */
-
-const {
-  unlock
-} = (0,external_wp_privateApis_namespaceObject.__dangerousOptInToUnstableAPIsOnlyForCoreModules)('I know using unstable features means my theme or plugin will inevitably break in the next version of WordPress.', '@wordpress/edit-post');
-//# sourceMappingURL=unlock.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/sidebar-heading.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-/**
- * Internal dependencies
- */
-
-const sidebars = {
-  document: 'edit-post/document',
-  block: 'edit-post/block'
-};
-const {
-  Tabs
-} = unlock(external_wp_components_namespaceObject.privateApis);
-const SettingsHeader = ({
-  documentInspector
-}) => {
-  const {
-    documentLabel
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    const hasCustomLabel = documentInspector && typeof documentInspector === 'string';
-    return {
-      // translators: Default label for the Document sidebar tab, not selected.
-      documentLabel: hasCustomLabel ? documentInspector : (0,external_wp_i18n_namespaceObject._x)('Document', 'noun')
-    };
-  }, []);
-
-  /* Use a list so screen readers will announce how many tabs there are. */
-  return (0,external_React_.createElement)(Tabs.TabList, null, !!documentInspector && (0,external_React_.createElement)(Tabs.Tab, {
-    tabId: sidebars.document
-  }, documentLabel), (0,external_React_.createElement)(Tabs.Tab, {
-    tabId: sidebars.block
-  }, (0,external_wp_i18n_namespaceObject.__)('Block')));
-};
-/* harmony default export */ const sidebar_heading = (SettingsHeader);
-//# sourceMappingURL=sidebar-heading.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/document/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-const {
-  Fill,
-  Slot
-} = (0,external_wp_components_namespaceObject.createSlotFill)('PluginDocumentSettingPanel');
-const DocumentSection = ({
-  children
-}) => {
-  return (0,external_React_.createElement)(Fill, null, children);
-};
-DocumentSection.Slot = function (props) {
-  return (0,external_React_.createElement)(Slot, null, fills => fills ? fills : (0,external_React_.createElement)("span", {
-    className: "block-editor-block-inspector__no-blocks"
-  }, (0,external_wp_i18n_namespaceObject.__)('Nothing to display')));
-};
-/* harmony default export */ const components_document = (DocumentSection);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/close-small.js
-
-/**
- * WordPress dependencies
- */
-
-const close_small_closeSmall = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M12 13.06l3.712 3.713 1.061-1.06L13.061 12l3.712-3.712-1.06-1.06L12 10.938 8.288 7.227l-1.061 1.06L10.939 12l-3.712 3.712 1.06 1.061L12 13.061z"
-}));
-/* harmony default export */ const library_close_small = (close_small_closeSmall);
-//# sourceMappingURL=close-small.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/complementary-area/complementary-area-header.js
-
-/**
- * External dependencies
- */
-
-
-
-
-
-/**
- * WordPress dependencies
- */
-
-function complementary_area_header_ComplementaryAreaToggle({
-  as = external_wp_components_namespaceObject.Button,
-  scope,
-  identifier,
-  icon,
-  selectedIcon,
-  name,
-  ...props
-}) {
-  const ComponentToUse = as;
-  const isSelected = (0,external_wp_data_namespaceObject.useSelect)(select =>
-  // @ts-ignore
-  select(store).getActiveComplementaryArea(scope) === identifier, [identifier]);
-  const {
-    enableComplementaryArea,
-    disableComplementaryArea
-  } = (0,external_wp_data_namespaceObject.useDispatch)(store);
-  return (0,external_React_.createElement)(ComponentToUse, {
-    icon: selectedIcon && isSelected ? selectedIcon : icon,
-    onClick: () => {
-      if (isSelected) {
-        disableComplementaryArea(scope);
-      } else {
-        enableComplementaryArea(scope, identifier);
-      }
-    },
-    ...props
-  });
-}
-const complementary_area_header_ComplementaryAreaHeader = ({
-  smallScreenTitle,
-  children,
-  className,
-  toggleButtonProps
-}) => {
-  const toggleButton = (0,external_React_.createElement)(complementary_area_header_ComplementaryAreaToggle, {
-    icon: library_close_small,
-    ...toggleButtonProps
-  });
-  return (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)("div", {
-    className: "components-panel__header interface-complementary-area-header__small"
-  }, smallScreenTitle && (0,external_React_.createElement)("span", {
-    className: "interface-complementary-area-header__small-title"
-  }, smallScreenTitle), toggleButton), (0,external_React_.createElement)("div", {
-    className: classnames_default()('components-panel__header', 'interface-complementary-area-header', className),
-    tabIndex: -1
-  }, children, toggleButton));
-};
-/* harmony default export */ const complementary_area_complementary_area_header = (complementary_area_header_ComplementaryAreaHeader);
-//# sourceMappingURL=complementary-area-header.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/complementary-area/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-function isActiveArea(area) {
-  return ['edit-post/document', 'edit-post/block'].includes(area);
-}
-function complementary_area_ComplementaryAreaFill({
-  scope,
-  children,
-  className
-}) {
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Fill, {
-    name: `ComplementaryArea/${scope}`
-  }, (0,external_React_.createElement)("div", {
-    className: className
-  }, children));
-}
-function complementary_area_ComplementaryArea({
-  className,
-  children,
-  header,
-  headerClassName,
-  toggleShortcut,
-  closeLabel,
-  title,
-  identifier,
-  ...props
-}) {
-  const scope = "isolated/editor";
-  const {
-    postTitle,
-    isActive
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    // @ts-ignore
-    const {
-      getActiveComplementaryArea
-    } = select(store);
-    const _activeArea = getActiveComplementaryArea('isolated/editor');
-    return {
-      postTitle: '',
-      // @ts-ignore
-      showIconLabels: select('isolated/editor').isFeatureActive('showIconLabels'),
-      isActive: isActiveArea(_activeArea)
-    };
-  }, []);
-  if (!isActive) {
-    return null;
-  }
-  return (0,external_React_.createElement)(complementary_area_ComplementaryAreaFill, {
-    className: "interface-complementary-area",
-    scope: "isolated/editor"
-  }, (0,external_React_.createElement)(complementary_area_complementary_area_header, {
-    className: headerClassName,
-    smallScreenTitle: postTitle || (0,external_wp_i18n_namespaceObject.__)('(no title)'),
-    toggleButtonProps: {
-      label: closeLabel,
-      shortcut: toggleShortcut,
-      scope,
-      identifier
-    }
-  }, header), (0,external_React_.createElement)(external_wp_components_namespaceObject.Panel, {
-    className: "edit-post-sidebar"
-  }, children));
-}
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/sidebar.js
-
-// @ts-nocheck
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-
-
-const {
-  Tabs: sidebar_Tabs
-} = unlock(external_wp_components_namespaceObject.privateApis);
-function sidebar_isActiveArea(area) {
-  return [sidebars.document, sidebars.block].includes(area);
-}
-const SettingsSidebarInternal = ({
-  documentInspector,
-  keyboardShortcut,
-  sidebarName
-}) => {
-  // Because of the `ComplementaryArea`, we
-  // need to forward the `Tabs` context so it can be passed through the
-  // underlying slot/fill.
-  const tabsContextValue = (0,external_wp_element_namespaceObject.useContext)(sidebar_Tabs.Context);
-  return (0,external_React_.createElement)(complementary_area_ComplementaryArea, {
-    className: "iso-sidebar",
-    identifier: sidebarName,
-    header: (0,external_React_.createElement)(sidebar_Tabs.Context.Provider, {
-      value: tabsContextValue
-    }, (0,external_React_.createElement)(sidebar_heading, {
-      documentInspector: documentInspector
-    })),
-    closeLabel: (0,external_wp_i18n_namespaceObject.__)('Close settings'),
-    headerClassName: "edit-post-sidebar__panel-tabs"
-    /* translators: button label text should, if possible, be under 16 characters. */,
-    title: (0,external_wp_i18n_namespaceObject.__)('Settings'),
-    toggleShortcut: keyboardShortcut,
-    icon: library_cog,
-    isActiveByDefault: false
-  }, (0,external_React_.createElement)(sidebar_Tabs.Context.Provider, {
-    value: tabsContextValue
-  }, (0,external_React_.createElement)(sidebar_Tabs.TabPanel, {
-    tabId: sidebars.document,
-    focusable: false
-  }, (0,external_React_.createElement)(components_document.Slot, null)), (0,external_React_.createElement)(sidebar_Tabs.TabPanel, {
-    tabId: sidebars.block,
-    focusable: false
-  }, (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.BlockInspector, null))));
-};
-const SettingsSidebar = ({
-  documentInspector
-}) => {
-  const {
-    sidebarName,
-    keyboardShortcut,
-    isSettingsSidebarActive
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    let sidebar = select(store).getActiveComplementaryArea('isolated/editor');
-    let isSettingsSidebar = true;
-    if (!sidebar_isActiveArea(sidebar)) {
-      isSettingsSidebar = false;
-      if (select(external_wp_blockEditor_namespaceObject.store).getBlockSelectionStart()) {
-        sidebar = sidebars.block;
-      }
-      sidebar = sidebars.document;
-    }
-    const shortcut = select(external_wp_keyboardShortcuts_namespaceObject.store).getShortcutRepresentation('core/edit-post/toggle-sidebar');
-    return {
-      sidebarName: sidebar,
-      keyboardShortcut: shortcut,
-      isSettingsSidebarActive: isSettingsSidebar
-    };
-  }, []);
-  const {
-    openGeneralSidebar: onTabSelect
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-  return (0,external_React_.createElement)(sidebar_Tabs
-  // Due to how this component is controlled (via a value from the
-  // `interfaceStore`), when the sidebar closes the currently selected
-  // tab can't be found. This causes the component to continuously reset
-  // the selection to `null` in an infinite loop.Proactively setting
-  // the selected tab to `null` avoids that.
-  , {
-    selectedTabId: isSettingsSidebarActive ? sidebarName : null,
-    onSelect: onTabSelect
-  }, (0,external_React_.createElement)(SettingsSidebarInternal, {
-    documentInspector: documentInspector,
-    keyboardShortcut: keyboardShortcut,
-    sidebarName: sidebarName
-  }));
-};
-/* harmony default export */ const sidebar = (SettingsSidebar);
-//# sourceMappingURL=sidebar.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/editor-heading-slot/index.js
-
-
-const {
-  Fill: editor_heading_slot_Fill,
-  Slot: editor_heading_slot_Slot
-} = (0,external_wp_components_namespaceObject.createSlotFill)('IsolatedEditorHeading');
-const EditorHeading = ({
-  children
-}) => {
-  return (0,external_React_.createElement)(editor_heading_slot_Fill, null, children);
-};
-EditorHeading.Slot = function (props) {
-  return (0,external_React_.createElement)(editor_heading_slot_Slot, null, fills => fills);
-};
-/* harmony default export */ const editor_heading_slot = (EditorHeading);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/footer-slot/index.js
-
-/**
- * WordPress dependencies
- */
-
-const {
-  Fill: footer_slot_Fill,
-  Slot: footer_slot_Slot
-} = (0,external_wp_components_namespaceObject.createSlotFill)('IsolatedFooter');
-const FooterSection = ({
-  children
-}) => {
-  return (0,external_React_.createElement)(footer_slot_Fill, null, children);
-};
-FooterSection.Slot = function (props) {
-  return (0,external_React_.createElement)(footer_slot_Slot, null, fills => fills);
-};
-/* harmony default export */ const footer_slot = (FooterSection);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/visual-editor.js
-
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-// @ts-ignore
-
-// @ts-ignore
-
-
-// @ts-ignore
-const isGutenbergPlugin = true;
-
-/**
- * Internal dependencies
- */
-
-
-
-const {
-  LayoutStyle,
-  useLayoutClasses,
-  useLayoutStyles,
-  ExperimentalBlockCanvas: BlockCanvas
-} = unlock(external_wp_blockEditor_namespaceObject.privateApis);
-
-/**
- * Given an array of nested blocks, find the first Post Content
- * block inside it, recursing through any nesting levels,
- * and return its attributes.
- *
- * @param {Array} blocks A list of blocks.
- *
- * @return {Object | undefined} The Post Content block.
- */
-function getPostContentAttributes(blocks) {
-  for (let i = 0; i < blocks.length; i++) {
-    if (blocks[i].name === 'core/post-content') {
-      return blocks[i].attributes;
-    }
-    if (blocks[i].innerBlocks.length) {
-      const nestedPostContent = getPostContentAttributes(blocks[i].innerBlocks);
-      if (nestedPostContent) {
-        return nestedPostContent;
-      }
-    }
-  }
-}
-function checkForPostContentAtRootLevel(blocks) {
-  for (let i = 0; i < blocks.length; i++) {
-    if (blocks[i].name === 'core/post-content') {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * This is a copy of packages/edit-post/src/components/visual-editor/index.js
- *
- * The original is not exported, and contains code for post titles
- *
- * @param {Object} args
- * @param args.styles
- */
-function VisualEditor({
-  styles
-}) {
-  const {
-    deviceType,
-    isWelcomeGuideVisible,
-    isTemplateMode,
-    postContentAttributes,
-    editedPostTemplate = {},
-    wrapperBlockName,
-    wrapperUniqueId,
-    // @ts-ignore
-    isBlockBasedTheme,
-    // @ts-ignore
-    hasV3BlocksOnly
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    const {
-      isFeatureActive
-    } = select('isolated/editor');
-    const {
-      getCurrentPostId,
-      getCurrentPostType,
-      getEditorSettings
-    } = select(external_wp_editor_namespaceObject.store);
-    const {
-      getBlockTypes
-    } = select(external_wp_blocks_namespaceObject.store);
-    const _isTemplateMode = false;
-    const postTypeSlug = getCurrentPostType();
-    let _wrapperBlockName;
-    if (postTypeSlug === 'wp_block') {
-      _wrapperBlockName = 'core/block';
-    } else if (!_isTemplateMode) {
-      _wrapperBlockName = 'core/post-content';
-    }
-    const editorSettings = getEditorSettings();
-    return {
-      deviceType: 'Desktop',
-      // @ts-ignore
-      isWelcomeGuideVisible: isFeatureActive('welcomeGuide'),
-      isTemplateMode: _isTemplateMode,
-      postContentAttributes: getEditorSettings().postContentAttributes,
-      // Post template fetch returns a 404 on classic themes, which
-      // messes with e2e tests, so check it's a block theme first.
-      editedPostTemplate: undefined,
-      wrapperBlockName: _wrapperBlockName,
-      wrapperUniqueId: getCurrentPostId(),
-      isBlockBasedTheme: editorSettings.__unstableIsBlockBasedTheme,
-      hasV3BlocksOnly: getBlockTypes().every(type => {
-        return type.apiVersion >= 3;
-      })
-    };
-  }, []);
-  // @ts-ignore
-  const {
-    isCleanNewPost
-  } = (0,external_wp_data_namespaceObject.useSelect)(external_wp_editor_namespaceObject.store);
-  const hasMetaBoxes = false;
-  const {
-    themeHasDisabledLayoutStyles,
-    themeSupportsLayout
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    const _settings = select(external_wp_blockEditor_namespaceObject.store).getSettings();
-    return {
-      themeHasDisabledLayoutStyles: _settings.disableLayoutStyles,
-      themeSupportsLayout: _settings.supportsLayout,
-      isFocusMode: _settings.focusMode,
-      hasRootPaddingAwareAlignments: _settings.__experimentalFeatures?.useRootPaddingAwareAlignments
-    };
-  }, []);
-  const desktopCanvasStyles = {
-    height: '100%',
-    width: '100%',
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    display: 'flex',
-    flexFlow: 'column',
-    // Default background color so that grey
-    // .edit-post-editor-regions__content color doesn't show through.
-    background: 'white'
-  };
-  const templateModeStyles = {
-    ...desktopCanvasStyles,
-    borderRadius: '2px 2px 0 0',
-    border: '1px solid #ddd',
-    borderBottom: 0
-  };
-  const resizedCanvasStyles = (0,external_wp_blockEditor_namespaceObject.__experimentalUseResizeCanvas)(deviceType, isTemplateMode);
-  const globalLayoutSettings = (0,external_wp_blockEditor_namespaceObject.useSetting)('layout');
-  const previewMode = 'is-' + deviceType.toLowerCase() + '-preview';
-  let animatedStyles = isTemplateMode ? templateModeStyles : desktopCanvasStyles;
-  if (resizedCanvasStyles) {
-    animatedStyles = resizedCanvasStyles;
-  }
-  let paddingBottom;
-
-  // Add a constant padding for the typewritter effect. When typing at the
-  // bottom, there needs to be room to scroll up.
-  if (!hasMetaBoxes && !resizedCanvasStyles && !isTemplateMode) {
-    paddingBottom = '40vh';
-  }
-  const ref = (0,external_wp_element_namespaceObject.useRef)();
-  const contentRef = (0,external_wp_compose_namespaceObject.useMergeRefs)([ref, (0,external_wp_blockEditor_namespaceObject.__unstableUseTypewriter)()]);
-
-  // fallbackLayout is used if there is no Post Content,
-  // and for Post Title.
-  const fallbackLayout = (0,external_wp_element_namespaceObject.useMemo)(() => {
-    if (isTemplateMode) {
-      return {
-        type: 'default'
-      };
-    }
-    if (themeSupportsLayout) {
-      // We need to ensure support for wide and full alignments,
-      // so we add the constrained type.
-      return {
-        ...globalLayoutSettings,
-        type: 'constrained'
-      };
-    }
-    // Set default layout for classic themes so all alignments are supported.
-    return {
-      type: 'default'
-    };
-  }, [isTemplateMode, themeSupportsLayout, globalLayoutSettings]);
-  const newestPostContentAttributes = (0,external_wp_element_namespaceObject.useMemo)(() => {
-    // @ts-ignore
-    if (!editedPostTemplate?.content && !editedPostTemplate?.blocks) {
-      return postContentAttributes;
-    }
-    // When in template editing mode, we can access the blocks directly.
-    // @ts-ignore
-    if (editedPostTemplate?.blocks) {
-      // @ts-ignore
-      return getPostContentAttributes(editedPostTemplate?.blocks);
-    }
-    // If there are no blocks, we have to parse the content string.
-    // Best double-check it's a string otherwise the parse function gets unhappy.
-    // @ts-ignore
-    const parseableContent =
-    // @ts-ignore
-    typeof editedPostTemplate?.content === 'string'
-    // @ts-ignore
-    ? editedPostTemplate?.content : '';
-
-    // @ts-ignore
-    return getPostContentAttributes((0,external_wp_blocks_namespaceObject.parse)(parseableContent)) || {};
-  }, [
-  // @ts-ignore
-  editedPostTemplate?.content,
-  // @ts-ignore
-  editedPostTemplate?.blocks, postContentAttributes]);
-  const hasPostContentAtRootLevel = (0,external_wp_element_namespaceObject.useMemo)(() => {
-    // @ts-ignore
-    if (!editedPostTemplate?.content && !editedPostTemplate?.blocks) {
-      return false;
-    }
-    // When in template editing mode, we can access the blocks directly.
-    // @ts-ignore
-    if (editedPostTemplate?.blocks) {
-      // @ts-ignore
-      return checkForPostContentAtRootLevel(editedPostTemplate?.blocks);
-    }
-    // If there are no blocks, we have to parse the content string.
-    // Best double-check it's a string otherwise the parse function gets unhappy.
-    const parseableContent =
-    // @ts-ignore
-    typeof editedPostTemplate?.content === 'string'
-    // @ts-ignore
-    ? editedPostTemplate?.content : '';
-    return checkForPostContentAtRootLevel((0,external_wp_blocks_namespaceObject.parse)(parseableContent)) || false;
-    // @ts-ignore
-  }, [editedPostTemplate?.content, editedPostTemplate?.blocks]);
-  const {
-    layout = {},
-    align = ''
-  } = newestPostContentAttributes || {};
-  const postContentLayoutClasses = useLayoutClasses(newestPostContentAttributes, 'core/post-content');
-  const blockListLayoutClass = classnames_default()({
-    'is-layout-flow': !themeSupportsLayout
-  }, themeSupportsLayout && postContentLayoutClasses, align && `align${align}`);
-  const postContentLayoutStyles = useLayoutStyles(newestPostContentAttributes, 'core/post-content', '.block-editor-block-list__layout.is-root-container');
-
-  // Update type for blocks using legacy layouts.
-  const postContentLayout = (0,external_wp_element_namespaceObject.useMemo)(() => {
-    return layout && (layout?.type === 'constrained' || layout?.inherit || layout?.contentSize || layout?.wideSize) ? {
-      ...globalLayoutSettings,
-      ...layout,
-      type: 'constrained'
-    } : {
-      ...globalLayoutSettings,
-      ...layout,
-      type: 'default'
-    };
-  }, [layout?.type, layout?.inherit, layout?.contentSize, layout?.wideSize, globalLayoutSettings]);
-
-  // If there is a Post Content block we use its layout for the block list;
-  // if not, this must be a classic theme, in which case we use the fallback layout.
-  const blockListLayout = postContentAttributes ? postContentLayout : fallbackLayout;
-  const postEditorLayout = blockListLayout?.type === 'default' && !hasPostContentAtRootLevel ? fallbackLayout : blockListLayout;
-  const titleRef = (0,external_wp_element_namespaceObject.useRef)();
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    if (isWelcomeGuideVisible || !isCleanNewPost()) {
-      return;
-    }
-    // @ts-ignore
-    titleRef?.current?.focus();
-  }, [isWelcomeGuideVisible, isCleanNewPost]);
-  styles = (0,external_wp_element_namespaceObject.useMemo)(() => [...styles, {
-    // We should move this in to future to the body.
-    css: `.edit-post-visual-editor__post-title-wrapper{margin-top:4rem}` + (paddingBottom ? `body{padding-bottom:${paddingBottom}}` : '')
-  }], [styles]);
-
-  // Add some styles for alignwide/alignfull Post Content and its children.
-  const alignCSS = `.is-root-container.alignwide { max-width: var(--wp--style--global--wide-size); margin-left: auto; margin-right: auto;}
-		.is-root-container.alignwide:where(.is-layout-flow) > :not(.alignleft):not(.alignright) { max-width: var(--wp--style--global--wide-size);}
-		.is-root-container.alignfull { max-width: none; margin-left: auto; margin-right: auto;}
-		.is-root-container.alignfull:where(.is-layout-flow) > :not(.alignleft):not(.alignright) { max-width: none;}`;
-
-  // TODO: Styles not appearing in the iframe mode yet
-  // const isToBeIframed =
-  // 	( ( hasV3BlocksOnly || ( isGutenbergPlugin && isBlockBasedTheme ) ) &&
-  // 		! hasMetaBoxes ) ||
-  // 	isTemplateMode ||
-  // 	deviceType === 'Tablet' ||
-  // 	deviceType === 'Mobile';
-  const isToBeIframed = false;
-  return (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.BlockTools, {
-    __unstableContentRef: ref,
-    className: classnames_default()('edit-post-visual-editor', {
-      'is-template-mode': isTemplateMode,
-      'has-inline-canvas': !isToBeIframed
-    })
-  }, (0,external_React_.createElement)(external_wp_components_namespaceObject.__unstableMotion.div, {
-    className: "edit-post-visual-editor__content-area",
-    animate: {
-      padding: isTemplateMode ? '48px 48px 0' : 0
-    }
-  }, (0,external_React_.createElement)(external_wp_components_namespaceObject.__unstableMotion.div, {
-    animate: animatedStyles,
-    initial: desktopCanvasStyles,
-    className: previewMode
-  }, (0,external_React_.createElement)(BlockCanvas, {
-    shouldIframe: isToBeIframed,
-    contentRef: contentRef,
-    styles: styles,
-    height: "100%"
-  }, themeSupportsLayout && !themeHasDisabledLayoutStyles && !isTemplateMode && (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)(LayoutStyle, {
-    selector: ".edit-post-visual-editor__post-title-wrapper",
-    layout: fallbackLayout
-  }), (0,external_React_.createElement)(LayoutStyle, {
-    selector: ".block-editor-block-list__layout.is-root-container",
-    layout: postEditorLayout
-  }), align && (0,external_React_.createElement)(LayoutStyle, {
-    css: alignCSS
-  }), postContentLayoutStyles && (0,external_React_.createElement)(LayoutStyle, {
-    layout: postContentLayout,
-    css: postContentLayoutStyles
-  })), (0,external_React_.createElement)(editor_heading_slot.Slot, {
-    mode: "visual"
-  }), (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.__experimentalRecursionProvider, {
-    blockName: wrapperBlockName,
-    uniqueId: wrapperUniqueId
-  }, (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.BlockList, {
-    className: isTemplateMode ? 'wp-site-blocks' : `${blockListLayoutClass} wp-block-post-content` // Ensure root level blocks receive default/flow blockGap styling rules.
-    ,
-
-    layout: blockListLayout
-  })), (0,external_React_.createElement)(footer_slot.Slot, {
-    mode: "visual"
-  })))));
-}
-//# sourceMappingURL=visual-editor.js.map
-// EXTERNAL MODULE: ./node_modules/react-autosize-textarea/lib/index.js
-var lib = __webpack_require__(766);
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/post-text-editor.js
-
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-class PostTextEditor extends external_wp_element_namespaceObject.Component {
-  constructor(props) {
-    super(props);
-    this.edit = this.edit.bind(this);
-    this.stopEditing = this.stopEditing.bind(this);
-    this.state = {};
-  }
-  static getDerivedStateFromProps(props, state) {
-    if (state.isDirty) {
-      return null;
-    }
-    return {
-      value: props.value,
-      isDirty: false
-    };
-  }
-
-  /**
-   * Handles a textarea change event to notify the onChange prop callback and
-   * reflect the new value in the component's own state. This marks the start
-   * of the user's edits, if not already changed, preventing future props
-   * changes to value from replacing the rendered value. This is expected to
-   * be followed by a reset to dirty state via `stopEditing`.
-   *
-   * @see stopEditing
-   *
-   * @param {Event} event Change event.
-   */
-  edit(event) {
-    // @ts-ignore */}
-    const value = event.target.value;
-    this.props.onChange(value);
-    this.setState({
-      value,
-      isDirty: true
-    });
-  }
-
-  /**
-   * Function called when the user has completed their edits, responsible for
-   * ensuring that changes, if made, are surfaced to the onPersist prop
-   * callback and resetting dirty state.
-   */
-  stopEditing() {
-    if (this.state.isDirty) {
-      this.props.onPersist(this.state.value);
-      this.setState({
-        isDirty: false
-      });
-    }
-  }
-  render() {
-    const {
-      value
-    } = this.state;
-    const {
-      instanceId
-    } = this.props;
-    return (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)("label", {
-      htmlFor: `post-content-${instanceId}`,
-      className: "screen-reader-text"
-    }, (0,external_wp_i18n_namespaceObject.__)('Type text or HTML')), (0,external_React_.createElement)(lib/* default */.A, {
-      autoComplete: "off",
-      dir: "auto",
-      value: value
-      // @ts-ignore */}
-      ,
-      onChange: this.edit,
-      onBlur: this.stopEditing,
-      className: "editor-post-text-editor",
-      id: `post-content-${instanceId}`,
-      placeholder: (0,external_wp_i18n_namespaceObject.__)('Start writing with text or HTML')
-    }));
-  }
-}
-
-// @ts-ignore
-/* harmony default export */ const post_text_editor = ((0,external_wp_compose_namespaceObject.compose)([(0,external_wp_data_namespaceObject.withSelect)(select => {
-  const {
-    getBlocks
-  } = select('isolated/editor');
-  return {
-    value: (0,external_wp_blocks_namespaceObject.serialize)(getBlocks())
-  };
-}), (0,external_wp_data_namespaceObject.withDispatch)(dispatch => {
-  const {
-    updateBlocksWithoutUndo
-  } = dispatch('isolated/editor');
-  return {
-    onChange(content) {
-      const blocks = (0,external_wp_blocks_namespaceObject.parse)(content);
-      updateBlocksWithoutUndo(blocks);
-    },
-    onPersist(content) {
-      const blocks = (0,external_wp_blocks_namespaceObject.parse)(content);
-      updateBlocksWithoutUndo(blocks);
-    }
-  };
-}), external_wp_compose_namespaceObject.withInstanceId])(PostTextEditor));
-//# sourceMappingURL=post-text-editor.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/text-editor.js
-
-// @ts-nocheck
-/**
- * Internal dependencies
- */
-
-
-
-
-/**
- * This is a copy of packages/edit-post/src/components/text-editor/index.js
- *
- * The original is not exported, and contains code for post titles
- */
-function TextEditor({}) {
-  return (0,external_React_.createElement)("div", {
-    className: "edit-post-text-editor"
-  }, (0,external_React_.createElement)("div", {
-    className: "edit-post-text-editor__body"
-  }, (0,external_React_.createElement)(editor_heading_slot.Slot, {
-    mode: "text"
-  }), (0,external_React_.createElement)(post_text_editor, null), (0,external_React_.createElement)(footer_slot.Slot, {
-    mode: "text"
-  })));
-}
-/* harmony default export */ const text_editor = (TextEditor);
-//# sourceMappingURL=text-editor.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/style.scss
-// extracted by mini-css-extract-plugin
-
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/next.js
-
-/**
- * WordPress dependencies
- */
-
-const next = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M6.6 6L5.4 7l4.5 5-4.5 5 1.1 1 5.5-6-5.4-6zm6 0l-1.1 1 4.5 5-4.5 5 1.1 1 5.5-6-5.5-6z"
-}));
-/* harmony default export */ const library_next = (next);
-//# sourceMappingURL=next.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/previous.js
-
-/**
- * WordPress dependencies
- */
-
-const previous = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M11.6 7l-1.1-1L5 12l5.5 6 1.1-1L7 12l4.6-5zm6 0l-1.1-1-5.5 6 5.5 6 1.1-1-4.6-5 4.6-5z"
-}));
-/* harmony default export */ const library_previous = (previous);
-//# sourceMappingURL=previous.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/more-vertical.js
-
-/**
- * WordPress dependencies
- */
-
-const moreVertical = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M13 19h-2v-2h2v2zm0-6h-2v-2h2v2zm0-6h-2V5h2v2z"
-}));
-/* harmony default export */ const more_vertical = (moreVertical);
-//# sourceMappingURL=more-vertical.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/check.js
-
-/**
- * WordPress dependencies
- */
-
-const check_check = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M16.7 7.1l-6.3 8.5-3.3-2.5-.9 1.2 4.5 3.4L17.9 8z"
-}));
-/* harmony default export */ const build_module_library_check = (check_check);
-//# sourceMappingURL=check.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/toggle-feature/index.js
-
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-function FeatureToggle({
-  onToggle,
-  isActive,
-  label,
-  info,
-  messageActivated,
-  messageDeactivated,
-  speak
-}) {
-  const speakMessage = () => {
-    if (isActive) {
-      speak(messageDeactivated || (0,external_wp_i18n_namespaceObject.__)('Feature deactivated'));
-    } else {
-      speak(messageActivated || (0,external_wp_i18n_namespaceObject.__)('Feature activated'));
-    }
-  };
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.MenuItem, {
-    icon: isActive && build_module_library_check,
-    isSelected: isActive,
-    onClick: (0,external_lodash_namespaceObject.flow)(onToggle, speakMessage),
-    role: "menuitemcheckbox",
-    info: info
-  }, label);
-}
-
-// @ts-ignore
-/* harmony default export */ const toggle_feature = ((0,external_wp_compose_namespaceObject.compose)([(0,external_wp_data_namespaceObject.withSelect)((select, {
-  feature
-}) => ({
-  isActive: select('isolated/editor').isFeatureActive(feature)
-})), (0,external_wp_data_namespaceObject.withDispatch)((dispatch, ownProps) => ({
-  onToggle() {
-    dispatch('isolated/editor').toggleFeature(ownProps.feature);
-    ownProps.onClose();
-  }
-})), external_wp_components_namespaceObject.withSpokenMessages])(FeatureToggle));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/toggle-option/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-function OptionToggle({
-  onToggle,
-  isActive,
-  label,
-  info
-}) {
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.MenuItem, {
-    icon: isActive && build_module_library_check,
-    isSelected: isActive,
-    onClick: onToggle,
-    role: "menuitemcheckbox",
-    info: info
-  }, label);
-}
-
-// @ts-ignore
-/* harmony default export */ const toggle_option = ((0,external_wp_compose_namespaceObject.compose)([(0,external_wp_data_namespaceObject.withSelect)((select, {
-  option
-}) => ({
-  isActive: select('isolated/editor').isOptionActive(option)
-})), (0,external_wp_data_namespaceObject.withDispatch)((dispatch, ownProps) => ({
-  onToggle() {
-    dispatch('isolated/editor').toggleOption(ownProps.option);
-    ownProps.onClose();
-  }
-})), external_wp_components_namespaceObject.withSpokenMessages])(OptionToggle));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/more-menu/writing-menu.js
-
-// @ts-nocheck
-/**
- * WordPress dependencies
- */
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-/** @typedef {import('../../../index').BlockEditorSettings} BlockEditorSettings */
-/** @typedef {import('./index').OnClose} OnClose */
-
-/**
- * Writing menu
- *
- * @param {Object} props - Component props
- * @param {OnClose} props.onClose - Close the menu
- * @param {BlockEditorSettings} props.settings - Settings
- */
-function WritingMenu({
-  onClose,
-  settings
-}) {
-  const {
-    preview,
-    fullscreen,
-    topToolbar
-  } = settings?.iso?.moreMenu || {};
-  const {
-    isFullscreen
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => ({
-    isFullscreen: select('isolated/editor').isOptionActive('fullscreenMode')
-  }), []);
-
-  // Anything to show?
-  if (!fullscreen && !preview && !topToolbar) {
-    return null;
-  }
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.MenuGroup, {
-    label: (0,external_wp_i18n_namespaceObject._x)('View', 'noun')
-  }, topToolbar && (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)(toggle_feature, {
-    feature: "fixedToolbar",
-    label: (0,external_wp_i18n_namespaceObject.__)('Top toolbar'),
-    info: (0,external_wp_i18n_namespaceObject.__)('Access all block and document tools in a single place.'),
-    messageActivated: (0,external_wp_i18n_namespaceObject.__)('Top toolbar activated'),
-    messageDeactivated: (0,external_wp_i18n_namespaceObject.__)('Top toolbar deactivated'),
-    onClose: onClose
-  })), fullscreen && (0,external_React_.createElement)(toggle_option, {
-    option: "fullscreenMode",
-    label: (0,external_wp_i18n_namespaceObject.__)('Fullscreen'),
-    info: (0,external_wp_i18n_namespaceObject.__)('Show editor fullscreen.'),
-    onClose: onClose
-  }), preview && !isFullscreen && (0,external_React_.createElement)(toggle_option, {
-    option: "preview",
-    label: (0,external_wp_i18n_namespaceObject.__)('Preview'),
-    info: (0,external_wp_i18n_namespaceObject.__)('Preview the content before posting.'),
-    onClose: onClose
-  }));
-}
-/* harmony default export */ const writing_menu = (WritingMenu);
-//# sourceMappingURL=writing-menu.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/more-menu/editor-menu.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-/** @typedef {import('./index').OnClose} OnClose */
-/** @typedef {import('../../../index').BlockEditorSettings} BlockEditorSettings */
-
-/**
- * Close dropdown callback
- *
- * @callback OnSetMode
- * @param {string} mode
- */
-
-/**
- * The 'more menu' editor section
- *
- * @param {Object} props - Component props
- * @param {boolean} props.isCodeEditingEnabled
- * @param {string} props.editorMode
- * @param {OnClose} props.onClose - Callback to close the menu
- * @param {OnSetMode} props.onSetMode
- * @param {BlockEditorSettings} props.settings - Settings
- */
-function EditorMenu({
-  onClose,
-  editorMode,
-  onSetMode,
-  isCodeEditingEnabled,
-  settings
-}) {
-  /**
-   * @param {string} mode
-   */
-  const setMode = mode => {
-    onSetMode(mode);
-    onClose();
-  };
-  if (!isCodeEditingEnabled) {
-    return null;
-  }
-  if (settings?.iso?.moreMenu === false || !settings?.iso?.moreMenu?.editor) {
-    return null;
-  }
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.MenuGroup, {
-    label: (0,external_wp_i18n_namespaceObject._x)('Editor', 'noun')
-  }, (0,external_React_.createElement)(external_wp_components_namespaceObject.MenuItem, {
-    icon: editorMode === 'visual' ? build_module_library_check : null,
-    isSelected: editorMode === 'visual',
-    onClick: () => setMode('visual'),
-    role: "menuitemcheckbox"
-  }, (0,external_wp_i18n_namespaceObject.__)('Visual editor')), (0,external_React_.createElement)(external_wp_components_namespaceObject.MenuItem, {
-    icon: editorMode === 'text' ? build_module_library_check : null,
-    isSelected: editorMode === 'text',
-    onClick: () => setMode('text'),
-    role: "menuitemcheckbox"
-  }, (0,external_wp_i18n_namespaceObject.__)('Code editor')));
-}
-
-// @ts-ignore
-/* harmony default export */ const editor_menu = ((0,external_wp_compose_namespaceObject.compose)([(0,external_wp_data_namespaceObject.withSelect)(select => {
-  const {
-    getEditorMode
-  } = select('isolated/editor');
-  const {
-    codeEditingEnabled
-  } = select('core/editor').getEditorSettings();
-  return {
-    editorMode: getEditorMode(),
-    isCodeEditingEnabled: codeEditingEnabled
-  };
-}), (0,external_wp_data_namespaceObject.withDispatch)(dispatch => ({
-  onSetMode(mode) {
-    dispatch('isolated/editor').setEditorMode(mode);
-  }
-}))])(EditorMenu));
-//# sourceMappingURL=editor-menu.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/more-menu/link-menu.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-/** @typedef {import('../../../index').BlockEditorSettings} BlockEditorSettings */
-
-/**
- * Link menu
- *
- * @param {Object} props - Component props
- * @param {BlockEditorSettings} props.settings - Settings
- */
-function LinkMenu({
-  settings
-}) {
-  const {
-    linkMenu = []
-  } = settings.iso || {};
-  if (linkMenu.length === 0) {
-    return null;
-  }
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.MenuGroup, {
-    label: (0,external_wp_i18n_namespaceObject.__)('Links')
-  }, linkMenu.map(({
-    title,
-    url
-  }) => (0,external_React_.createElement)(external_wp_components_namespaceObject.MenuItem, {
-    key: title
-  }, (0,external_React_.createElement)(external_wp_components_namespaceObject.ExternalLink, {
-    href: url
-  }, title))));
-}
-/* harmony default export */ const link_menu = (LinkMenu);
-//# sourceMappingURL=link-menu.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/more-menu/index.js
-
-// @ts-nocheck
-/**
- * WordPress dependencies
- */
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-/** @typedef {import('../../../index').BlockEditorSettings} BlockEditorSettings */
-
-/**
- * Close dropdown callback
- *
- * @callback OnClose
- */
-
-/**
- * More menu render callback
- *
- * @callback OnMore
- * @param {BlockEditorSettings} settings - Settings
- * @param {OnClose} onClose - Callback to close the menu
- */
-
-const POPOVER_PROPS = {
-  className: 'edit-post-more-menu__content',
-  position: 'bottom left'
-};
-const TOGGLE_PROPS = {
-  tooltipPosition: 'bottom'
-};
-
-/**
- * More menu
- *
- * @param {Object} props - Component props
- * @param {BlockEditorSettings} props.settings - Settings
- * @param {OnClose} props.onClick
- * @param {OnMore} props.renderMoreMenu
- */
-const MoreMenu = ({
-  settings,
-  onClick,
-  renderMoreMenu
-}) => (0,external_React_.createElement)(external_wp_components_namespaceObject.DropdownMenu, {
-  className: "edit-post-more-menu",
-  icon: more_vertical,
-  label: (0,external_wp_i18n_namespaceObject.__)('More tools & options'),
-  popoverProps: POPOVER_PROPS,
-  toggleProps: {
-    ...TOGGLE_PROPS,
-    onClick
-  }
-}, ({
-  onClose
-}) => (0,external_React_.createElement)(external_React_.Fragment, null, renderMoreMenu && renderMoreMenu(settings, onClose), (0,external_React_.createElement)(editor_menu, {
-  onClose: onClose,
-  settings: settings
-}), (0,external_React_.createElement)(writing_menu, {
-  onClose: onClose,
-  settings: settings
-}), (0,external_React_.createElement)(link_menu, {
-  settings: settings
-})));
-/* harmony default export */ const more_menu = (MoreMenu);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/plus.js
-
-/**
- * WordPress dependencies
- */
-
-const plus = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M11 12.5V17.5H12.5V12.5H17.5V11H12.5V6H11V11H6V12.5H11Z"
-}));
-/* harmony default export */ const library_plus = (plus);
-//# sourceMappingURL=plus.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/list-view.js
-
-/**
- * WordPress dependencies
- */
-
-const listView = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  viewBox: "0 0 24 24",
-  xmlns: "http://www.w3.org/2000/svg"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M3 6h11v1.5H3V6Zm3.5 5.5h11V13h-11v-1.5ZM21 17H10v1.5h11V17Z"
-}));
-/* harmony default export */ const list_view = (listView);
-//# sourceMappingURL=list-view.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/redo.js
-
-/**
- * WordPress dependencies
- */
-
-const redo = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M15.6 6.5l-1.1 1 2.9 3.3H8c-.9 0-1.7.3-2.3.9-1.4 1.5-1.4 4.2-1.4 5.6v.2h1.5v-.3c0-1.1 0-3.5 1-4.5.3-.3.7-.5 1.3-.5h9.2L14.5 15l1.1 1.1 4.6-4.6-4.6-5z"
-}));
-/* harmony default export */ const library_redo = (redo);
-//# sourceMappingURL=redo.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/header-toolbar/redo.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-function EditorHistoryRedo(props, ref) {
-  // @ts-ignore
-  const hasRedo = (0,external_wp_data_namespaceObject.useSelect)(select => select('isolated/editor').hasEditorRedo(), []);
-  const {
-    redo
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Button, {
-    ...props,
-    ref: ref,
-    icon: library_redo,
-    label: (0,external_wp_i18n_namespaceObject.__)('Redo'),
-    shortcut: external_wp_keycodes_namespaceObject.displayShortcut.primaryShift('z')
-    // If there are no redo levels we don't want to actually disable this
-    // button, because it will remove focus for keyboard users.
-    // See: https://github.com/WordPress/gutenberg/issues/3486
-    ,
-    "aria-disabled": !hasRedo,
-    onClick: hasRedo ? redo : undefined,
-    className: "editor-history__redo"
-  });
-}
-/* harmony default export */ const header_toolbar_redo = ((0,external_wp_element_namespaceObject.forwardRef)(EditorHistoryRedo));
-//# sourceMappingURL=redo.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/undo.js
-
-/**
- * WordPress dependencies
- */
-
-const undo = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M18.3 11.7c-.6-.6-1.4-.9-2.3-.9H6.7l2.9-3.3-1.1-1-4.5 5L8.5 16l1-1-2.7-2.7H16c.5 0 .9.2 1.3.5 1 1 1 3.4 1 4.5v.3h1.5v-.2c0-1.5 0-4.3-1.5-5.7z"
-}));
-/* harmony default export */ const library_undo = (undo);
-//# sourceMappingURL=undo.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/header-toolbar/undo.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-function EditorHistoryUndo(props, ref) {
-  // @ts-ignore
-  const hasUndo = (0,external_wp_data_namespaceObject.useSelect)(select => select('isolated/editor').hasEditorUndo(), []);
-  const {
-    undo
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Button, {
-    ...props,
-    ref: ref,
-    icon: library_undo,
-    label: (0,external_wp_i18n_namespaceObject.__)('Undo'),
-    shortcut: external_wp_keycodes_namespaceObject.displayShortcut.primary('z')
-    // If there are no undo levels we don't want to actually disable this
-    // button, because it will remove focus for keyboard users.
-    // See: https://github.com/WordPress/gutenberg/issues/3486
-    ,
-    "aria-disabled": !hasUndo,
-    onClick: hasUndo ? undo : undefined,
-    className: "editor-history__undo"
-  });
-}
-/* harmony default export */ const header_toolbar_undo = ((0,external_wp_element_namespaceObject.forwardRef)(EditorHistoryUndo));
-//# sourceMappingURL=undo.js.map
-;// external ["wp","dom"]
-const external_wp_dom_namespaceObject = window["wp"]["dom"];
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/list-view-outline.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-function ListViewOutline() {
-  return (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)("div", {
-    className: "editor-list-view-sidebar__outline"
-  }, (0,external_React_.createElement)("div", null, (0,external_React_.createElement)(external_wp_components_namespaceObject.__experimentalText, null, (0,external_wp_i18n_namespaceObject.__)('Characters:')), (0,external_React_.createElement)(external_wp_components_namespaceObject.__experimentalText, null, (0,external_React_.createElement)(external_wp_editor_namespaceObject.CharacterCount, null))), (0,external_React_.createElement)("div", null, (0,external_React_.createElement)(external_wp_components_namespaceObject.__experimentalText, null, (0,external_wp_i18n_namespaceObject.__)('Words:')), (0,external_React_.createElement)(external_wp_editor_namespaceObject.WordCount, null)), (0,external_React_.createElement)("div", null, (0,external_React_.createElement)(external_wp_components_namespaceObject.__experimentalText, null, (0,external_wp_i18n_namespaceObject.__)('Time to read:')), (0,external_React_.createElement)(external_wp_editor_namespaceObject.TimeToRead, null))), (0,external_React_.createElement)(external_wp_editor_namespaceObject.DocumentOutline, null));
-}
-//# sourceMappingURL=list-view-outline.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/listview-sidebar.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-const {
-  Tabs: listview_sidebar_Tabs
-} = unlock(external_wp_components_namespaceObject.privateApis);
-function ListViewSidebar({
-  canClose = true
-}) {
-  const {
-    setIsListViewOpened
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-
-  // This hook handles focus when the sidebar first renders.
-  const focusOnMountRef = (0,external_wp_compose_namespaceObject.useFocusOnMount)('firstElement');
-
-  // When closing the list view, focus should return to the toggle button.
-  const closeListView = (0,external_wp_element_namespaceObject.useCallback)(() => {
-    setIsListViewOpened(false);
-  }, [setIsListViewOpened]);
-  const closeOnEscape = (0,external_wp_element_namespaceObject.useCallback)(event => {
-    if (event.keyCode === external_wp_keycodes_namespaceObject.ESCAPE && !event.defaultPrevented) {
-      event.preventDefault();
-      closeListView();
-    }
-  }, [closeListView]);
-
-  // Use internal state instead of a ref to make sure that the component
-  // re-renders when the dropZoneElement updates.
-  const [dropZoneElement, setDropZoneElement] = (0,external_wp_element_namespaceObject.useState)(null);
-  // Tracks our current tab.
-  const [tab, setTab] = (0,external_wp_element_namespaceObject.useState)('list-view');
-
-  // This ref refers to the sidebar as a whole.
-  const sidebarRef = (0,external_wp_element_namespaceObject.useRef)();
-  // This ref refers to the tab panel.
-  const tabsRef = (0,external_wp_element_namespaceObject.useRef)();
-  // This ref refers to the list view application area.
-  const listViewRef = (0,external_wp_element_namespaceObject.useRef)();
-
-  // Must merge the refs together so focus can be handled properly in the next function.
-  const listViewContainerRef = (0,external_wp_compose_namespaceObject.useMergeRefs)([focusOnMountRef, listViewRef, setDropZoneElement]);
-
-  /*
-   * Callback function to handle list view or outline focus.
-   *
-   * @param {string} currentTab The current tab. Either list view or outline.
-   *
-   * @return void
-   */
-  function handleSidebarFocus(currentTab) {
-    // Tab panel focus.
-    // @ts-ignore
-    const tabPanelFocus = external_wp_dom_namespaceObject.focus.tabbable.find(tabsRef.current)[0];
-    // List view tab is selected.
-    if (currentTab === 'list-view') {
-      // Either focus the list view or the tab panel. Must have a fallback because the list view does not render when there are no blocks.
-      const listViewApplicationFocus = external_wp_dom_namespaceObject.focus.tabbable.find(
-      // @ts-ignore
-      listViewRef.current)[0];
-      // @ts-ignore
-      const listViewFocusArea = sidebarRef.current.contains(listViewApplicationFocus) ? listViewApplicationFocus : tabPanelFocus;
-      // @ts-ignore
-      listViewFocusArea.focus();
-      // Outline tab is selected.
-    } else {
-      // @ts-ignore
-      tabPanelFocus.focus();
-    }
-  }
-  const handleToggleListViewShortcut = (0,external_wp_element_namespaceObject.useCallback)(() => {
-    // If the sidebar has focus, it is safe to close.
-    if (
-    // @ts-ignore
-    sidebarRef.current.contains(
-    // @ts-ignore
-    sidebarRef.current.ownerDocument.activeElement)) {
-      closeListView();
-    } else {
-      // If the list view or outline does not have focus, focus should be moved to it.
-      handleSidebarFocus(tab);
-    }
-  }, [closeListView, tab]);
-
-  // This only fires when the sidebar is open because of the conditional rendering. It is the same shortcut to open but that is defined as a global shortcut and only fires when the sidebar is closed.
-  (0,external_wp_keyboardShortcuts_namespaceObject.useShortcut)('core/edit-post/toggle-list-view', handleToggleListViewShortcut);
-  return (
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-    (0,external_React_.createElement)("div", {
-      className: "editor-list-view-sidebar",
-      onKeyDown: closeOnEscape
-      // @ts-ignore
-      ,
-      ref: sidebarRef
-    }, (0,external_React_.createElement)(listview_sidebar_Tabs, {
-      onSelect: tabName => setTab(tabName),
-      selectOnMove: false
-      // The initial tab value is set explicitly to avoid an initial
-      // render where no tab is selected. This ensures that the
-      // tabpanel height is correct so the relevant scroll container
-      // can be rendered internally.
-      ,
-      initialTabId: "list-view"
-    }, (0,external_React_.createElement)("div", {
-      className: "edit-post-editor__document-overview-panel__header"
-    }, canClose && (0,external_React_.createElement)(external_wp_components_namespaceObject.Button, {
-      className: "editor-list-view-sidebar__close-button",
-      icon: library_close_small,
-      label: (0,external_wp_i18n_namespaceObject.__)('Close'),
-      onClick: closeListView
-    }), (0,external_React_.createElement)(listview_sidebar_Tabs.TabList, {
-      className: "editor-list-view-sidebar__tabs-tablist",
-      ref: tabsRef
-    }, (0,external_React_.createElement)(listview_sidebar_Tabs.Tab, {
-      className: "editor-list-view-sidebar__tabs-tab",
-      tabId: "list-view"
-    }, (0,external_wp_i18n_namespaceObject._x)('List View', 'Post overview')), (0,external_React_.createElement)(listview_sidebar_Tabs.Tab, {
-      className: "editor-list-view-sidebar__tabs-tab",
-      tabId: "outline"
-    }, (0,external_wp_i18n_namespaceObject._x)('Outline', 'Post overview')))), (0,external_React_.createElement)(listview_sidebar_Tabs.TabPanel, {
-      ref: listViewContainerRef,
-      className: "editor-list-view-sidebar__tabs-tabpanel",
-      tabId: "list-view",
-      focusable: false
-    }, (0,external_React_.createElement)("div", {
-      className: "editor-list-view-sidebar__list-view-container"
-    }, (0,external_React_.createElement)("div", {
-      className: "editor-list-view-sidebar__list-view-panel-content"
-    }, (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.__experimentalListView, {
-      dropZoneElement: dropZoneElement
-    })))), (0,external_React_.createElement)(listview_sidebar_Tabs.TabPanel, {
-      className: "editor-list-view-sidebar__tabs-tabpanel",
-      tabId: "outline",
-      focusable: false
-    }, (0,external_React_.createElement)("div", {
-      className: "editor-list-view-sidebar__list-view-container"
-    }, (0,external_React_.createElement)(ListViewOutline, null)))))
-  );
-}
-//# sourceMappingURL=listview-sidebar.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/block-navigation/style.scss
-// extracted by mini-css-extract-plugin
-
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/block-navigation/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-function BlockNavigationDropdown({
-  isDisabled,
-  ...props
-}, ref) {
-  // @ts-ignore
-  const hasBlocks = (0,external_wp_data_namespaceObject.useSelect)(select => !!select(external_wp_blockEditor_namespaceObject.store).getBlockCount(), []);
-  const isEnabled = hasBlocks && !isDisabled;
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Dropdown, {
-    contentClassName: "block-editor-block-navigation__popover",
-    position: "bottom right",
-    renderToggle: ({
-      isOpen,
-      onToggle
-    }) => (0,external_React_.createElement)(external_wp_components_namespaceObject.Button, {
-      ...props,
-      ref: ref,
-      icon: list_view,
-      "aria-expanded": isOpen,
-      "aria-haspopup": "true",
-      onClick: isEnabled ? onToggle : undefined
-      /* translators: button label text should, if possible, be under 16 characters. */,
-      label: (0,external_wp_i18n_namespaceObject.__)('List view'),
-      className: "block-editor-block-navigation",
-      "aria-disabled": !isEnabled
-    }),
-    renderContent: () => (0,external_React_.createElement)(ListViewSidebar, {
-      canClose: false
-    })
-  });
-}
-/* harmony default export */ const block_navigation = ((0,external_wp_element_namespaceObject.forwardRef)(BlockNavigationDropdown));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/header-toolbar/style.scss
-// extracted by mini-css-extract-plugin
-
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/header-toolbar/index.js
-
-// @ts-nocheck
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-const preventDefault = event => {
-  event.preventDefault();
-};
-function HeaderToolbar(props) {
-  const inserterButton = (0,external_wp_element_namespaceObject.useRef)();
-  const {
-    setIsInserterOpened,
-    setIsListViewOpened
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-  const isMobileViewport = (0,external_wp_compose_namespaceObject.useViewportMatch)('medium', '<');
-  const {
-    fixedToolbar,
-    isInserterEnabled,
-    isTextModeEnabled,
-    showIconLabels,
-    previewDeviceType,
-    isInserterOpened,
-    isListViewOpen,
-    listViewShortcut
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    const {
-      hasInserterItems,
-      getBlockRootClientId,
-      getBlockSelectionEnd
-    } = select('core/block-editor');
-    const {
-      isListViewOpened
-    } = select('isolated/editor');
-    // @ts-ignore
-    const {
-      getShortcutRepresentation
-    } = select(external_wp_keyboardShortcuts_namespaceObject.store);
-    return {
-      // @ts-ignore
-      fixedToolbar: select('isolated/editor').isFeatureActive('fixedToolbar'),
-      // This setting (richEditingEnabled) should not live in the block editor's setting.
-      isInserterEnabled:
-      // @ts-ignore
-      select('isolated/editor').getEditorMode() === 'visual' &&
-      // @ts-ignore
-      select('core/editor').getEditorSettings().richEditingEnabled &&
-      // @ts-ignore
-      hasInserterItems(getBlockRootClientId(getBlockSelectionEnd())),
-      // @ts-ignore
-      isListViewOpen: isListViewOpened(),
-      // @ts-ignore
-      isTextModeEnabled: select('isolated/editor').getEditorMode() === 'text',
-      previewDeviceType: 'Desktop',
-      // @ts-ignore
-      isInserterOpened: select('isolated/editor').isInserterOpened(),
-      showIconLabels: false,
-      // Not implemented yet
-      listViewShortcut: getShortcutRepresentation('core/edit-post/toggle-list-view')
-    };
-  }, []);
-  const isLargeViewport = (0,external_wp_compose_namespaceObject.useViewportMatch)('medium');
-  const {
-    inserter,
-    navigation,
-    undo,
-    selectorTool
-  } = props.settings.iso.toolbar;
-  const inserterInSidebar = props.settings?.iso?.sidebar?.inserter || false;
-  const displayBlockToolbar = !isLargeViewport || previewDeviceType !== 'Desktop' || fixedToolbar;
-  const toolbarAriaLabel = displayBlockToolbar ? /* translators: accessibility text for the editor toolbar when Top Toolbar is on */
-  (0,external_wp_i18n_namespaceObject.__)('Document and block tools') : /* translators: accessibility text for the editor toolbar when Top Toolbar is off */
-  (0,external_wp_i18n_namespaceObject.__)('Document tools');
-  const openInserter = (0,external_wp_element_namespaceObject.useCallback)(() => {
-    if (isInserterOpened) {
-      // Focusing the inserter button closes the inserter popover
-      // @ts-ignore
-      setIsInserterOpened(false);
-    } else {
-      setIsInserterOpened(true);
-    }
-  }, [isInserterOpened, setIsInserterOpened]);
-  const toggleListView = (0,external_wp_element_namespaceObject.useCallback)(() => setIsListViewOpened(!isListViewOpen), [setIsListViewOpened, isListViewOpen]);
-  return (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.NavigableToolbar, {
-    className: "editor-document-tools edit-post-header-toolbar",
-    "aria-label": toolbarAriaLabel
-  }, (inserter || undo || navigation || selectorTool) && (0,external_React_.createElement)("div", {
-    className: "editor-document-tools__left edit-post-header-toolbar__left"
-  }, inserter && (0,external_React_.createElement)(external_wp_components_namespaceObject.ToolbarItem, {
-    ref: inserterButton,
-    as: external_wp_components_namespaceObject.Button,
-    className: "editor-document-tools__inserter-toggle",
-    isPressed: isInserterOpened,
-    onMouseDown: preventDefault,
-    onClick: openInserter,
-    disabled: !isInserterEnabled,
-    isPrimary: true,
-    icon: library_plus
-    /* translators: button label text should, if possible, be under 16
-    characters. */,
-    label: (0,external_wp_i18n_namespaceObject._x)('Toggle block inserter', 'Generic label for block inserter button'),
-    showTooltip: !showIconLabels
-  }), isInserterOpened && !inserterInSidebar && (0,external_React_.createElement)(external_wp_components_namespaceObject.Popover, {
-    position: "bottom right",
-    onClose: () => setIsInserterOpened(false),
-    anchor: inserterButton.current
-  }, (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.__experimentalLibrary, {
-    showMostUsedBlocks: false,
-    showInserterHelpPanel: true,
-    onSelect: () => {
-      if (isMobileViewport) {
-        setIsInserterOpened(false);
-      }
-    }
-  })), selectorTool && (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.ToolSelector, null), undo && (0,external_React_.createElement)(external_wp_components_namespaceObject.ToolbarItem, {
-    as: header_toolbar_undo,
-    showTooltip: !showIconLabels,
-    variant: showIconLabels ? 'tertiary' : undefined
-  }), undo && (0,external_React_.createElement)(external_wp_components_namespaceObject.ToolbarItem, {
-    as: header_toolbar_redo,
-    showTooltip: !showIconLabels,
-    variant: showIconLabels ? 'tertiary' : undefined
-  }), navigation && !inserterInSidebar && (0,external_React_.createElement)(external_wp_components_namespaceObject.ToolbarItem, {
-    as: block_navigation,
-    isDisabled: isTextModeEnabled
-  }), navigation && inserterInSidebar && (0,external_React_.createElement)(external_wp_components_namespaceObject.ToolbarItem, {
-    as: external_wp_components_namespaceObject.Button,
-    className: "edit-post-header-toolbar__list-view-toggle",
-    icon: list_view,
-    disabled: isTextModeEnabled,
-    isPressed: isListViewOpen
-    /* translators: button label text should, if possible, be under 16 characters. */,
-    label: (0,external_wp_i18n_namespaceObject.__)('List View'),
-    onClick: toggleListView,
-    shortcut: listViewShortcut,
-    showTooltip: !showIconLabels
-  })));
-}
-/* harmony default export */ const header_toolbar = (HeaderToolbar);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/inspector/style.scss
-// extracted by mini-css-extract-plugin
-
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/inspector/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-/**
- * Internal dependencies
- */
-
-function Inspector({
-  button,
-  onToggle
-}) {
-  function onOutside(ev) {
-    if (ev.target.closest('.block-editor-block-inspector') === null && !ev.target.classList.contains('iso-inspector')) {
-      onToggle(false);
-      ev.preventDefault();
-      ev.stopPropagation();
-    }
-  }
-  return (0,external_React_.createElement)(external_wp_components_namespaceObject.Popover, {
-    position: "bottom left",
-    className: "iso-inspector",
-    anchor: button?.current,
-    onFocusOutside: onOutside
-  }, (0,external_React_.createElement)(complementary_area.Slot, {
-    scope: "isolated/editor"
-  }));
-}
-/* harmony default export */ const block_editor_toolbar_inspector = (Inspector);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/slot.js
-
-/**
- * WordPress dependencies
- */
-
-
-const {
-  Fill: slot_Fill,
-  Slot: slot_Slot
-} = (0,external_wp_components_namespaceObject.createSlotFill)('IsolatedToolbar');
-
-/**
- * A Toolbar slot/fill
- *
- * @param {Object} props Component props
- * @param {Object} props.children Child components to insert in the toolbar slot
- * @return object
- */
-const ToolbarSlot = ({
-  children
-}) => {
-  return (0,external_React_.createElement)(slot_Fill, null, children);
-};
-ToolbarSlot.Slot = function (props) {
-  return (0,external_React_.createElement)(slot_Slot, null, fills => fills);
-};
-/* harmony default export */ const slot = (ToolbarSlot);
-//# sourceMappingURL=slot.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/style.scss
-// extracted by mini-css-extract-plugin
-
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-toolbar/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-
-
-
-/**
- * External dependencies
- */
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-
-/** @typedef {import('../../store/editor/reducer').EditorMode} EditorMode */
-/** @typedef {import('../../index').BlockEditorSettings} BlockEditorSettings */
-/** @typedef {import('../../index').OnMore} OnMore */
-
-/**
- * Block editor toolbar
- *
- * @param {Object} props - Component props
- * @param {BlockEditorSettings} props.settings - Settings
- * @param {EditorMode} props.editorMode - Visual or code?
- * @param {OnMore} props.renderMoreMenu - Callback to render additional items in the more menu
- */
-const BlockEditorToolbar = props => {
-  const ref = (0,external_wp_element_namespaceObject.useRef)(null);
-  const {
-    settings,
-    editorMode,
-    renderMoreMenu
-  } = props;
-  const isHugeViewport = (0,external_wp_compose_namespaceObject.useViewportMatch)('huge', '>=');
-  const blockToolbarRef = (0,external_wp_element_namespaceObject.useRef)();
-  const isLargeViewport = (0,external_wp_compose_namespaceObject.useViewportMatch)('medium');
-  const {
-    inspector
-  } = settings.iso?.toolbar || {};
-  const {
-    moreMenu
-  } = settings.iso || {};
-  const inspectorInSidebar = settings?.iso?.sidebar?.inspector || false;
-  const {
-    openGeneralSidebar,
-    closeGeneralSidebar
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-  const {
-    setIsInserterOpened
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-  const {
-    isEditorSidebarOpened,
-    isBlockSelected,
-    hasBlockSelected,
-    isInserterOpened,
-    isEditing
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => ({
-    isEditing: select('isolated/editor'),
-    // @ts-ignore
-    isEditorSidebarOpened: select('isolated/editor').isEditorSidebarOpened(),
-    // @ts-ignore
-    isBlockSelected: !!select('core/block-editor').getBlockSelectionStart(),
-    // @ts-ignore
-    hasBlockSelected: !!select('core/block-editor').getBlockSelectionStart(),
-    // @ts-ignore
-    isInserterOpened: select('isolated/editor').isInserterOpened()
-  }), []);
-  const [isBlockToolsCollapsed, setIsBlockToolsCollapsed] = (0,external_wp_element_namespaceObject.useState)(true);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    // If we have a new block selection, show the block tools
-    if (isBlockSelected) {
-      setIsBlockToolsCollapsed(false);
-    }
-  }, [isBlockSelected]);
-  function toggleSidebar(isOpen) {
-    if (!isOpen) {
-      closeGeneralSidebar();
-    } else {
-      openGeneralSidebar(hasBlockSelected ? 'edit-post/block' : 'edit-post/document');
-    }
-  }
-
-  // If in popover mode then ensure the sidebar is closed when the editor is first started. This is because the complimentary area status
-  // is saved to localStorage, and it might have been left open when in sidebar mode.
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    if (!inspectorInSidebar) {
-      closeGeneralSidebar();
-    }
-  }, []);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    // Close the block inspector when no block is selected. Gutenberg gets a bit crashy otherwise
-    if (!inspectorInSidebar && !isEditing && !isBlockSelected && isEditorSidebarOpened) {
-      closeGeneralSidebar();
-    }
-  }, [isEditing]);
-
-  // Inserter and Sidebars are mutually exclusive
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    if (isEditorSidebarOpened && !isHugeViewport) {
-      setIsInserterOpened(false);
-    }
-  }, [isEditorSidebarOpened, isHugeViewport]);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    if (isInserterOpened && (!isHugeViewport || !inspectorInSidebar)) {
-      closeGeneralSidebar();
-    }
-  }, [isInserterOpened, isHugeViewport]);
-  return (0,external_React_.createElement)("div", {
-    className: "edit-post-editor-regions__header",
-    role: "region",
-    tabIndex: -1
-  }, (0,external_React_.createElement)("div", {
-    className: "edit-post-header"
-  }, (0,external_React_.createElement)("div", {
-    className: "edit-post-header__toolbar"
-  }, (0,external_React_.createElement)(header_toolbar, {
-    settings: settings
-  }), isLargeViewport && (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)("div", {
-    className: classnames_default()('selected-block-tools-wrapper', {
-      'is-collapsed': isBlockToolsCollapsed
-    })
-  }, (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.BlockToolbar, {
-    hideDragHandle: true
-  })),
-  // @ts-ignore
-  (0,external_React_.createElement)(external_wp_components_namespaceObject.Popover.Slot, {
-    ref: blockToolbarRef,
-    name: "block-toolbar"
-  }), isBlockSelected && (0,external_React_.createElement)(external_wp_components_namespaceObject.Button, {
-    className: "edit-post-header__block-tools-toggle",
-    icon: isBlockToolsCollapsed ? library_next : library_previous,
-    onClick: () => {
-      setIsBlockToolsCollapsed(collapsed => !collapsed);
-    },
-    label: isBlockToolsCollapsed ? (0,external_wp_i18n_namespaceObject.__)('Show block tools') : (0,external_wp_i18n_namespaceObject.__)('Hide block tools')
-  }))), (0,external_React_.createElement)("div", {
-    className: "edit-post-header__settings",
-    ref: ref
-  }, (0,external_React_.createElement)(slot.Slot, null), inspector && (0,external_React_.createElement)(external_wp_components_namespaceObject.Button, {
-    icon: library_cog,
-    label: (0,external_wp_i18n_namespaceObject.__)('Settings'),
-    onClick: () => toggleSidebar(!isEditorSidebarOpened),
-    isPressed: isEditorSidebarOpened,
-    "aria-expanded": isEditorSidebarOpened,
-    disabled: editorMode === 'text'
-  }), isEditorSidebarOpened && !inspectorInSidebar && (0,external_React_.createElement)(block_editor_toolbar_inspector, {
-    button: ref,
-    onToggle: toggleSidebar
-  }), moreMenu && (0,external_React_.createElement)(more_menu, {
-    settings: settings,
-    onClick: () => closeGeneralSidebar(),
-    renderMoreMenu: renderMoreMenu
-  }))));
-};
-/* harmony default export */ const block_editor_toolbar = (BlockEditorToolbar);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/node_modules/@wordpress/icons/build-module/library/close.js
-
-/**
- * WordPress dependencies
- */
-
-const close_close = (0,external_React_.createElement)(external_wp_primitives_namespaceObject.SVG, {
-  xmlns: "http://www.w3.org/2000/svg",
-  viewBox: "0 0 24 24"
-}, (0,external_React_.createElement)(external_wp_primitives_namespaceObject.Path, {
-  d: "M13 11.8l6.1-6.3-1-1-6.1 6.2-6.1-6.2-1 1 6.1 6.3-6.5 6.7 1 1 6.5-6.6 6.5 6.6 1-1z"
-}));
-/* harmony default export */ const library_close = (close_close);
-//# sourceMappingURL=close.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/inserter-sidebar.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-function InserterSidebar() {
-  const {
-    setIsInserterOpened
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-  const isMobileViewport = (0,external_wp_compose_namespaceObject.useViewportMatch)('medium', '<');
-  const TagName = !isMobileViewport ? external_wp_components_namespaceObject.VisuallyHidden : 'div';
-  // Note: focusOnMount not present in Gutenberg
-  // @ts-ignore
-  const [inserterDialogRef, inserterDialogProps] = (0,external_wp_compose_namespaceObject.__experimentalUseDialog)({
-    onClose: () => setIsInserterOpened(false),
-    // @ts-ignore copied from Gutenberg
-    focusOnMount: null
-  });
-  return (0,external_React_.createElement)("div", {
-    // @ts-ignore
-    ref: inserterDialogRef,
-    ...inserterDialogProps,
-    className: "edit-widgets-layout__inserter-panel"
-  }, (0,external_React_.createElement)(TagName, {
-    className: "edit-widgets-layout__inserter-panel-header"
-  }, (0,external_React_.createElement)(external_wp_components_namespaceObject.Button, {
-    icon: library_close,
-    onClick: () => setIsInserterOpened(false)
-  })), (0,external_React_.createElement)("div", {
-    className: "edit-widgets-layout__inserter-panel-content"
-  }, (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.__experimentalLibrary, {
-    showMostUsedBlocks: false,
-    showInserterHelpPanel: true,
-    shouldFocusBlock: isMobileViewport
-  })));
-}
-//# sourceMappingURL=inserter-sidebar.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/footer.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-const Footer = ({
-  editorMode
-}) => {
-  const isMobileViewport = (0,external_wp_compose_namespaceObject.useViewportMatch)('medium', '<');
-  const {
-    showBlockBreadcrumbs,
-    documentLabel
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    // @ts-ignore
-    const {
-      getPostTypeLabel
-    } = select(external_wp_editor_namespaceObject.store);
-    const postTypeLabel = getPostTypeLabel();
-    return {
-      // TODO: This is currently disabled until it can be better worked in
-      showBlockBreadcrumbs: false,
-      //isFeatureActive( 'showBlockBreadcrumbs' ),
-      // translators: Default label for the Document in the Block Breadcrumb.
-      documentLabel: postTypeLabel || (0,external_wp_i18n_namespaceObject._x)('Document', 'noun')
-    };
-  }, []);
-  return (0,external_React_.createElement)("div", {
-    className: "edit-post-layout__footer"
-  }, showBlockBreadcrumbs && !isMobileViewport && editorMode === 'visual' && (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.BlockBreadcrumb, {
-    rootLabelText: documentLabel
-  }), (0,external_React_.createElement)(footer_slot.Slot, null));
-};
-/* harmony default export */ const footer = (Footer);
-//# sourceMappingURL=footer.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/action-area/index.js
-
-/**
- * WordPress dependencies
- */
-
-const {
-  Fill: action_area_Fill,
-  Slot: action_area_Slot
-} = (0,external_wp_components_namespaceObject.createSlotFill)('IsolatedFooter');
-const ActionArea = ({
-  children
-}) => {
-  return (0,external_React_.createElement)(action_area_Fill, null, children);
-};
-ActionArea.Slot = function () {
-  return (0,external_React_.createElement)(action_area_Slot, null, fills => fills);
-};
-/* harmony default export */ const action_area = (ActionArea);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor/index.js
-
-// @ts-nocheck
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-
-
-
-
-
-/** @typedef {import('../../store/editor/reducer').EditorMode} EditorMode */
-/** @typedef {import('../../index').BlockEditorSettings} BlockEditorSettings */
-/** @typedef {import('../../index').OnMore} OnMore */
-
-/**
- * Undo/redo
- *
- * @callback OnHistory
- */
-
-const interfaceLabels = {
-  secondarySidebar: (0,external_wp_i18n_namespaceObject.__)('Block library'),
-  /* translators: accessibility text for the editor top bar landmark region. */
-  header: (0,external_wp_i18n_namespaceObject.__)('Editor top bar'),
-  /* translators: accessibility text for the editor content landmark region. */
-  body: (0,external_wp_i18n_namespaceObject.__)('Editor content'),
-  /* translators: accessibility text for the editor settings landmark region. */
-  sidebar: (0,external_wp_i18n_namespaceObject.__)('Editor settings'),
-  /* translators: accessibility text for the editor publish landmark region. */
-  actions: (0,external_wp_i18n_namespaceObject.__)('Editor publish'),
-  /* translators: accessibility text for the editor footer landmark region. */
-  footer: (0,external_wp_i18n_namespaceObject.__)('Editor footer')
-};
-
-/**
- * The editor component. Contains the visual or text editor, along with keyboard handling.
- *
- * Note: the keyboard handling is specific to this editor and *not* global
- *
- * @param {Object} props - Component props
- * @param {boolean} props.isEditing - Are we editing in this editor?
- * @param {EditorMode} props.editorMode - Visual or code?
- * @param {BlockEditorSettings} props.settings - Settings
- * @param {Object} props.children - Child components
- * @param {OnHistory} props.undo
- * @param {OnHistory} props.redo
- * @param {OnMore} props.renderMoreMenu - Callback to render additional items in the more menu
- */
-function BlockEditor(props) {
-  var _settings$iso$header, _settings$iso$sidebar, _settings$iso$toolbar;
-  const {
-    isEditing,
-    editorMode,
-    children,
-    undo,
-    redo,
-    settings,
-    renderMoreMenu
-  } = props;
-  const styles = []; // TODO: do we need hasThemeStyles support here?
-  const isMobileViewport = (0,external_wp_compose_namespaceObject.useViewportMatch)('medium', '<');
-  const isLargeViewport = (0,external_wp_compose_namespaceObject.useViewportMatch)('medium');
-  const inspectorInSidebar = settings?.iso?.sidebar?.inspector || false;
-  const inserterInSidebar = settings?.iso?.sidebar?.inserter || false;
-  const showHeader = (_settings$iso$header = settings?.iso?.header) !== null && _settings$iso$header !== void 0 ? _settings$iso$header : true;
-  const showFooter = settings?.iso?.footer || false;
-  const {
-    sidebarIsOpened,
-    fixedToolbar,
-    isInserterOpened,
-    isListViewOpened,
-    showIconLabels,
-    isFullscreenActive,
-    previousShortcut,
-    nextShortcut
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    const {
-      isFeatureActive,
-      isInserterOpened,
-      isListViewOpened,
-      isOptionActive
-    } = select('isolated/editor');
-    return {
-      sidebarIsOpened: !!select(store).getActiveComplementaryArea('isolated/editor'),
-      fixedToolbar: isFeatureActive('fixedToolbar', settings?.editor.hasFixedToolbar),
-      isInserterOpened: isInserterOpened(),
-      isListViewOpened: isListViewOpened(),
-      isFullscreenActive: isOptionActive('fullscreenMode'),
-      showIconLabels: isFeatureActive('showIconLabels'),
-      previousShortcut: select(external_wp_keyboardShortcuts_namespaceObject.store).getAllShortcutKeyCombinations('core/edit-post/previous-region'),
-      nextShortcut: select(external_wp_keyboardShortcuts_namespaceObject.store).getAllShortcutKeyCombinations('core/edit-post/next-region')
-    };
-  }, []);
-  const className = classnames_default()('edit-post-layout', 'is-mode-' + editorMode, {
-    'is-sidebar-opened': sidebarIsOpened,
-    'is-inserter-opened': isInserterOpened,
-    'has-fixed-toolbar': fixedToolbar,
-    'show-icon-labels': showIconLabels
-  });
-  const secondarySidebar = () => {
-    if (!inserterInSidebar) {
-      return null;
-    }
-    if (editorMode === 'visual' && isInserterOpened) {
-      return (0,external_React_.createElement)(InserterSidebar, null);
-    }
-    if (editorMode === 'visual' && isListViewOpened) {
-      return (0,external_React_.createElement)(ListViewSidebar, null);
-    }
-    return null;
-  };
-
-  // For back-compat with older iso-editor
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    const html = document.querySelector('html');
-    if (isFullscreenActive) {
-      // @ts-ignore
-      html.classList.add('is-fullscreen-mode');
-    } else {
-      // @ts-ignore
-      html.classList.remove('is-fullscreen-mode');
-    }
-    return () => {
-      if (html) {
-        html.classList.remove('is-fullscreen-mode');
-      }
-    };
-  }, [isFullscreenActive]);
-  const header = showHeader ? (0,external_React_.createElement)(block_editor_toolbar, {
-    editorMode: editorMode,
-    settings: settings,
-    renderMoreMenu: renderMoreMenu
-  }) : null;
-  const CustomSettingsSidebar = (_settings$iso$sidebar = settings?.iso?.sidebar?.customComponent) !== null && _settings$iso$sidebar !== void 0 ? _settings$iso$sidebar : sidebar;
-  return (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)(CustomSettingsSidebar, {
-    documentInspector: (_settings$iso$toolbar = settings?.iso?.toolbar?.documentInspector) !== null && _settings$iso$toolbar !== void 0 ? _settings$iso$toolbar : false
-  }), (0,external_React_.createElement)(fullscreen_mode, {
-    isActive: isFullscreenActive
-  }), (0,external_React_.createElement)(interface_skeleton, {
-    className: className,
-    labels: interfaceLabels,
-    header: header,
-    secondarySidebar: secondarySidebar(),
-    sidebar: (!isMobileViewport || sidebarIsOpened) && inspectorInSidebar && (0,external_React_.createElement)(complementary_area.Slot, {
-      scope: "isolated/editor"
-    }),
-    notices: (0,external_React_.createElement)(external_wp_editor_namespaceObject.EditorSnackbars, null),
-    content: (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)(external_wp_editor_namespaceObject.EditorNotices, null), isEditing && (0,external_React_.createElement)(external_React_.Fragment, null, (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.BlockEditorKeyboardShortcuts, null), (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.BlockEditorKeyboardShortcuts.Register, null)), (0,external_React_.createElement)(external_wp_components_namespaceObject.KeyboardShortcuts, {
-      bindGlobal: false,
-      shortcuts: {
-        [external_wp_keycodes_namespaceObject.rawShortcut.primary('z')]: undo,
-        [external_wp_keycodes_namespaceObject.rawShortcut.primaryShift('z')]: redo
-      }
-    }, editorMode === 'visual' && (0,external_React_.createElement)(external_React_.Fragment, null, !isLargeViewport && (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.BlockToolbar, {
-      hideDragHandle: true
-    }), (0,external_React_.createElement)(VisualEditor, {
-      styles: styles
-    })), editorMode === 'text' && (0,external_React_.createElement)(text_editor, null)), children),
-    footer: showFooter && (0,external_React_.createElement)(footer, {
-      editorMode: editorMode
-    }),
-    actions: (0,external_React_.createElement)(action_area.Slot, null),
-    shortcuts: {
-      previous: previousShortcut,
-      next: nextShortcut
-    }
-  }));
-}
-/* harmony default export */ const block_editor = ((0,external_wp_data_namespaceObject.withDispatch)(dispatch => {
-  const {
-    redo,
-    undo
-  } = dispatch('isolated/editor');
-  return {
-    redo,
-    undo
-  };
-})(BlockEditor));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-contents/editor-content.js
-/**
- * WordPress dependencies
- */
-
-
-
-/** @typedef {import('../../store/editor/reducer').Pattern} Pattern */
-
-const getPattern = (patterns, currentPattern) => patterns && patterns.find(item => item.name === currentPattern);
-
-/**
- * Get the pattern to start an editor with.
- *
- * @param {Pattern[]} patterns Array of patterns
- * @param {string} currentPattern Current pattern name
- * @param {object[]} template Current template
- * @param {object[]} initialContent Initial content
- */
-function getInitialEditorContent(patterns, currentPattern, template, initialContent) {
-  // No patterns = do nothing
-  if (patterns === undefined) {
-    return initialContent;
-  }
-
-  // Existing content comes before anything
-  if (initialContent && initialContent.length > 0) {
-    return initialContent;
-  }
-
-  // Did we load the page with a template set?
-  if (currentPattern) {
-    const pattern = getPattern(patterns, currentPattern);
-    if (pattern) {
-      return (0,external_wp_blocks_namespaceObject.parse)(pattern.content);
-    }
-  }
-  if (template) {
-    return (0,external_wp_blocks_namespaceObject.synchronizeBlocksWithTemplate)(initialContent, template);
-  }
-
-  // No content
-  return [];
-}
-/* harmony default export */ const editor_content = (getInitialEditorContent);
-//# sourceMappingURL=editor-content.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-contents/index.js
-
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-/** @typedef {import('../../store/editor/reducer').EditorMode} EditorMode */
-/** @typedef {import('../../index').BlockEditorSettings} BlockEditorSettings */
-/** @typedef {import('../../index').OnLoad} OnLoad */
-/** @typedef {import('../../index').OnMore} OnMore */
-
-/**
- * Get editor selection
- *
- * @callback OnSelection
- */
-
-/**
- * Update callback
- *
- * @callback OnUpdate
- * @param {object[]} blocks - Editor content to save
- * @param settings
- * @param [loader]
- * @param {Object} [options]
- */
-async function getInitialContent(settings, loader) {
-  const contentLoader = isPromise(loader) ? loader : new Promise(resolve => {
-    resolve(loader ? loader(external_wp_blocks_namespaceObject.parse, external_wp_blocks_namespaceObject.rawHandler) : []);
-  });
-  return contentLoader.then(content => {
-    return editor_content(settings.iso.patterns, settings.iso.currentPattern, settings.editor.template, content);
-  });
-}
-
-/**
- * The editor itself, including toolbar
- *
- * @param {Object} props - Component props
- * @param {object[]} props.blocks
- * @param {OnUpdate} props.onInput - Callback to update blocks
- * @param {OnUpdate} props.onChange - Callback to update blocks
- * @param {boolean} props.isEditing - Are we editing in this editor?
- * @param {EditorMode} props.editorMode - Visual or code?
- * @param {Object} props.children - Child components
- * @param {BlockEditorSettings} props.settings - Settings
- * @param {OnMore} props.renderMoreMenu - Callback to render additional items in the more menu
- * @param {OnSelection} props.selection
- * @param {OnLoad} props.onLoad - Load initial blocks
- */
-
-function BlockEditorContents(props) {
-  const {
-    blocks,
-    onInput,
-    onChange,
-    selection,
-    isEditing,
-    editorMode
-  } = props;
-  const {
-    children,
-    settings,
-    renderMoreMenu,
-    onLoad
-  } = props;
-
-  // Set initial content, if we have any, but only if there is no existing data in the editor (from elsewhere)
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    const loadData = async () => {
-      const initialContent = await getInitialContent(settings, onLoad);
-      if (initialContent.length > 0 && (!blocks || blocks.length === 0)) {
-        onInput(initialContent, {
-          isInitialContent: true
-        });
-      }
-    };
-    loadData();
-  }, []);
-  return (0,external_React_.createElement)(external_wp_blockEditor_namespaceObject.BlockEditorProvider, {
-    value: blocks || [],
-    onInput: onInput,
-    onChange: onChange,
-    useSubRegistry: false,
-    selection: selection,
-    settings: settings.editor
-  }, (0,external_React_.createElement)(block_editor, {
-    isEditing: isEditing,
-    editorMode: editorMode,
-    settings: settings,
-    renderMoreMenu: renderMoreMenu
-  }, children),
-  // @ts-ignore
-  (0,external_React_.createElement)(external_wp_components_namespaceObject.Popover.Slot, null));
-}
-
-// @ts-ignore
-/* harmony default export */ const block_editor_contents = ((0,external_wp_compose_namespaceObject.compose)([(0,external_wp_data_namespaceObject.withSelect)((select, ownProps) => {
-  var _ownProps$blocks;
-  const {
-    getBlocks,
-    getEditorSelection,
-    getEditorMode,
-    isEditing
-  } = select('isolated/editor');
-  return {
-    blocks: (_ownProps$blocks = ownProps.blocks) !== null && _ownProps$blocks !== void 0 ? _ownProps$blocks : getBlocks(),
-    selection: getEditorSelection(),
-    isEditing: isEditing(),
-    editorMode: getEditorMode()
-  };
-}), (0,external_wp_data_namespaceObject.withDispatch)((dispatch, ownProps) => {
-  const {
-    updateBlocksWithUndo,
-    updateBlocksWithoutUndo
-  } = dispatch('isolated/editor');
-  const {
-    onInput,
-    onChange
-  } = ownProps;
-  return {
-    onChange: (...args) => {
-      onChange?.(...args);
-      updateBlocksWithUndo(...args);
-    },
-    onInput: (...args) => {
-      onInput?.(...args);
-      updateBlocksWithoutUndo(...args);
-    }
-  };
-})])(BlockEditorContents));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/plugins/store-hot-swap.js
-/**
- * Swap any access to `core/block-editor` to the currently focussed editor store. This ensures that blocks that directly access
- * wp.data still work.
- *
- * Note that store plugins are currently marked as deprecated. It's unknown what will replace them, and this will need to be updated
- * once that happens.
- *
- * @param {Object} registry
- * @param {Object} pluginOptions
- */
-function storeHotSwapPlugin(registry, pluginOptions) {
-  const hotStores = ['core/block-editor', 'core/editor'];
-
-  // Switch select and dispatch
-  return {
-    dispatch(reducerKey) {
-      if (storeHotSwapPlugin.targetDispatch === null || hotStores.indexOf(reducerKey) === -1) {
-        return registry.dispatch(reducerKey);
-      }
-      return storeHotSwapPlugin.targetDispatch(reducerKey);
-    },
-    select(reducerKey) {
-      if (storeHotSwapPlugin.targetSelect === null || hotStores.indexOf(reducerKey) === -1) {
-        return registry.select(reducerKey);
-      }
-      return storeHotSwapPlugin.targetSelect(reducerKey);
-    }
-  };
-}
-storeHotSwapPlugin.targetSelect = null;
-storeHotSwapPlugin.targetDispatch = null;
-storeHotSwapPlugin.setEditor = function (select, dispatch) {
-  this.targetSelect = select;
-  this.targetDispatch = dispatch;
-};
-storeHotSwapPlugin.resetEditor = function () {
-  this.targetSelect = null;
-  this.targetDispatch = null;
-};
-/* harmony default export */ const store_hot_swap = (storeHotSwapPlugin);
-//# sourceMappingURL=store-hot-swap.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-container/hot-swapper.js
-/**
- * WordPress dependencies
- */
-
-
-
-
-/**
- * Internal dependencies
- */
-
-function HotSwapper({
-  isEditing,
-  hotSwap
-}) {
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    hotSwap(isEditing);
-  }, [isEditing]);
-  return null;
-}
-
-// @ts-ignore
-/* harmony default export */ const hot_swapper = ((0,external_wp_compose_namespaceObject.compose)([(0,external_wp_data_namespaceObject.withSelect)(select => {
-  const {
-    isEditing
-  } = select('isolated/editor');
-  return {
-    isEditing: isEditing()
-  };
-}), (0,external_wp_data_namespaceObject.withDispatch)((dispatch, ownProps, {
-  select
-}) => {
-  return {
-    hotSwap: isEditing => {
-      store_hot_swap.resetEditor();
-      if (isEditing) {
-        store_hot_swap.setEditor(select, dispatch);
-      }
-    }
-  };
-})])(HotSwapper));
-//# sourceMappingURL=hot-swapper.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-container/style.scss
-// extracted by mini-css-extract-plugin
-
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/block-editor-container/index.js
-
-// @ts-nocheck
-/**
- * External dependencies
- */
-
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-/** @typedef {import('../../index').BlockEditorSettings} BlockEditorSettings */
-/** @typedef {import('../../index').OnError} OnError */
-/** @typedef {import('../../index').OnMore} OnMore */
-/** @typedef {import('../../store/editor/reducer').EditorMode} EditorMode */
-/** @typedef {import('../../index').OnLoad} OnLoad */
-/** @typedef {import('../block-editor-contents/index').OnUpdate} OnUpdate */
-
-/**
- * Set editing callback
- *
- * @callback OnSetEditing
- * @param {boolean} isEditing
- */
-
-const SIZE_LARGE = 720;
-const SIZE_MEDIUM = 480;
-
-/**
- * Contains the block contents. Handles the hot-swapping of the redux stores, as well as applying the root CSS classes
- *
- * @param {Object} props - Component props
- * @param {Object} props.children - Child components
- * @param {boolean} props.isEditorReady - The editor is ready for editing
- * @param {boolean} props.isEditing - This editor is being edited in
- * @param {boolean} props.isPreview - Whether preview mode is enabled
- * @param {boolean} props.fixedToolbar - Has fixed toolbar
- * @param {EditorMode} props.editorMode - 'text' or 'visual'
- * @param {string} props.className - additional class names
- * @param {BlockEditorSettings} props.settings - Settings
- * @param {OnError} props.onError - Error callback
- * @param {OnMore} props.renderMoreMenu - Callback to render additional items in the more menu
- * @param {OnSetEditing} props.setEditing - Set the mode to editing
- * @param {OnLoad} props.onLoad - Load initial blocks
- * @param {OnUpdate} [props.onInput] - Gutenberg's onInput callback
- * @param {OnUpdate} [props.onChange] - Gutenberg's onChange callback
- * @param {object[]} [props.blocks] - Gutenberg's blocks
- */
-function BlockEditorContainer(props) {
-  const {
-    children,
-    settings,
-    className,
-    onError,
-    renderMoreMenu,
-    onLoad,
-    onInput,
-    onChange,
-    blocks
-  } = props;
-  const {
-    isEditorReady,
-    editorMode,
-    isEditing,
-    setEditing,
-    fixedToolbar,
-    isPreview
-  } = props;
-  const [resizeListener, {
-    width
-  }] = (0,external_wp_compose_namespaceObject.useResizeObserver)();
-  const classes = classnames_default()(className, {
-    'iso-editor': true,
-    'is-large': width ? width >= SIZE_LARGE : false,
-    'is-medium': width ? width >= SIZE_MEDIUM && width < SIZE_LARGE : true,
-    'is-small': width ? width < SIZE_MEDIUM : false,
-    'iso-editor__loading': !isEditorReady,
-    'iso-editor__selected': isEditing,
-    // Match Gutenberg
-    'block-editor': true,
-    'edit-post-layout': true,
-    'has-fixed-toolbar': fixedToolbar,
-    ['is-mode-' + editorMode]: true,
-    'is-preview-mode': isPreview
-  });
-  return (0,external_React_.createElement)("div", {
-    className: classes
-  }, (0,external_React_.createElement)(external_wp_editor_namespaceObject.ErrorBoundary, {
-    onError: onError
-  }, (0,external_React_.createElement)(hot_swapper, null), resizeListener, (0,external_React_.createElement)(click_outside, {
-    onOutside: () => setEditing(false),
-    onFocus: () => !isEditing && setEditing(true)
-  }, (0,external_React_.createElement)(block_editor_contents, {
-    blocks: blocks,
-    settings: settings,
-    renderMoreMenu: renderMoreMenu,
-    onLoad: onLoad,
-    onInput: onInput,
-    onChange: onChange
-  }, children))));
-}
-/* harmony default export */ const block_editor_container = ((0,external_wp_compose_namespaceObject.compose)([(0,external_wp_data_namespaceObject.withSelect)((select, {
-  settings
-}) => {
-  const {
-    isEditorReady,
-    getEditorMode,
-    isEditing,
-    isFeatureActive,
-    isOptionActive
-  } = select('isolated/editor');
-  return {
-    isEditorReady: isEditorReady(),
-    editorMode: getEditorMode(),
-    isEditing: isEditing(),
-    fixedToolbar: isFeatureActive('fixedToolbar', settings?.editor.hasFixedToolbar),
-    isPreview: isOptionActive('preview')
-  };
-}), (0,external_wp_data_namespaceObject.withDispatch)(dispatch => {
-  const {
-    setEditing
-  } = dispatch('isolated/editor');
-  return {
-    setEditing
-  };
-})])(BlockEditorContainer));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/redux-undo/dist/redux-undo.mjs
-const redux_undo_c = {
-  UNDO: "@@redux-undo/UNDO",
-  REDO: "@@redux-undo/REDO",
-  JUMP_TO_FUTURE: "@@redux-undo/JUMP_TO_FUTURE",
-  JUMP_TO_PAST: "@@redux-undo/JUMP_TO_PAST",
-  JUMP: "@@redux-undo/JUMP",
-  CLEAR_HISTORY: "@@redux-undo/CLEAR_HISTORY"
-}, M = {
-  undo() {
-    return { type: redux_undo_c.UNDO };
-  },
-  redo() {
-    return { type: redux_undo_c.REDO };
-  },
-  jumpToFuture(e) {
-    return { type: redux_undo_c.JUMP_TO_FUTURE, index: e };
-  },
-  jumpToPast(e) {
-    return { type: redux_undo_c.JUMP_TO_PAST, index: e };
-  },
-  jump(e) {
-    return { type: redux_undo_c.JUMP, index: e };
-  },
-  clearHistory() {
-    return { type: redux_undo_c.CLEAR_HISTORY };
-  }
-};
-function U(e, t = []) {
-  return Array.isArray(e) ? e : typeof e == "string" ? [e] : t;
-}
-function E(e) {
-  return typeof e.present < "u" && typeof e.future < "u" && typeof e.past < "u" && Array.isArray(e.future) && Array.isArray(e.past);
-}
-function v(e) {
-  const t = U(e);
-  return (n) => t.indexOf(n.type) >= 0;
-}
-function D(e) {
-  const t = U(e);
-  return (n) => t.indexOf(n.type) < 0;
-}
-function w(...e) {
-  return e.reduce(
-    (t, n) => (s, l, i) => t(s, l, i) && n(s, l, i),
-    () => !0
-  );
-}
-function B(e) {
-  const t = U(e);
-  return (n) => t.indexOf(n.type) >= 0 ? n.type : null;
-}
-function T(e, t, n, s = null) {
-  return {
-    past: e,
-    present: t,
-    future: n,
-    group: s,
-    _latestUnfiltered: t,
-    index: e.length,
-    limit: e.length + n.length + 1
-  };
-}
-let _, d;
-const P = {
-  prevState: "#9E9E9E",
-  action: "#03A9F4",
-  nextState: "#4CAF50"
-};
-function F() {
-  d = {
-    header: [],
-    prev: [],
-    action: [],
-    next: [],
-    msgs: []
-  };
-}
-function H() {
-  const { header: e, prev: t, next: n, action: s, msgs: l } = d;
-  console.group ? (console.groupCollapsed(...e), console.log(...t), console.log(...s), console.log(...n), console.log(...l), console.groupEnd()) : (console.log(...e), console.log(...t), console.log(...s), console.log(...n), console.log(...l));
-}
-function S(e, t, n) {
-  return [
-    `%c${e}`,
-    `color: ${t}; font-weight: bold`,
-    n
-  ];
-}
-function h(e, t) {
-  F(), _ && (console.group ? (d.header = ["%credux-undo", "font-style: italic", "action", e.type], d.action = S("action", P.action, e), d.prev = S("prev history", P.prevState, t)) : (d.header = ["redux-undo action", e.type], d.action = ["action", e], d.prev = ["prev history", t]));
-}
-function redux_undo_a(e) {
-  _ && (console.group ? d.next = S("next history", P.nextState, e) : d.next = ["next history", e], H());
-}
-function f(...e) {
-  _ && (d.msgs = d.msgs.concat([...e, `
-`]));
-}
-function j(e) {
-  _ = e;
-}
-function m(e, t) {
-  const n = T([], e, []);
-  return t && (n._latestUnfiltered = null), n;
-}
-function I(e, t, n, s) {
-  const l = e.past.length + 1;
-  f("inserting", t), f("new free: ", n - l);
-  const { past: i, _latestUnfiltered: o } = e, p = n && n <= l, r = i.slice(p ? 1 : 0), u = o != null ? [
-    ...r,
-    o
-  ] : r;
-  return T(u, t, [], s);
-}
-function A(e, t) {
-  if (t < 0 || t >= e.future.length)
-    return e;
-  const { past: n, future: s, _latestUnfiltered: l } = e, i = [...n, l, ...s.slice(0, t)], o = s[t], p = s.slice(t + 1);
-  return T(i, o, p);
-}
-function x(e, t) {
-  if (t < 0 || t >= e.past.length)
-    return e;
-  const { past: n, future: s, _latestUnfiltered: l } = e, i = n.slice(0, t), o = [...n.slice(t + 1), l, ...s], p = n[t];
-  return T(i, p, o);
-}
-function O(e, t) {
-  return t > 0 ? A(e, t - 1) : t < 0 ? x(e, e.past.length + t) : e;
-}
-function J(e, t) {
-  return t.indexOf(e) > -1 ? e : !e;
-}
-function C(e, t = {}) {
-  j(t.debug);
-  const n = {
-    limit: void 0,
-    filter: () => !0,
-    groupBy: () => null,
-    undoType: redux_undo_c.UNDO,
-    redoType: redux_undo_c.REDO,
-    jumpToPastType: redux_undo_c.JUMP_TO_PAST,
-    jumpToFutureType: redux_undo_c.JUMP_TO_FUTURE,
-    jumpType: redux_undo_c.JUMP,
-    neverSkipReducer: !1,
-    ignoreInitialState: !1,
-    syncFilter: !1,
-    ...t,
-    initTypes: U(t.initTypes, ["@@redux-undo/INIT"]),
-    clearHistoryType: U(
-      t.clearHistoryType,
-      [redux_undo_c.CLEAR_HISTORY]
-    )
-  }, s = n.neverSkipReducer ? (i, o, ...p) => ({
-    ...i,
-    present: e(i.present, o, ...p)
-  }) : (i) => i;
-  let l;
-  return (i = l, o = {}, ...p) => {
-    h(o, i);
-    let r = i;
-    if (!l)
-      if (f("history is uninitialized"), i === void 0) {
-        const g = e(i, { type: "@@redux-undo/CREATE_HISTORY" }, ...p);
-        return r = m(
-          g,
-          n.ignoreInitialState
-        ), f("do not set initialState on probe actions"), redux_undo_a(r), r;
-      } else
-        E(i) ? (r = l = n.ignoreInitialState ? i : T(
-          i.past,
-          i.present,
-          i.future
-        ), f(
-          "initialHistory initialized: initialState is a history",
-          l
-        )) : (r = l = m(
-          i,
-          n.ignoreInitialState
-        ), f(
-          "initialHistory initialized: initialState is not a history",
-          l
-        ));
-    let u;
-    switch (o.type) {
-      case void 0:
-        return r;
-      case n.undoType:
-        return u = O(r, -1), f("perform undo"), redux_undo_a(u), s(u, o, ...p);
-      case n.redoType:
-        return u = O(r, 1), f("perform redo"), redux_undo_a(u), s(u, o, ...p);
-      case n.jumpToPastType:
-        return u = x(r, o.index), f(`perform jumpToPast to ${o.index}`), redux_undo_a(u), s(u, o, ...p);
-      case n.jumpToFutureType:
-        return u = A(r, o.index), f(`perform jumpToFuture to ${o.index}`), redux_undo_a(u), s(u, o, ...p);
-      case n.jumpType:
-        return u = O(r, o.index), f(`perform jump to ${o.index}`), redux_undo_a(u), s(u, o, ...p);
-      case J(o.type, n.clearHistoryType):
-        return u = m(r.present, n.ignoreInitialState), f("perform clearHistory"), redux_undo_a(u), s(u, o, ...p);
-      default:
-        if (u = e(
-          r.present,
-          o,
-          ...p
-        ), n.initTypes.some((y) => y === o.type))
-          return f("reset history due to init action"), redux_undo_a(l), l;
-        if (r._latestUnfiltered === u)
-          return r;
-        if (typeof n.filter == "function" && !n.filter(
-          o,
-          u,
-          r
-        )) {
-          const y = T(
-            r.past,
-            u,
-            r.future,
-            r.group
-          );
-          return n.syncFilter || (y._latestUnfiltered = r._latestUnfiltered), f("filter ignored action, not storing it in past"), redux_undo_a(y), y;
-        }
-        const g = n.groupBy(o, u, r);
-        if (g != null && g === r.group) {
-          const y = T(
-            r.past,
-            u,
-            r.future,
-            r.group
-          );
-          return f("groupBy grouped the action with the previous action"), redux_undo_a(y), y;
-        }
-        return r = I(r, u, n.limit, g), f("inserted new state into history"), redux_undo_a(r), r;
-    }
-  };
-}
-
-
-;// external ["wp","isShallowEqual"]
-const external_wp_isShallowEqual_namespaceObject = window["wp"]["isShallowEqual"];
-var external_wp_isShallowEqual_default = /*#__PURE__*/__webpack_require__.n(external_wp_isShallowEqual_namespaceObject);
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/blocks/reducer.js
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-const DEFAULT_STATE = {
-  editCount: 0,
-  selection: null,
-  blocks: null
-};
-const groupBy = (action, currentState, previousHistory) => {
-  return currentState.editCount;
-};
-function getSelectedBlock(blocks, selection) {
-  return blocks.find(block => block.clientId === selection.clientId);
-}
-
-// Gutenberg triggers a UPDATE_BLOCKS_WITH_UNDO one second after typing. Try and group this with the previous edits
-function isNewUndo(action, state) {
-  const {
-    type,
-    selection
-  } = action;
-
-  // Don't create a new undo when flagged as no undo
-  if (type === 'UPDATE_BLOCKS_WITHOUT_UNDO') {
-    return false;
-  }
-  if (!selection) {
-    return true;
-  }
-
-  // Not new if selection is same
-  if (external_wp_isShallowEqual_default()(selection, state.selection)) {
-    const previousBlock = getSelectedBlock(state.blocks, selection.selectionStart);
-    const currentBlock = getSelectedBlock(action.blocks, selection.selectionStart);
-
-    // Check if any attributes have changed in the selected block
-    if (previousBlock && currentBlock && external_wp_isShallowEqual_default()(previousBlock.attributes, currentBlock.attributes)) {
-      // Nothing has changed - not a new undo level
-      return false;
-    }
-  }
-
-  // Yes, a new undo level
-  return true;
-}
-const reducer_reducer = (state = DEFAULT_STATE, action) => {
-  switch (action.type) {
-    case 'UPDATE_BLOCKS_WITHOUT_UNDO':
-    case 'UPDATE_BLOCKS_WITH_UNDO':
-      return {
-        ...state,
-        editCount: isNewUndo(action, state) ? state.editCount + 1 : state.editCount,
-        blocks: action.blocks,
-        selection: action.selection
-      };
-  }
-  return state;
-};
-/* harmony default export */ const blocks_reducer = (C(reducer_reducer, {
-  groupBy
-}));
-//# sourceMappingURL=reducer.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/blocks/actions.js
-/**
- * External dependencies
- */
-
-const actions = {
-  *undo() {
-    return yield M.undo();
-  },
-  *redo() {
-    return yield M.redo();
-  },
-  /**
-   * Update blocks without undo history
-   *
-   * @param {object[]} blocks
-   * @param {Object} options
-   */
-  *updateBlocksWithUndo(blocks, options = {}) {
-    return yield {
-      type: 'UPDATE_BLOCKS_WITH_UNDO',
-      blocks,
-      ...options
-    };
-  },
-  /**
-   * Update blocks without undo history
-   *
-   * @param {object[]} blocks
-   * @param {Object} options
-   */
-  *updateBlocksWithoutUndo(blocks, options = {}) {
-    return yield {
-      type: 'UPDATE_BLOCKS_WITHOUT_UNDO',
-      blocks,
-      ...options
-    };
-  }
-};
-/* harmony default export */ const blocks_actions = (actions);
-//# sourceMappingURL=actions.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/editor/reducer.js
-/**
- * WordPress dependencies
- */
-
-
-const reducer_getPattern = (patterns, currentPattern) => patterns && patterns.find(item => item.name === currentPattern);
-
-/** @typedef {import('../../index').IsoSettings} IsoSettings */
-
-/**
- * Pattern type.
- *
- * @typedef Pattern
- * @property {string} name - Name of the pattern.
- * @property {string} content - Content for the pattern.
- */
-
-/**
- * Editor mode
- *
- * @typedef {('visual'|'text')} EditorMode
- */
-
-/**
- * The editor state object
- *
- * @typedef EditorState
- * @property {EditorMode} editorMode - whether in visual or code editing mode.
- * @property {boolean} isInserterOpened - whether the inserter is open.
- * @property {boolean} isListViewOpened - whether the list view is open.
- * @property {Pattern[]} patterns - array of patterns.
- * @property {string|null} currentPattern - current pattern name.
- * @property {string[]} ignoredContent - content to ignore when saving.
- * @property {object|null} gutenbergTemplate - the Gutenberg template
- * @property {boolean} isEditing - is this editor being used?
- * @property {boolean} isReady - is the editor ready?
- * @property {IsoSettings} settings - editor settings
- * @property {string} deviceType - current device type
- * @property {Object} canvasStyles - editor canvas styles
- * @property {boolean} isIframePreview - whether the editor canvas is an iframe
- */
-
-/** @type EditorState */
-const reducer_DEFAULT_STATE = {
-  // Editor state
-  editorMode: 'visual',
-  isInserterOpened: false,
-  isEditing: false,
-  isListViewOpened: false,
-  isReady: false,
-  patterns: [],
-  currentPattern: null,
-  gutenbergTemplate: null,
-  ignoredContent: [],
-  deviceType: 'Desktop',
-  canvasStyles: null,
-  isIframePreview: false,
-  settings: {
-    preferencesKey: null,
-    persistenceKey: null,
-    blocks: {
-      allowBlocks: [],
-      disallowBlocks: []
-    },
-    disallowEmbed: [],
-    customStores: [],
-    toolbar: {
-      inserter: true,
-      undo: true,
-      inspector: true,
-      navigation: false,
-      documentInspector: false,
-      selectorTool: false
-    },
-    sidebar: {
-      inspector: false,
-      inserter: false
-    },
-    moreMenu: {
-      editor: false,
-      fullscreen: false,
-      preview: false,
-      topToolbar: false
-    },
-    linkMenu: [],
-    currentPattern: null,
-    patterns: [],
-    defaultPreferences: {},
-    allowApi: false,
-    disableCanvasAnimations: false
-  }
-};
-
-/**
- * Ignored content are pieces of HTML that we don't need to save. This could be, for example, an empty pattern.
- *
- * @param {Pattern[]} patterns - Array of patterns.
- * @param {string} currentPattern - Selected pattern name.
- * @param {object|null} gutenbergTemplate - Gutenberg template.
- * @return {string[]} Array of ignored HTML strings.
- */
-function getIgnoredContent(patterns, currentPattern, gutenbergTemplate) {
-  const ignored = [(0,external_wp_blocks_namespaceObject.serialize)((0,external_wp_blocks_namespaceObject.createBlock)('core/paragraph')), (0,external_wp_blocks_namespaceObject.serialize)((0,external_wp_blocks_namespaceObject.createBlock)('core/paragraph', {
-    className: ''
-  }))];
-  const found = reducer_getPattern(patterns, currentPattern);
-
-  // If we're using a starter pattern then add the empty pattern to our ignored content list
-  if (found) {
-    // We parse and then serialize so it will better match the formatting from Gutenberg when saving content
-    ignored.push((0,external_wp_blocks_namespaceObject.serialize)((0,external_wp_blocks_namespaceObject.parse)(found.content)));
-  }
-
-  // If we're using a Gutenberg template then add that to the ignored list
-  if (gutenbergTemplate) {
-    ignored.push((0,external_wp_blocks_namespaceObject.serialize)((0,external_wp_blocks_namespaceObject.synchronizeBlocksWithTemplate)([], gutenbergTemplate)));
-  }
-  return ignored;
-}
-const editor_reducer_reducer = (state = reducer_DEFAULT_STATE, action) => {
-  switch (action.type) {
-    case 'SETUP_EDITOR':
-      {
-        const {
-          currentPattern,
-          patterns
-        } = action.settings.iso;
-        return {
-          ...state,
-          patterns,
-          currentPattern,
-          ignoredContent: getIgnoredContent(patterns, currentPattern, action.settings.editor.template),
-          gutenbergTemplate: action.settings.editor.template,
-          settings: {
-            ...state.settings,
-            ...action.settings.iso
-          }
-        };
-      }
-    case 'SET_CURRENT_PATTERN':
-      return {
-        ...state,
-        currentPattern: action.pattern,
-        ignoredContent: getIgnoredContent(state.patterns, action.pattern, state.gutenbergTemplate)
-      };
-    case 'SET_EDITOR_MODE':
-      return {
-        ...state,
-        editorMode: action.editorMode
-      };
-    case 'SET_INSERTER_OPEN':
-      return {
-        ...state,
-        isInserterOpened: action.isOpen,
-        isInspectorOpened: false,
-        isListViewOpened: false
-      };
-    case 'SET_INSPECTOR_OPEN':
-      return {
-        ...state,
-        isInspectorOpened: action.isOpen,
-        isListViewOpened: false
-      };
-    case 'SET_LISTVIEW_OPEN':
-      return {
-        ...state,
-        isInserterOpened: false,
-        isInspectorOpened: false,
-        isListViewOpened: action.isOpen
-      };
-    case 'SET_EDITING':
-      return {
-        ...state,
-        isEditing: action.isEditing
-      };
-    case 'SET_EDITOR_READY':
-      return {
-        ...state,
-        isReady: action.isReady
-      };
-    case 'SET_DEVICE_TYPE':
-      return {
-        ...state,
-        deviceType: action.deviceType
-      };
-    case 'SET_CANVAS_STYLES':
-      return {
-        ...state,
-        canvasStyles: action.canvasStyles
-      };
-    case 'SET_IFRAME_PREVIEW':
-      return {
-        ...state,
-        isIframePreview: action.isIframePreview
-      };
-  }
-  return state;
-};
-/* harmony default export */ const editor_reducer = (editor_reducer_reducer);
-//# sourceMappingURL=reducer.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/editor/actions.js
-/**
- * WordPress dependencies
- */
-
-
-
-
-/** @typedef {import('../../index').BlockEditorSettings} BlockEditorSettings */
-/** @typedef {import('./reducer').EditorMode} EditorMode */
-
-const actions_actions = {
-  /**
-   * Set whether the editor is ready for editing
-   *
-   * @param {boolean} isReady
-   */
-  setReady(isReady) {
-    return {
-      type: 'SET_EDITOR_READY',
-      isReady
-    };
-  },
-  /**
-   * Set the current editor mode
-   *
-   * @param {EditorMode} editorMode Editor mode
-   */
-  setEditorMode(editorMode) {
-    return {
-      type: 'SET_EDITOR_MODE',
-      editorMode
-    };
-  },
-  /**
-   * Set up the editor
-   *
-   * @param {BlockEditorSettings} settings
-   */
-  setupEditor(settings) {
-    return {
-      type: 'SETUP_EDITOR',
-      settings
-    };
-  },
-  /**
-   * Set the current pattern name
-   *
-   * @param {string} pattern Pattern name
-   */
-  setCurrentPattern(pattern) {
-    return {
-      type: 'SET_CURRENT_PATTERN',
-      pattern
-    };
-  },
-  /**
-   * Mark the block inserter as open or closed
-   *
-   * @param {boolean} isOpen
-   */
-  setIsInserterOpened(isOpen) {
-    return {
-      type: 'SET_INSERTER_OPEN',
-      isOpen
-    };
-  },
-  /**
-   * Set the current device type
-   *
-   * @param {string} deviceType 'Mobile', 'Desktop', or 'Tablet'
-   */
-  setDeviceType(deviceType) {
-    return {
-      type: 'SET_DEVICE_TYPE',
-      deviceType
-    };
-  },
-  /**
-   * Set the editor canvas styles
-   *
-   * @param {string} canvasStyles
-   */
-  setCanvasStyles(canvasStyles) {
-    return {
-      type: 'SET_CANVAS_STYLES',
-      canvasStyles
-    };
-  },
-  /**
-   * Set the editor preview mode
-   *
-   * @param {boolean} isIframePreview
-   */
-  setIsIframePreview(isIframePreview) {
-    return {
-      type: 'SET_IFRAME_PREVIEW',
-      isIframePreview
-    };
-  },
-  /**
-   * Mark this editor as in-use or not
-   *
-   * @param {boolean} isEditing
-   */
-  setEditing(isEditing) {
-    return {
-      type: 'SET_EDITING',
-      isEditing
-    };
-  },
-  /**
-   * Open the named sidebar
-   *
-   * @param {string} name Name of sidebar section
-   */
-  *openGeneralSidebar(name) {
-    yield external_wp_data_namespaceObject.controls.dispatch(store, 'enableComplementaryArea', 'isolated/editor', name);
-  },
-  /**
-   * Close the sidebar (or popover)
-   */
-  *closeGeneralSidebar() {
-    yield external_wp_data_namespaceObject.controls.dispatch(store, 'disableComplementaryArea', 'isolated/editor');
-  },
-  /**
-   * Set the status of the listview sidebar section
-   *
-   * @param {boolean} isOpen
-   */
-  setIsListViewOpened(isOpen) {
-    return {
-      type: 'SET_LISTVIEW_OPEN',
-      isOpen
-    };
-  }
-};
-/* harmony default export */ const editor_actions = (actions_actions);
-//# sourceMappingURL=actions.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/preferences/reducer.js
-/**
- * WordPress dependencies
- */
-
-const preferences_reducer_reducer = (state, action) => {
-  switch (action.type) {
-    case 'TOGGLE_FEATURE':
-      const {
-        preferencesKey,
-        ...preferences
-      } = state;
-      const updatedPreferences = {
-        ...preferences,
-        [action.feature]: state[action.feature] ? !state[action.feature] : true
-      };
-      if (preferencesKey && window.localStorage) {
-        localStorage.setItem(preferencesKey, JSON.stringify(updatedPreferences));
-      }
-      return {
-        preferencesKey,
-        ...updatedPreferences
-      };
-  }
-  return state;
-};
-/* harmony default export */ const preferences_reducer = (preferences_reducer_reducer);
-//# sourceMappingURL=reducer.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/preferences/actions.js
-const preferences_actions_actions = {
-  /**
-   * Toggle the feature
-   *
-   * @param {string} feature - Feature name
-   */
-  toggleFeature(feature) {
-    return {
-      type: 'TOGGLE_FEATURE',
-      feature
-    };
-  }
-};
-/* harmony default export */ const preferences_actions = (preferences_actions_actions);
-//# sourceMappingURL=actions.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/options/reducer.js
-const options_reducer_DEFAULT_STATE = {};
-const options_reducer_reducer = (state = options_reducer_DEFAULT_STATE, action) => {
-  switch (action.type) {
-    case 'TOGGLE_OPTION':
-      return {
-        ...state,
-        [action.option]: state[action.option] ? !state[action.option] : true
-      };
-  }
-  return state;
-};
-/* harmony default export */ const options_reducer = (options_reducer_reducer);
-//# sourceMappingURL=reducer.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/options/actions.js
-const options_actions_actions = {
-  /**
-   * Toggle the option
-   *
-   * @param {string} option Option name
-   */
-  toggleOption(option) {
-    return {
-      type: 'TOGGLE_OPTION',
-      option
-    };
-  }
-};
-/* harmony default export */ const options_actions = (options_actions_actions);
-//# sourceMappingURL=actions.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/editor/selectors.js
-/**
- * External dependencies
- */
-
-
-/**
- * WordPress dependencies
- */
-
-
-
-/** @typedef {import('../../index').IsoSettings} IsoSettings */
-/** @typedef {import('./reducer').EditorMode} EditorMode */
-/** @typedef {import('./reducer').Pattern} Pattern */
-/** @typedef {import('./reducer').EditorState} EditorState */
-
-/**
- * Get current editor mode
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {EditorMode}
- */
-function getEditorMode(state) {
-  return state.editor.editorMode;
-}
-
-/**
- * Get current editor settings
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {IsoSettings}
- */
-function getEditorSettings(state) {
-  return state.editor.settings;
-}
-
-/**
- * Is the editor ready for use?
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {boolean}
- */
-function isEditorReady(state) {
-  return state.editor.isReady;
-}
-
-/**
- * Get current pattern name
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {string|null}
- */
-function getCurrentPatternName(state) {
-  return state.editor.currentPattern;
-}
-
-/**
- * Get current pattern
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {Pattern|null}
- */
-function getCurrentPattern(state) {
-  const {
-    currentPattern,
-    patterns
-  } = state.editor;
-  if (currentPattern && patterns) {
-    for (let index = 0; index < patterns.length; index++) {
-      if (patterns[index].name === currentPattern) {
-        return patterns[index];
-      }
-    }
-  }
-  return null;
-}
-
-/**
- * Get all ignored content
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {string[]}
- */
-function selectors_getIgnoredContent(state) {
-  return state.editor.ignoredContent;
-}
-
-/**
- * Get the pattern for a given name
- *
- * @param {{editor: EditorState}} state - Current state
- * @param patternName
- * @return {Pattern|null}
- */
-function getNamedPattern(state, patternName) {
-  const {
-    patterns = []
-  } = state.editor;
-  let pattern = patterns.find(item => item.name === patternName);
-
-  // Find the full name
-  if (pattern) {
-    return pattern;
-  }
-
-  // Find the shortened name
-  pattern = patterns.find(item => item.name.replace('p2/', '') === patternName);
-  if (pattern) {
-    return pattern;
-  }
-  return null;
-}
-
-/**
- * Is the block inserter open?
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {boolean}
- */
-function isInserterOpened(state) {
-  return state.editor.isInserterOpened;
-}
-const isEditorSidebarOpened = (0,external_wp_data_namespaceObject.createRegistrySelector)(select => () => {
-  const activeGeneralSidebar = select(store).getActiveComplementaryArea('isolated/editor');
-  return (0,external_lodash_namespaceObject.includes)(['edit-post/document', 'edit-post/block'], activeGeneralSidebar);
-});
-
-/**
- * Are we editing this editor?
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {boolean}
- */
-function isEditing(state) {
-  return state.editor.isEditing;
-}
-
-/**
- * Get all patterns
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {Pattern[]}
- */
-function getPatterns(state) {
-  return state.editor.patterns;
-}
-
-/**
- * Determine if the list viewer is open
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {boolean}
- */
-function isListViewOpened(state) {
-  return state.editor.isListViewOpened;
-}
-
-/**
- * Return current device type
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {string}
- */
-function getPreviewDeviceType(state) {
-  return state.editor.deviceType;
-}
-
-/**
- * Return editor canvas styles
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {Object} editor canvas styles
- */
-function getCanvasStyles(state) {
-  return state.editor.canvasStyles;
-}
-
-/**
- * Whether the editor canvas is an iframe
- *
- * @param {{editor: EditorState}} state - Current state
- * @return {boolean} whether the editor canvas is an iframe
- */
-function isIframePreview(state) {
-  return state.editor.isIframePreview || ['Tablet', 'Mobile'].includes(state.editor.deviceType);
-}
-//# sourceMappingURL=selectors.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/blocks/selectors.js
-/**
- * Internal dependencies
- */
-
-
-/**
- * Get blocks from edit history
- *
- * @param {Object} state - Current state
- * @return {object[]}
- */
-function getBlocks(state) {
-  return state.blocks.present.blocks;
-}
-
-/**
- * Get selection
- *
- * @param {Object} state - Current state
- * @return {Object}
- */
-function getEditorSelection(state) {
-  return state.blocks.present.selection;
-}
-
-/**
- * Is undo possible?
- *
- * @param {Object} state - Current state
- * @return {boolean}
- */
-function hasEditorUndo(state) {
-  if (getEditorMode(state) !== 'visual') return false;
-  return state.blocks.past.length > 0;
-}
-
-/**
- * Is redo possible?
- *
- * @param {Object} state - Current state
- * @return {boolean}
- */
-function hasEditorRedo(state) {
-  if (getEditorMode(state) !== 'visual') return false;
-  return state.blocks.future.length > 0;
-}
-
-/**
- * Get current edit count
- *
- * @param {Object} state - Current state
- * @return {number}
- */
-function getEditCount(state) {
-  return state.blocks.present.editCount;
-}
-//# sourceMappingURL=selectors.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/preferences/selectors.js
-/**
- * Is the feature active?
- *
- * @param {Object} state - Current state
- * @param {string} feature - Feature name
- * @param {boolean} [defaultValue=false] - Default value
- */
-function selectors_isFeatureActive(state, feature, defaultValue = false) {
-  return state.preferences[feature] === undefined ? defaultValue : state.preferences[feature];
-}
-//# sourceMappingURL=selectors.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/options/selectors.js
-/**
- * Get the option value
- *
- * @param {Object} state - Current state
- * @param {string} option - Option name
- * @return {boolean}
- */
-function isOptionActive(state, option) {
-  return state.options[option] ? state.options[option] : false;
-}
-//# sourceMappingURL=selectors.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/index.js
-/**
- * WordPress dependencies
- */
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-
-
-
-
-
-
-
-
-function storeConfig(preferencesKey, defaultPreferences) {
-  return {
-    reducer: (0,external_wp_data_namespaceObject.combineReducers)({
-      blocks: blocks_reducer,
-      editor: editor_reducer,
-      preferences: preferences_reducer,
-      options: options_reducer
-    }),
-    actions: {
-      ...blocks_actions,
-      ...editor_actions,
-      ...options_actions,
-      ...preferences_actions
-    },
-    selectors: {
-      ...blocks_selectors_namespaceObject,
-      ...editor_selectors_namespaceObject,
-      ...preferences_selectors_namespaceObject,
-      ...options_selectors_namespaceObject
-    },
-    persist: ['preferences'],
-    initialState: {
-      preferences: {
-        preferencesKey,
-        ...(preferencesKey && localStorage.getItem(preferencesKey) ?
-        // @ts-ignore
-        JSON.parse(localStorage.getItem(preferencesKey)) : defaultPreferences)
-      }
-    }
-  };
-}
-/* harmony default export */ const build_module_store = (storeConfig);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/reusable-store/controls.js
-/**
- * WordPress dependencies
- */
-
-
-
-
-/**
- * Convert a reusable block to a static block effect handler
- *
- * @param {string}  clientId Block ID.
- * @return {Object} control descriptor.
- */
-function convertBlockToStatic(clientId) {
-  return {
-    type: 'CONVERT_BLOCK_TO_STATIC',
-    clientId
-  };
-}
-
-/**
- * Convert a static block to a reusable block effect handler
- *
- * @param {Array}  clientIds Block IDs.
- * @return {Object} control descriptor.
- */
-function convertBlocksToReusable(clientIds) {
-  return {
-    type: 'CONVERT_BLOCKS_TO_REUSABLE',
-    clientIds
-  };
-}
-
-/**
- * Deletes a reusable block.
- *
- * @param {string} id Reusable block ID.
- * @return {Object} control descriptor.
- */
-function deleteReusableBlock(id) {
-  return {
-    type: 'DELETE_REUSABLE_BLOCK',
-    id
-  };
-}
-const controls = {
-  CONVERT_BLOCK_TO_STATIC: (0,external_wp_data_namespaceObject.createRegistryControl)(registry => ({
-    clientId
-  }) => {
-    const oldBlock = registry.select('core/block-editor').getBlock(clientId);
-    const reusableBlock = registry.select('core').getEditedEntityRecord('postType', 'wp_block', oldBlock.attributes.ref);
-    const newBlocks = (0,external_wp_blocks_namespaceObject.parse)(reusableBlock.content);
-    registry.dispatch('core/block-editor').replaceBlocks(oldBlock.clientId, newBlocks);
-  }),
-  CONVERT_BLOCKS_TO_REUSABLE: (0,external_wp_data_namespaceObject.createRegistryControl)(registry => async function ({
-    clientIds
-  }) {
-    const reusableBlock = {
-      title: (0,external_wp_i18n_namespaceObject.__)('Untitled Reusable Block'),
-      content: (0,external_wp_blocks_namespaceObject.serialize)(registry.select('core/block-editor').getBlocksByClientId(clientIds)),
-      status: 'publish'
-    };
-    const updatedRecord = await registry.dispatch('core').saveEntityRecord('postType', 'wp_block', reusableBlock);
-    const newBlock = (0,external_wp_blocks_namespaceObject.createBlock)('core/block', {
-      ref: updatedRecord.id
-    });
-    registry.dispatch('core/block-editor').replaceBlocks(clientIds, newBlock);
-    registry
-    // @ts-ignore */}
-    .dispatch(reusableBlocksStore).__experimentalSetEditingReusableBlock(newBlock.clientId, true);
-  }),
-  DELETE_REUSABLE_BLOCK: (0,external_wp_data_namespaceObject.createRegistryControl)(registry => async function ({
-    id
-  }) {
-    const reusableBlock = registry.select('core').getEditedEntityRecord('postType', 'wp_block', id);
-
-    // Don't allow a reusable block with a temporary ID to be deleted
-    if (!reusableBlock) {
-      return;
-    }
-
-    // Remove any other blocks that reference this reusable block
-    const allBlocks = registry.select('core/block-editor').getBlocks();
-    const associatedBlocks = allBlocks.filter(block => (0,external_wp_blocks_namespaceObject.isReusableBlock)(block) && block.attributes.ref === id);
-    const associatedBlockClientIds = associatedBlocks.map(block => block.clientId);
-
-    // Remove the parsed block.
-    if (associatedBlockClientIds.length) {
-      registry.dispatch('core/block-editor').removeBlocks(associatedBlockClientIds);
-    }
-    await registry.dispatch('core').deleteEntityRecord('postType', 'wp_block', id);
-  })
-};
-/* harmony default export */ const reusable_store_controls = (controls);
-//# sourceMappingURL=controls.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/reusable-store/actions.js
-/**
- * Internal dependencies
- */
-
-
-/**
- * Returns a generator converting a reusable block into a static block.
- *
- * @param {string} clientId The client ID of the block to attach.
- */
-function* __experimentalConvertBlockToStatic(clientId) {
-  yield convertBlockToStatic(clientId);
-}
-
-/**
- * Returns a generator converting one or more static blocks into a reusable block.
- *
- * @param {string[]} clientIds The client IDs of the block to detach.
- */
-function* __experimentalConvertBlocksToReusable(clientIds) {
-  yield convertBlocksToReusable(clientIds);
-}
-
-/**
- * Returns a generator deleting a reusable block.
- *
- * @param {string} id The ID of the reusable block to delete.
- */
-function* __experimentalDeleteReusableBlock(id) {
-  yield deleteReusableBlock(id);
-}
-
-/**
- * Returns an action descriptor for SET_EDITING_REUSABLE_BLOCK action.
- *
- * @param {string} clientId The clientID of the reusable block to target.
- * @param {boolean} isEditing Whether the block should be in editing state.
- * @return {Object} Action descriptor.
- */
-function __experimentalSetEditingReusableBlock(clientId, isEditing) {
-  return {
-    type: 'SET_EDITING_REUSABLE_BLOCK',
-    clientId,
-    isEditing
-  };
-}
-//# sourceMappingURL=actions.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/reusable-store/reducer.js
-/**
- * WordPress dependencies
- */
-
-function isEditingReusableBlock(state = {}, action) {
-  if (action?.type === 'SET_EDITING_REUSABLE_BLOCK') {
-    return {
-      ...state,
-      [action.clientId]: action.isEditing
-    };
-  }
-  return state;
-}
-/* harmony default export */ const reusable_store_reducer = ((0,external_wp_data_namespaceObject.combineReducers)({
-  isEditingReusableBlock
-}));
-//# sourceMappingURL=reducer.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/reusable-store/selectors.js
-/**
- * Returns true if reusable block is in the editing state.
- *
- * @param {Object} state Global application state.
- * @param {number} clientId the clientID of the block.
- * @return {boolean} Whether the reusable block is in the editing state.
- */
-function __experimentalIsEditingReusableBlock(state, clientId) {
-  return state.isEditingReusableBlock[clientId];
-}
-//# sourceMappingURL=selectors.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/reusable-store/index.js
-/**
- * Internal dependencies
- */
-
-
-
-
-
-/**
- * Data store configuration.
- *
- * @see https://github.com/WordPress/gutenberg/blob/master/packages/data/README.md#registerStore
- *
- * @type {Object}
- */
-/* harmony default export */ const reusable_store = ({
-  actions: reusable_store_actions_namespaceObject,
-  controls: reusable_store_controls,
-  reducer: reusable_store_reducer,
-  selectors: reusable_store_selectors_namespaceObject
-});
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/default-settings/index.js
-/**
- * WordPress dependencies
- */
-
-
-
-/** @typedef {import('../../index').BlockEditorSettings} BlockEditorSettings */
-
-function getMenu(current, defaultMenu) {
-  if (current === false) {
-    return false;
-  }
-  return defaultMenu;
-}
-
-/**
- * Apply default settings to the user supplied settings, ensuring we have a full and valid set of settings
- *
- * @param {BlockEditorSettings} settings - Settings
- * @return {BlockEditorSettings}
- */
-function applyDefaultSettings(settings) {
-  var _iso$preferencesKey, _iso$persistenceKey, _iso$disallowEmbed, _iso$customStores, _iso$blocks$allowBloc, _iso$blocks$disallowB, _iso$toolbar, _iso$header, _iso$sidebar, _iso$footer, _iso$moreMenu, _iso$linkMenu, _iso$defaultPreferenc, _iso$allowApi, _iso$disableCanvasAni, _iso$currentPattern, _iso$patterns, _editor$bodyPlacehold, _editor$fetchLinkSugg, _editor$fetchLinkSugg2;
-  const {
-    iso,
-    editor
-  } = settings;
-  return {
-    iso: {
-      // No preferences or persistence
-      preferencesKey: (_iso$preferencesKey = iso?.preferencesKey) !== null && _iso$preferencesKey !== void 0 ? _iso$preferencesKey : null,
-      persistenceKey: (_iso$persistenceKey = iso?.persistenceKey) !== null && _iso$persistenceKey !== void 0 ? _iso$persistenceKey : null,
-      // No disallowed embeds
-      disallowEmbed: (_iso$disallowEmbed = iso?.disallowEmbed) !== null && _iso$disallowEmbed !== void 0 ? _iso$disallowEmbed : [],
-      customStores: (_iso$customStores = iso?.customStores) !== null && _iso$customStores !== void 0 ? _iso$customStores : [],
-      // Default to all blocks
-      blocks: {
-        allowBlocks: (_iso$blocks$allowBloc = iso?.blocks?.allowBlocks) !== null && _iso$blocks$allowBloc !== void 0 ? _iso$blocks$allowBloc : [],
-        disallowBlocks: (_iso$blocks$disallowB = iso?.blocks?.disallowBlocks) !== null && _iso$blocks$disallowB !== void 0 ? _iso$blocks$disallowB : []
-      },
-      // Inserter, undo, and inspector is on, everything else is off
-      toolbar: {
-        // @ts-ignore */}
-        inserter: true,
-        // @ts-ignore */}
-        inspector: false,
-        // @ts-ignore */}
-        navigation: false,
-        // @ts-ignore */}
-        documentInspector: false,
-        // @ts-ignore */}
-        undo: true,
-        // @ts-ignore */}
-        selectorTool: false,
-        ...((_iso$toolbar = iso?.toolbar) !== null && _iso$toolbar !== void 0 ? _iso$toolbar : {})
-      },
-      header: (_iso$header = iso?.header) !== null && _iso$header !== void 0 ? _iso$header : true,
-      sidebar: {
-        inserter: false,
-        inspector: false,
-        customComponent: null,
-        ...((_iso$sidebar = iso?.sidebar) !== null && _iso$sidebar !== void 0 ? _iso$sidebar : {})
-      },
-      footer: (_iso$footer = iso?.footer) !== null && _iso$footer !== void 0 ? _iso$footer : false,
-      // Nothing appears in the 'more menu'
-      moreMenu: getMenu(iso?.moreMenu, {
-        editor: false,
-        fullscreen: false,
-        preview: false,
-        topToolbar: false,
-        ...((_iso$moreMenu = iso?.moreMenu) !== null && _iso$moreMenu !== void 0 ? _iso$moreMenu : {})
-      }),
-      // No link menu
-      linkMenu: (_iso$linkMenu = iso?.linkMenu) !== null && _iso$linkMenu !== void 0 ? _iso$linkMenu : [],
-      // Default to top toolbar
-      defaultPreferences: {
-        ...((_iso$defaultPreferenc = iso?.defaultPreferences) !== null && _iso$defaultPreferenc !== void 0 ? _iso$defaultPreferenc : {})
-      },
-      allowApi: (_iso$allowApi = iso?.allowApi) !== null && _iso$allowApi !== void 0 ? _iso$allowApi : false,
-      disableCanvasAnimations: (_iso$disableCanvasAni = iso?.disableCanvasAnimations) !== null && _iso$disableCanvasAni !== void 0 ? _iso$disableCanvasAni : false,
-      // No default pattern
-      currentPattern: (_iso$currentPattern = iso?.currentPattern) !== null && _iso$currentPattern !== void 0 ? _iso$currentPattern : null,
-      // No patterns
-      patterns: (_iso$patterns = iso?.patterns) !== null && _iso$patterns !== void 0 ? _iso$patterns : []
-    },
-    editor: {
-      alignWide: true,
-      disableCustomColors: false,
-      disableCustomFontSizes: false,
-      disablePostFormats: true,
-      titlePlaceholder: (0,external_wp_i18n_namespaceObject.__)('Add title'),
-      isRTL: false,
-      autosaveInterval: 60,
-      maxUploadFileSize: 0,
-      // @ts-ignore */}
-      allowedMimeTypes: [],
-      styles: [{
-        baseURL: '',
-        __unstableType: 'theme',
-        css: "body { font-family: 'Noto Serif' }"
-      }],
-      imageSizes: [],
-      richEditingEnabled: true,
-      codeEditingEnabled: false,
-      // @ts-ignore */}
-      allowedBlockTypes: true,
-      __experimentalCanUserUseUnfilteredHTML: false,
-      // Default to no patterns, reusable blocks
-      __experimentalBlockPatterns: [],
-      // @ts-ignore */}
-      reusableBlocks: [],
-      // Default to fixed top toolbar
-      fixedToolbar: true,
-      hasFixedToolbar: true,
-      hasInlineToolbar: false,
-      ...editor,
-      bodyPlaceholder: (_editor$bodyPlacehold = editor?.bodyPlaceholder) !== null && _editor$bodyPlacehold !== void 0 ? _editor$bodyPlacehold : (0,external_wp_i18n_namespaceObject.__)('Start writing or type / to choose a block'),
-      // @ts-ignore */}
-      availableLegacyWidgets: {},
-      hasPermissionsToManageWidgets: false,
-      // Default to no link suggestions
-      // @ts-ignore */}
-      fetchLinkSuggestions: ((_editor$fetchLinkSugg = editor?.fetchLinkSuggestions) !== null && _editor$fetchLinkSugg !== void 0 ? _editor$fetchLinkSugg : editor?.__experimentalFetchLinkSuggestions) ? // @ts-ignore */}
-      (_editor$fetchLinkSugg2 = editor?.fetchLinkSuggestions) !== null && _editor$fetchLinkSugg2 !== void 0 ? _editor$fetchLinkSugg2 : editor?.__experimentalFetchLinkSuggestions : () => []
-    }
-  };
-}
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/store/core-editor/index.js
-/**
- * WordPress dependencies
- */
-
-
-
-/**
- * Override the default `core/editor` store with functions that return data from `core/block-editor` instead of the post in `core/editor`
- *
- * @param existingSelectors
- * @param newSelect
- */
-/* harmony default export */ function core_editor(existingSelectors, newSelect) {
-  return {
-    getEditedPostAttribute: (state, attributeName) => {
-      if (attributeName === 'content') {
-        // Content is stored in core/block-editor, not in the post entity
-        return (0,external_wp_blocks_namespaceObject.serialize)(newSelect('core/block-editor').getBlocks());
-      }
-
-      // Pass everything else through
-      return existingSelectors.getEditedPostAttribute(state, attributeName);
-    },
-    getEditedPostContent: () => {
-      return (0,external_wp_blocks_namespaceObject.serialize)(newSelect('core/block-editor').getBlocks());
-    }
-  };
-}
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/interface-store/actions.js
-/**
- * WordPress dependencies
- */
-
-
-
-/**
- * Set a default complementary area.
- *
- * @param {string} scope Complementary area scope.
- * @param {string} area  Area identifier.
- *
- * @return {Object} Action object.
- */
-const actions_setDefaultComplementaryArea = (scope, area) => ({
-  type: 'SET_DEFAULT_COMPLEMENTARY_AREA',
-  scope,
-  area
-});
-
-/**
- * Enable the complementary area.
- *
- * @param {string} scope Complementary area scope.
- * @param {string} area  Area identifier.
- */
-const actions_enableComplementaryArea = (scope, area) => ({
-  registry,
-  dispatch
-}) => {
-  // Return early if there's no area.
-  if (!area) {
-    return;
-  }
-  const isComplementaryAreaVisible = registry.select(external_wp_preferences_namespaceObject.store).get(scope, 'isComplementaryAreaVisible');
-  if (!isComplementaryAreaVisible) {
-    registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, 'isComplementaryAreaVisible', true);
-  }
-  dispatch({
-    type: 'ENABLE_COMPLEMENTARY_AREA',
-    scope,
-    area
-  });
-};
-
-/**
- * Disable the complementary area.
- *
- * @param {string} scope Complementary area scope.
- */
-const actions_disableComplementaryArea = scope => ({
-  registry
-}) => {
-  const isComplementaryAreaVisible = registry.select(external_wp_preferences_namespaceObject.store).get(scope, 'isComplementaryAreaVisible');
-  if (isComplementaryAreaVisible) {
-    registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, 'isComplementaryAreaVisible', false);
-  }
-};
-
-/**
- * Pins an item.
- *
- * @param {string} scope Item scope.
- * @param {string} item  Item identifier.
- *
- * @return {Object} Action object.
- */
-const actions_pinItem = (scope, item) => ({
-  registry
-}) => {
-  // Return early if there's no item.
-  if (!item) {
-    return;
-  }
-  const pinnedItems = registry.select(external_wp_preferences_namespaceObject.store).get(scope, 'pinnedItems');
-
-  // The item is already pinned, there's nothing to do.
-  if (pinnedItems?.[item] === true) {
-    return;
-  }
-  registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, 'pinnedItems', {
-    ...pinnedItems,
-    [item]: true
-  });
-};
-
-/**
- * Unpins an item.
- *
- * @param {string} scope Item scope.
- * @param {string} item  Item identifier.
- */
-const actions_unpinItem = (scope, item) => ({
-  registry
-}) => {
-  // Return early if there's no item.
-  if (!item) {
-    return;
-  }
-  const pinnedItems = registry.select(external_wp_preferences_namespaceObject.store).get(scope, 'pinnedItems');
-  registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, 'pinnedItems', {
-    ...pinnedItems,
-    [item]: false
-  });
-};
-
-/**
- * Returns an action object used in signalling that a feature should be toggled.
- *
- * @param {string} scope       The feature scope (e.g. core/edit-post).
- * @param {string} featureName The feature name.
- */
-function actions_toggleFeature(scope, featureName) {
-  return function ({
-    registry
-  }) {
-    external_wp_deprecated_default()(`dispatch( 'core/interface' ).toggleFeature`, {
-      since: '6.0',
-      alternative: `dispatch( 'core/preferences' ).toggle`
-    });
-    registry.dispatch(external_wp_preferences_namespaceObject.store).toggle(scope, featureName);
-  };
-}
-
-/**
- * Returns an action object used in signalling that a feature should be set to
- * a true or false value
- *
- * @param {string}  scope       The feature scope (e.g. core/edit-post).
- * @param {string}  featureName The feature name.
- * @param {boolean} value       The value to set.
- *
- * @return {Object} Action object.
- */
-function actions_setFeatureValue(scope, featureName, value) {
-  return function ({
-    registry
-  }) {
-    external_wp_deprecated_default()(`dispatch( 'core/interface' ).setFeatureValue`, {
-      since: '6.0',
-      alternative: `dispatch( 'core/preferences' ).set`
-    });
-    registry.dispatch(external_wp_preferences_namespaceObject.store).set(scope, featureName, !!value);
-  };
-}
-
-/**
- * Returns an action object used in signalling that defaults should be set for features.
- *
- * @param {string}                  scope    The feature scope (e.g. core/edit-post).
- * @param {Object<string, boolean>} defaults A key/value map of feature names to values.
- *
- * @return {Object} Action object.
- */
-function actions_setFeatureDefaults(scope, defaults) {
-  return function ({
-    registry
-  }) {
-    external_wp_deprecated_default()(`dispatch( 'core/interface' ).setFeatureDefaults`, {
-      since: '6.0',
-      alternative: `dispatch( 'core/preferences' ).setDefaults`
-    });
-    registry.dispatch(external_wp_preferences_namespaceObject.store).setDefaults(scope, defaults);
-  };
-}
-//# sourceMappingURL=actions.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/interface-store/selectors.js
-/**
- * WordPress dependencies
- */
-
-
-
-
-/**
- * Returns the complementary area that is active in a given scope.
- *
- * @param {Object} state Global application state.
- * @param {string} scope Item scope.
- *
- * @return {string | null | undefined} The complementary area that is active in the given scope.
- */
-const selectors_getActiveComplementaryArea = (0,external_wp_data_namespaceObject.createRegistrySelector)(select => (state, scope) => {
-  const isComplementaryAreaVisible = select(external_wp_preferences_namespaceObject.store).get(scope, 'isComplementaryAreaVisible');
-
-  // Return `undefined` to indicate that the user has never toggled
-  // visibility, this is the vanilla default. Other code relies on this
-  // nuance in the return value.
-  if (isComplementaryAreaVisible === undefined) {
-    return undefined;
-  }
-
-  // Return `null` to indicate the user hid the complementary area.
-  if (!isComplementaryAreaVisible) {
-    return null;
-  }
-  return state?.complementaryAreas?.[scope];
-});
-
-/**
- * Returns a boolean indicating if an item is pinned or not.
- *
- * @param {Object} state Global application state.
- * @param {string} scope Scope.
- * @param {string} item  Item to check.
- *
- * @return {boolean} True if the item is pinned and false otherwise.
- */
-const selectors_isItemPinned = (0,external_wp_data_namespaceObject.createRegistrySelector)(select => (state, scope, item) => {
-  var _pinnedItems$item;
-  const pinnedItems = select(external_wp_preferences_namespaceObject.store).get(scope, 'pinnedItems');
-  return (_pinnedItems$item = pinnedItems?.[item]) !== null && _pinnedItems$item !== void 0 ? _pinnedItems$item : true;
-});
-
-/**
- * Returns a boolean indicating whether a feature is active for a particular
- * scope.
- *
- * @param {Object} state       The store state.
- * @param {string} scope       The scope of the feature (e.g. core/edit-post).
- * @param {string} featureName The name of the feature.
- *
- * @return {boolean} Is the feature enabled?
- */
-const interface_store_selectors_isFeatureActive = (0,external_wp_data_namespaceObject.createRegistrySelector)(select => (state, scope, featureName) => {
-  external_wp_deprecated_default()(`select( 'core/interface' ).isFeatureActive( scope, featureName )`, {
-    since: '6.0',
-    alternative: `select( 'core/preferences' ).get( scope, featureName )`
-  });
-  return !!select(external_wp_preferences_namespaceObject.store).get(scope, featureName);
-});
-//# sourceMappingURL=selectors.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/interface-store/reducer.js
-/**
- * WordPress dependencies
- */
-
-function reducer_complementaryAreas(state = {}, action) {
-  switch (action.type) {
-    case 'SET_DEFAULT_COMPLEMENTARY_AREA':
-      {
-        const {
-          scope,
-          area
-        } = action;
-
-        // If there's already an area, don't overwrite it.
-        if (state[scope]) {
-          return state;
-        }
-        return {
-          ...state,
-          [scope]: area
-        };
-      }
-    case 'ENABLE_COMPLEMENTARY_AREA':
-      {
-        const {
-          scope,
-          area
-        } = action;
-        return {
-          ...state,
-          [scope]: area
-        };
-      }
-  }
-  return state;
-}
-/* harmony default export */ const interface_store_reducer = ((0,external_wp_data_namespaceObject.combineReducers)({
-  complementaryAreas: reducer_complementaryAreas
-}));
-//# sourceMappingURL=reducer.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/interface-store/index.js
-/**
- * Internal dependencies
- */
-
-
-
-
-/**
- * Store definition for the interface namespace.
- *
- * @see https://github.com/WordPress/gutenberg/blob/HEAD/packages/data/README.md#createReduxStore
- *
- * @type {Object}
- */
-/* harmony default export */ const interface_store = ({
-  reducer: interface_store_reducer,
-  actions: interface_store_actions_namespaceObject,
-  selectors: interface_store_selectors_namespaceObject
-});
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/with-registry-provider/index.js
-
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-
-// Keep track of the registries we create so we can release them after the editor instance is removed
-let registries = [];
-const with_registry_provider_STORE_NAME = 'isolated/editor';
-
-/**
- * This is the core of having a multi-editor Gutenberg experience.
- *
- * We create a sub registry that contains copies of `core/block-editor`, `core/editor`, and STORE_NAME. These are specific to the editor instance and
- * provide the content for each editor, as well as overriding some core functions
- *
- * The key `persistenceKey` from the settings is used as the `localStorage` key to save Gutenberg preferences
- */
-const withRegistryProvider = (0,external_wp_compose_namespaceObject.createHigherOrderComponent)(
-/**
- *
- * @param {import("react").FC } WrappedComponent
- */
-WrappedComponent => (0,external_wp_data_namespaceObject.withRegistry)(props => {
-  const {
-    registry,
-    settings,
-    ...additionalProps
-  } = props;
-  const defaultSettings = applyDefaultSettings(settings);
-  const {
-    persistenceKey,
-    preferencesKey,
-    defaultPreferences,
-    customStores = []
-  } = defaultSettings.iso || {};
-  const [subRegistry, setSubRegistry] = (0,external_wp_element_namespaceObject.useState)(null);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    // Create a new registry for this editor. We have the STORE_NAME for storing blocks and other data
-    // and a duplicate of `core/block-editor` for storing block selections
-    const newRegistry = (0,external_wp_data_namespaceObject.createRegistry)({
-      'core/reusable-blocks': reusable_store,
-      'core/interface': interface_store
-    }, registry);
-
-    // Enable the persistence plugin so we use settings in `localStorage`
-    if (persistenceKey) {
-      // @ts-ignore
-      newRegistry.use(external_wp_data_namespaceObject.plugins.persistence, {
-        persistenceKey
-      });
-    }
-
-    // Create our custom store
-    const store = newRegistry.registerStore(with_registry_provider_STORE_NAME, build_module_store(preferencesKey, defaultPreferences));
-
-    // Create the core/block-editor store separatley as we need the persistence plugin to be active
-    const blockEditorStore = newRegistry.registerStore('core/block-editor', {
-      ...external_wp_blockEditor_namespaceObject.storeConfig,
-      persist: ['preferences']
-    });
-
-    // Duplicate the core/editor store so we can decorate it
-    const editorStore = newRegistry.registerStore('core/editor', {
-      ...external_wp_editor_namespaceObject.storeConfig,
-      selectors: {
-        ...external_wp_editor_namespaceObject.storeConfig.selectors,
-        ...core_editor(external_wp_editor_namespaceObject.storeConfig.selectors, newRegistry.select)
-      },
-      persist: ['preferences']
-    });
-
-    // Create any custom stores inside our registry
-    customStores.map(store => {
-      registries.push(newRegistry.registerStore(store.name, store.config));
-    });
-    registries.push(store);
-    registries.push(blockEditorStore);
-    registries.push(editorStore);
-
-    // @ts-ignore
-    setSubRegistry(newRegistry);
-    return function cleanup() {
-      registries = registries.filter(item => item !== store);
-    };
-  }, [registry]);
-  if (!subRegistry) {
-    return null;
-  }
-  return (0,external_React_.createElement)(external_wp_data_namespaceObject.RegistryProvider, {
-    value: subRegistry
-  }, (0,external_React_.createElement)(WrappedComponent, {
-    ...additionalProps,
-    settings: defaultSettings
-  }));
-}), 'withRegistryProvider');
-/* harmony default export */ const with_registry_provider = (withRegistryProvider);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/editor-setup/editor-settings.js
-/** @typedef {import('../../index').EditorSettings} EditorSettings */
-/** @typedef {import('../../index').IsoSettings} IsoSettings */
-
-/**
- * Get all the allowed block types, either from the settings, or all available blocks
- *
- * @param {{allowBlocks: string[]}} blockSettings - settings for available blocks
- * @param {object[]} allBlockTypes - All available blocks
- * @return {string[]}
- */
-function getAllowedBlockTypes(blockSettings, allBlockTypes) {
-  if (blockSettings && blockSettings.allowBlocks && blockSettings.allowBlocks.length > 0) {
-    return blockSettings.allowBlocks;
-  }
-
-  // No allow blocks - return all blocks
-  return allBlockTypes.map(block => block.name);
-}
-
-/**
- * Get all the disallowed block types, either from the settings, or all available blocks
- *
- * @param {{disallowBlocks: string[]}} blockSettings - settings for disallowed blocks
- * @return {string[]}
- */
-function getDisallowedBlocks(blockSettings) {
-  if (blockSettings && blockSettings.disallowBlocks) {
-    return blockSettings.disallowBlocks;
-  }
-
-  // No blocks disallowed
-  return [];
-}
-
-/**
- * Get editor settings
- *
- * @param {EditorSettings} editorSettings - Editor settings
- * @param {IsoSettings} isoSettings
- * @param {object[]} allBlockTypes - All available blocks
- * @param {boolean} fixedToolbar - Do we need a fixed toolbar?
- * @return {EditorSettings}
- */
-function editor_settings_getEditorSettings(editorSettings, isoSettings, allBlockTypes, fixedToolbar) {
-  // @ts-ignore
-  const disallowBlocks = getDisallowedBlocks(isoSettings.blocks);
-  return {
-    ...editorSettings,
-    fixedToolbar,
-    hasFixedToolbar: fixedToolbar,
-    // @ts-ignore
-    allowedBlockTypes: getAllowedBlockTypes(isoSettings.blocks, allBlockTypes).filter(blockName => disallowBlocks.indexOf(blockName) === -1)
-  };
-}
-//# sourceMappingURL=editor-settings.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/editor-setup/index.js
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-/** @typedef {import('../../index').BlockEditorSettings} BlockEditorSettings */
-
-/**
- * Settings callback
- *
- * @callback OnSettings
- * @param {BlockEditorSettings} settings
- */
-
-/**
- * Sets up Gutenberg and the Isolated Block Editor
- *
- * An initial setup is performed, and is then reset each time the editor is focussed. This ensures we are applying the right
- * settings for this particular editor.
- *
- * @param {BlockEditorSettings} settings - Settings
- */
-function useEditorSetup(settings) {
-  // @ts-ignore
-  const {
-    undo,
-    setupEditor
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-  const {
-    updateEditorSettings,
-    setEditedPost: setupCoreEditor
-  } = (0,external_wp_data_namespaceObject.useDispatch)('core/editor');
-  const {
-    updateSettings
-  } = (0,external_wp_data_namespaceObject.useDispatch)('core/block-editor');
-  const {
-    isEditing,
-    topToolbar,
-    currentSettings
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => {
-    const {
-      isEditing: isEditingSelect,
-      isFeatureActive
-    } = select('isolated/editor');
-    // @ts-ignore
-    const {
-      getBlockTypes
-    } = select(external_wp_blocks_namespaceObject.store);
-    const blockTypes = getBlockTypes();
-    // @ts-ignore
-    const hasFixedToolbar = isFeatureActive('fixedToolbar', settings?.editor.hasFixedToolbar);
-    return {
-      // @ts-ignore
-      isEditing: isEditingSelect(),
-      topToolbar: hasFixedToolbar,
-      currentSettings: {
-        ...settings,
-        editor: {
-          ...editor_settings_getEditorSettings(
-          // @ts-ignore
-          settings.editor, settings.iso, blockTypes,
-          // Use the default preference, if set, otherwise use the feature
-          settings.iso?.defaultPreferences?.fixedToolbar !== undefined ? settings.iso?.defaultPreferences?.fixedToolbar : hasFixedToolbar),
-          // Reusable blocks
-          __experimentalReusableBlocks: [],
-          __experimentalFetchReusableBlocks: false,
-          // Experimental undo, to do some experimental things
-          __experimentalUndo: undo
-        }
-      }
-    };
-  }, [settings]);
-  function updateAllSettings(newSettings) {
-    updateSettings(newSettings.editor);
-    updateEditorSettings(newSettings.editor);
-  }
-
-  // This is the initial setup
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    // Ensure we always have a __editorAssets value - Gutenberg hardcoded assets
-    // @ts-ignore
-    if (window.__editorAssets === undefined) {
-      // @ts-ignore
-      window.__editorAssets = {
-        styles: '',
-        scripts: ''
-      };
-    }
-
-    // Setup the Isolated Editor & Gutenberg
-    setupEditor(currentSettings);
-
-    // And Gutenberg
-    updateAllSettings(currentSettings);
-
-    // Set up the post entities with some dummy data, ensuring that anything that uses post entities can work
-    setupCoreEditor('post', 0);
-  }, []);
-
-  // Run whenever the editor is focussed, or the topToolbar setting or reusable blocks change
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    if (!isEditing) {
-      return;
-    }
-
-    // Setup Gutenberg for this editor, but only when focussed. This swaps allowed blocks and other capabilities
-    updateSettings(currentSettings);
-  }, [isEditing, topToolbar, currentSettings?.editor?.reusableBlocks]);
-  return settings;
-}
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/pattern-monitor/index.js
-// @ts-nocheck
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-/** @typedef {import('../../index').BlockEditorSettings} BlockEditorSettings */
-/** @typedef {import('../../store/editor/reducer').Pattern} Pattern */
-
-/**
- * Update callback
- *
- * @callback OnUpdate
- * @param {object[]} blocks - Editor content to save
- */
-
-/**
- * Sets up Gutenberg and the Isolated Block Editor
- *
- * An initial setup is performed, and is then reset each time the editor is focussed. This ensures we are applying the right
- * settings for this particular editor.
- *
- * @param {Object} props - Component props
- * @param {BlockEditorSettings} props.settings - Settings
- * @param {Pattern} props.currentPattern - Currently selected pattern
- * @param {OnUpdate} props.updateBlocksWithoutUndo - Callback to update blocks
- */
-function PatternMonitor(props) {
-  const {
-    currentPattern,
-    updateBlocksWithoutUndo
-  } = props;
-  const previous = (0,external_wp_element_namespaceObject.useRef)(null);
-
-  // Monitor the current pattern and update the editor content if it changes
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    if (currentPattern === null || previous.current === currentPattern) {
-      // @ts-ignore
-      previous.current = currentPattern;
-      return;
-    }
-
-    // @ts-ignore
-    previous.current = currentPattern.name;
-    setTimeout(() => {
-      updateBlocksWithoutUndo((0,external_wp_blocks_namespaceObject.parse)(currentPattern.content));
-    }, 0);
-  }, [currentPattern]);
-  return null;
-}
-/* harmony default export */ const pattern_monitor = ((0,external_wp_compose_namespaceObject.compose)([(0,external_wp_data_namespaceObject.withSelect)(select => {
-  const {
-    getCurrentPattern
-  } = select('isolated/editor');
-  return {
-    currentPattern: getCurrentPattern()
-  };
-}), (0,external_wp_data_namespaceObject.withDispatch)(dispatch => {
-  const {
-    updateBlocksWithoutUndo
-  } = dispatch('isolated/editor');
-  return {
-    updateBlocksWithoutUndo
-  };
-})])(PatternMonitor));
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/content-saver/index.js
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-/** @typedef {import('../../index').OnSaveBlocks} OnSaveBlocks */
-/** @typedef {import('../../index').OnSaveContent} OnSaveContent */
-
-/**
- * Content saver
- *
- * @param {Object} props - Component props
- * @param {OnSaveBlocks} [props.onSaveBlocks] - Save blocks callback
- * @param {OnSaveContent} [props.onSaveContent] - Save content callback
- */
-function ContentSaver(props) {
-  const {
-    onSaveBlocks,
-    onSaveContent
-  } = props;
-  const firstTime = (0,external_wp_element_namespaceObject.useRef)(true);
-  const {
-    setReady
-  } = (0,external_wp_data_namespaceObject.useDispatch)('isolated/editor');
-  const {
-    blocks,
-    ignoredContent
-  } = (0,external_wp_data_namespaceObject.useSelect)(select => ({
-    // @ts-ignore
-    blocks: select('isolated/editor').getBlocks(),
-    // @ts-ignore
-    ignoredContent: select('isolated/editor').getIgnoredContent()
-  }), []);
-  function saveBlocks() {
-    // Save the content in the format wanted by the user
-    onSaveBlocks?.(blocks, ignoredContent);
-    onSaveContent?.((0,external_wp_blocks_namespaceObject.serialize)(blocks));
-  }
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    if (!blocks) {
-      setReady(true);
-      return;
-    }
-
-    // Try and avoid an initial first save if no content
-    if (firstTime.current) {
-      firstTime.current = false;
-      setReady(true);
-
-      // The editor has initial content - save it
-      if (blocks && blocks.length > 1) {
-        saveBlocks();
-      }
-    } else {
-      saveBlocks();
-    }
-  }, [blocks]);
-  return null;
-}
-/* harmony default export */ const content_saver = (ContentSaver);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/components/api-fetch/index.js
-/**
- * WordPress dependencies
- */
-
-
-function getPost() {
-  return {
-    body: {
-      id: 0,
-      type: 'post'
-    }
-  };
-}
-
-// Enough data for Gutenberg to work
-function getTypes() {
-  return {
-    body: {
-      post: {
-        capabilities: {
-          edit_post: 'edit_post'
-        },
-        description: '',
-        hierarchical: false,
-        viewable: true,
-        name: 'Posts',
-        slug: 'post',
-        labels: {
-          name: 'Posts',
-          singular_name: 'Post'
-        },
-        supports: {
-          title: false,
-          editor: true,
-          author: false,
-          thumbnail: false,
-          excerpt: false,
-          trackbacks: false,
-          'custom-fields': false,
-          comments: false,
-          revisions: false,
-          'post-formats': false,
-          'geo-location': false
-        },
-        taxonomies: [],
-        rest_base: 'posts'
-      }
-    }
-  };
-}
-
-// Provide some basic API preloading. This oils the Gutenberg wheels and allows certain operations to happen without making an external request
-function registerApiHandlers(options) {
-  const preload = {
-    OPTIONS: {
-      // Reusable blocks
-      '/wp/v2/blocks': {
-        body: []
-      },
-      '/wp/v2/templates': {
-        body: []
-      }
-    },
-    '/wp/v2/types?context=view': getTypes(),
-    '/wp/v2/types?context=edit': getTypes(),
-    '/wp/v2/posts/0?context=edit': getPost(),
-    '/wp/v2/posts?context=edit': getPost(),
-    '/wp/v2/templates': () => ({}),
-    '/wp/v2/types/post?context=edit': () => ({})
-  };
-  external_wp_apiFetch_default().use(external_wp_apiFetch_default().createPreloadingMiddleware(preload));
-}
-/* harmony default export */ const api_fetch = (registerApiHandlers);
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-module/style.scss
-// extracted by mini-css-extract-plugin
-
-;// ./node_modules/@automattic/isolated-block-editor/build-module/index.js
-
-// @ts-nocheck
-/**
- * WordPress dependencies
- */
-
-
-
-
-
-
-
-
-
-/**
- * Internal dependencies
- */
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Export library components
-
-
-
-// A fake edit-post store is needed
-
-
-
-/** @typedef {import('./components/block-editor-toolbar/more-menu').OnMore} OnMore */
-/** @typedef {import('./store/editor/reducer').Pattern} Pattern */
-/** @typedef {import('./components/block-editor-contents/index').OnUpdate} OnUpdate */
-
-/**
- * Undo Manager
- *
- * @typedef UndoManager
- * @property {Function} undo - Undo callback
- * @property {Function} redo - redoCallback
- * @property {Array} undoStack - Undo stack
- * @property {Array} redoStack - Redo stack
- */
-
-/**
- * Toolbar settings
- *
- * @typedef ToolbarSettings
- * @property {boolean} [inserter] - Enable or disable the toolbar block inserter
- * @property {boolean} [inspector] - Enable or disable the toolbar block inspector
- * @property {boolean} [navigation] - Enable or disable the toolbar navigation button
- * @property {boolean} [undo] - Enable or disable the toolbar undo/redo buttons
- * @property {boolean} [selectorTool] - Enable or disable the selector tool
- * @property {boolean|string} [documentInspector] - Enable or disable the document inspector or enable with custom label
- */
-
-/**
- * More menu settings
- *
- * @typedef MoreMenuSettings
- * @property {boolean} [editor] - Enable or disable the editor sub menu (visual/code editing)
- * @property {boolean} [fullscreen] - Enable or disable the fullscreen option
- * @property {boolean} [preview] - Enable or disable the preview option
- * @property {boolean} [topToolbar] - Enable or disable the 'top toolbar' option
- */
-
-/**
- * Sidebar settings
- *
- * @typedef SidebarSettings
- * @property {boolean} [inspector=false] - Display the block inspector in a sidebar (true) or popover (false)
- * @property {boolean} [inserter=false] - Display the block inserter in a sidebar (true) or popover (false)
- * @property {function|null} [customComponent] - Function returning a custom sidebar component, or will default to the block inspector
- */
-
-/**
- * Isolated Editor Settings
- *
- * @typedef IsoSettings
- * @property {string|null} [preferencesKey] - Preferences key. Set to null to disable
- * @property {string|null} [persistenceKey] - Persistence key. Set to null to disable
- * @property {{allowBlocks: string[], disallowBlocks: string[]}} [blocks] - Block restrictions
- * @property {string[]} [disallowEmbed] - List of embed names to remove
- * @property {object[]} [customStores] - Array of custom stores
- * @property {boolean} [footer] - Show footer component
- * @property {boolean} [header] - Show header component
- * @property {ToolbarSettings} [toolbar] - Toolbar settings
- * @property {MoreMenuSettings|false} [moreMenu] - More menu settings, or false to disable
- * @property {{title: string, url: string}[]} [linkMenu] - Link menu settings
- * @property {string|null} [currentPattern] - The pattern to start with
- * @property {Pattern[]} [patterns] - List of patterns
- * @property {Object} [defaultPreferences] - Default preferences if nothing in localStorage
- * @property {boolean} [allowApi] - Allow API requests
- * @property {boolean} [disableCanvasAnimations] - Disable editor canvas animations
- * @property {SidebarSettings} [sidebar] - Configure sidebar functionality
- */
-
-/**
- * Block Editor Settings
- *
- * @typedef BlockEditorSettings
- * @property {IsoSettings} [iso] - Isolated editor settings
- * @property {EditorSettings} [editor] - Gutenberg editor settings
- */
-
-/**
- * Gutenberg Editor Settings - this isn't the complete object, but just enough for linting here
- *
- * @typedef EditorSettings
- * @property {boolean} hasUploadPermissions
- * @property {Object} allowedMimeTypes
- * @property {string[]} allowedBlockTypes
- * @property {boolean} fixedToolbar
- * @property {boolean} hasFixedToolbar
- * @property {object[]|null} template
- * @property {null} templateLock
- * @property {object[]} reusableBlocks
- * @property {object[]} styles
- * @property {object[]} defaultEditorStyles
- * @property {string} bodyPlaceholder
- */
-
-/**
- * OnSelect callback
- *
- * @callback OnSelect
- * @param {Object} selection - Editor content to save
- */
-
-/**
- * Initialize Gutenberg
- */
-function initializeEditor() {
-  if (window.isoInitialised) {
-    return;
-  }
-
-  // Register all core blocks
-  (0,external_wp_blockLibrary_namespaceObject.registerCoreBlocks)();
-  window.isoInitialised = true;
-}
-/**
- * @param {Object} props - Component props
- * @param {UndoManager} [props.undoManager]
- */
-function useInitializeIsoEditor({
-  undoManager
-} = {}) {
-  if (window.isoInitialisedBlocks) {
-    return;
-  }
-  initializeEditor();
-
-  // This allows the editor to swap stores dynamically
-  (0,external_wp_data_namespaceObject.use)(store_hot_swap, {});
-  api_fetch();
-
-  // Don't run this again
-  window.isoInitialisedBlocks = true;
-}
-
-/**
- * Save blocks callback
- *
- * @callback OnSaveBlocks
- * @param {object[]} blocks - Editor content to save
- * @param {string[]} ignoredContent - Possible content to ignore
- */
-
-/**
- * Save HTML content callback
- *
- * @callback OnSaveContent
- * @param {string} content - Serialized content
- */
-
-/**
- * Parser callback
- *
- * @callback OnParse
- * @param {string} content - HTML content
- * @return {object[]}
- */
-
-/**
- * Initial load blocks callback
- *
- * @callback OnLoad
- * @param {OnParse} parse - Current block parser
- * @param {OnParse} rawHandler - Current raw handler
- * @return {object[]|Promise}
- */
-
-/**
- * Error callback
- *
- * @callback OnError
- */
-
-/**
- * Isolated block editor component.
- *
- * This wraps up the Gutenberg editor along with a customised store. The contents of the editor are unique, and multiple instances
- * can be created.
- *
- * @param {Object} props - Component props
- * @param {OnSaveBlocks} [props.onSaveBlocks] - Save callback
- * @param {OnSaveContent} [props.onSaveContent] - Save callback
- * @param {OnError} props.onError - Error callback
- * @param {OnLoad} [props.onLoad] - Initial blocks
- * @param {BlockEditorSettings} props.settings - Settings
- * @param {Object} [props.children] - Child content
- * @param {string} [props.className] - Additional class name
- * @param {OnMore} [props.renderMoreMenu] - Callback to render additional items in the more menu
- * @param {UndoManager} [props.__experimentalUndoManager] - Undo manager
- * @param {OnUpdate} [props.__experimentalOnInput] - Gutenberg's onInput callback
- * @param {OnUpdate} [props.__experimentalOnChange] - Gutenberg's onChange callback
- * @param {OnSelect} [props.__experimentalOnSelection] - Callback to run when the editor selection changes
- * @param {object[]} [props.__experimentalValue] - Gutenberg's value
- */
-function IsolatedBlockEditor(props) {
-  const {
-    children,
-    onSaveContent,
-    onSaveBlocks,
-    __experimentalUndoManager,
-    __experimentalOnInput,
-    __experimentalOnChange,
-    __experimentalValue,
-    __experimentalOnSelection,
-    ...params
-  } = props;
-
-  // This needs to happen first to setup Gutenbergy things
-  useInitializeIsoEditor({
-    undoManager: __experimentalUndoManager
-  });
-  const settings = useEditorSetup(props.settings);
-  const editorSelection = (0,external_wp_data_namespaceObject.useSelect)(select => ({
-    start: select('core/block-editor').getSelectionStart(),
-    end: select('core/block-editor').getSelectionEnd()
-  }), []);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    __experimentalOnSelection?.(editorSelection);
-  }, [editorSelection]);
-  return (0,external_React_.createElement)(external_wp_element_namespaceObject.StrictMode, null, (0,external_React_.createElement)(content_saver, {
-    onSaveBlocks: onSaveBlocks,
-    onSaveContent: onSaveContent
-  }), (0,external_React_.createElement)(pattern_monitor, null), (0,external_React_.createElement)(external_wp_components_namespaceObject.SlotFillProvider, null, (0,external_React_.createElement)(block_editor_container, {
-    ...params,
-    onInput: __experimentalOnInput,
-    onChange: __experimentalOnChange,
-    blocks: __experimentalValue,
-    settings: settings
-  }, children)));
-}
-/* harmony default export */ const build_module = (with_registry_provider(IsolatedBlockEditor));
-
-//# sourceMappingURL=index.js.map
-;// ./node_modules/@automattic/isolated-block-editor/build-browser/core.css
-// extracted by mini-css-extract-plugin
-
+;// external ["wp","blockLibrary"]
+const external_wp_blockLibrary_namespaceObject = window["wp"]["blockLibrary"];
+;// external ["wp","mediaUtils"]
+const external_wp_mediaUtils_namespaceObject = window["wp"]["mediaUtils"];
+;// external ["wp","hooks"]
+const external_wp_hooks_namespaceObject = window["wp"]["hooks"];
 ;// ./src/components/BlockEditor.js
 
 
 
 
-const wrapPlainText = text => {
-  if (!text || text.trim() === '') return '';
-  if (text.includes('<!-- wp:')) return text;
-  return `<!-- wp:paragraph -->\n<p>${text}</p>\n<!-- /wp:paragraph -->`;
+
+
+
+
+
+if (!(0,external_wp_hooks_namespaceObject.hasFilter)('editor.MediaUpload', 'acemedia-glossary/media-upload')) {
+  (0,external_wp_hooks_namespaceObject.addFilter)('editor.MediaUpload', 'acemedia-glossary/media-upload', () => external_wp_mediaUtils_namespaceObject.MediaUpload);
+}
+
+// Use the installed WordPress editor rather than a second, version-bound copy.
+const prepareBlocks = content => {
+  const value = content || '';
+  return value.includes('<!-- wp:') ? (0,external_wp_blocks_namespaceObject.parse)(value) : (0,external_wp_blocks_namespaceObject.rawHandler)({
+    HTML: value
+  });
 };
-const BlockEditor_BlockEditor = ({
+const BlockEditor = ({
   termId,
   content,
   onChange,
   onFocus,
   textareaId
 }) => {
-  const onChangeRef = (0,external_wp_element_namespaceObject.useRef)(onChange);
-  const onFocusRef = (0,external_wp_element_namespaceObject.useRef)(onFocus);
   const textareaRef = (0,external_wp_element_namespaceObject.useRef)(null);
-  const lastTermIdRef = (0,external_wp_element_namespaceObject.useRef)(termId);
-  const lastContentPropRef = (0,external_wp_element_namespaceObject.useRef)(content);
-  const isInitializingRef = (0,external_wp_element_namespaceObject.useRef)(true);
+  const lastValue = (0,external_wp_element_namespaceObject.useRef)(content || '');
+  const lastTerm = (0,external_wp_element_namespaceObject.useRef)(termId);
+  const callbacks = (0,external_wp_element_namespaceObject.useRef)({
+    onChange,
+    onFocus
+  });
+  callbacks.current = {
+    onChange,
+    onFocus
+  };
+  const [blocks, setBlocks] = (0,external_wp_element_namespaceObject.useState)(() => {
+    if (!(0,external_wp_blocks_namespaceObject.getBlockType)('core/paragraph')) (0,external_wp_blockLibrary_namespaceObject.registerCoreBlocks)();
+    return prepareBlocks(content);
+  });
+  const [history, setHistory] = (0,external_wp_element_namespaceObject.useState)({
+    past: [],
+    future: []
+  });
+  const settings = (0,external_wp_element_namespaceObject.useMemo)(() => ({
+    allowedBlockTypes: (0,external_wp_blocks_namespaceObject.getBlockTypes)().map(({
+      name
+    }) => name).filter(name => !['core/freeform', 'core/classic'].includes(name)),
+    hasFixedToolbar: true,
+    canLockBlocks: false,
+    mediaUpload: external_wp_mediaUtils_namespaceObject.uploadMedia
+  }), []);
   (0,external_wp_element_namespaceObject.useEffect)(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    onFocusRef.current = onFocus;
-  }, [onFocus]);
-  (0,external_wp_element_namespaceObject.useEffect)(() => {
-    const termChanged = termId !== lastTermIdRef.current;
-    const contentChanged = content !== lastContentPropRef.current;
-    if (textareaRef.current && (termChanged || contentChanged)) {
-      textareaRef.current.value = content || '';
-      isInitializingRef.current = true;
+    const value = content || '';
+    if (lastTerm.current !== termId || value !== lastValue.current) {
+      lastTerm.current = termId;
+      lastValue.current = value;
+      setBlocks(prepareBlocks(value));
+      setHistory({
+        past: [],
+        future: []
+      });
+      if (textareaRef.current) textareaRef.current.value = value;
     }
-    if (termChanged) {
-      lastTermIdRef.current = termId;
-    }
-    lastContentPropRef.current = content;
   }, [termId, content]);
-
-  // Sync textarea to onChange callback - this fires on every keystroke
-  const handleSaveContent = content => {
-    const skipInitialEmission = isInitializingRef.current && content === lastContentPropRef.current;
-    isInitializingRef.current = false;
-    if (!skipInitialEmission && onChangeRef.current) {
-      onChangeRef.current(content, textareaRef.current);
-    }
-    if (textareaRef.current) {
-      textareaRef.current.value = content;
-    }
+  const publish = next => {
+    const value = (0,external_wp_blocks_namespaceObject.serialize)(next);
+    setBlocks(next);
+    if (value === lastValue.current) return;
+    lastValue.current = value;
+    if (textareaRef.current) textareaRef.current.value = value;
+    callbacks.current.onChange?.(value, textareaRef.current);
   };
-  const handleLoad = parseFunc => {
-    const currentContent = textareaRef.current?.value || content || '';
-    const wrappedContent = wrapPlainText(currentContent);
-    return parseFunc(wrappedContent);
-  };
-  const handleSelection = () => {
-    if (onFocusRef.current) {
-      onFocusRef.current();
+  const update = next => {
+    if ((0,external_wp_blocks_namespaceObject.serialize)(next) !== lastValue.current) {
+      setHistory(previous => ({
+        past: [...previous.past.slice(-49), blocks],
+        future: []
+      }));
     }
+    publish(next);
+  };
+  const undo = () => {
+    if (!history.past.length) return;
+    setHistory({
+      past: history.past.slice(0, -1),
+      future: [blocks, ...history.future]
+    });
+    publish(history.past[history.past.length - 1]);
+  };
+  const redo = () => {
+    if (!history.future.length) return;
+    setHistory({
+      past: [...history.past, blocks],
+      future: history.future.slice(1)
+    });
+    publish(history.future[0]);
   };
   return /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
     className: "glossary-block-editor",
+    onFocus: () => callbacks.current.onFocus?.(),
     children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("textarea", {
       ref: textareaRef,
       id: textareaId,
@@ -24912,34 +18758,33 @@ const BlockEditor_BlockEditor = ({
         display: 'none'
       },
       defaultValue: content || ''
-    }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(build_module, {
-      settings: {
-        iso: {
-          blocks: {
-            allowBlocks: true,
-            disallowBlocks: ['core/freeform', 'core/classic']
-          },
-          moreMenu: false,
-          toolbar: {
-            navigation: false,
-            undo: true
-          },
-          sidebar: {
-            inserter: true,
-            inspector: false
-          }
-        },
-        editor: {
-          hasFixedToolbar: false
-        }
-      },
-      onSaveContent: handleSaveContent,
-      onLoad: handleLoad,
-      __experimentalOnSelection: handleSelection
+    }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)(external_wp_blockEditor_namespaceObject.BlockEditorProvider, {
+      value: blocks,
+      onInput: update,
+      onChange: update,
+      settings: settings,
+      children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsxs)("div", {
+        className: "glossary-editor-actions",
+        children: [/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_blockEditor_namespaceObject.Inserter, {}), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Button, {
+          onClick: undo,
+          disabled: !history.past.length,
+          children: (0,external_wp_i18n_namespaceObject.__)('Undo', 'acemedia-glossary')
+        }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Button, {
+          onClick: redo,
+          disabled: !history.future.length,
+          children: (0,external_wp_i18n_namespaceObject.__)('Redo', 'acemedia-glossary')
+        })]
+      }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_blockEditor_namespaceObject.BlockTools, {
+        children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_blockEditor_namespaceObject.WritingFlow, {
+          children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_blockEditor_namespaceObject.ObserveTyping, {
+            children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_blockEditor_namespaceObject.BlockList, {})
+          })
+        })
+      }), /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Popover.Slot, {})]
     })]
   });
 };
-/* harmony default export */ const components_BlockEditor = (BlockEditor_BlockEditor);
+/* harmony default export */ const components_BlockEditor = (BlockEditor);
 ;// ./src/Modals.js
 
 
@@ -25314,19 +19159,19 @@ const CardsOptimized = ({
     const content = activeTerm?.content || '';
     const prevTermId = activeTermIdRef.current;
     const prevContent = lastEditorContentRef.current;
-    console.log('Content effect - termId:', termId, 'prevTermId:', prevTermId, 'content:', content?.substring(0, 50), 'prevContent:', prevContent?.substring(0, 50), 'isEditing:', isEditingRef.current);
+    ;
 
     // Term changed OR content loaded after term opened
     const termChanged = prevTermId !== termId && activeTerm?.isOpen;
     const contentArrived = termId === prevTermId && !prevContent && content && activeTerm?.isOpen;
-    console.log('termChanged:', termChanged, 'contentArrived:', contentArrived);
+    ;
 
     // Reset editing flag when term changes OR when fresh content arrives from API
     if (termChanged || contentArrived) {
       isEditingRef.current = false;
     }
     if ((termChanged || contentArrived) && !isEditingRef.current) {
-      console.log('✅ Loading content into editor:', termId, content?.substring(0, 100));
+      ;
       setLocalEditorContent(content);
       contentLoadedForTermRef.current = termId;
 
@@ -25371,9 +19216,9 @@ const CardsOptimized = ({
 
   // Store content updates locally WITHOUT syncing to parent (to avoid re-renders)
   const handleEditorContentUpdate = (0,external_wp_element_namespaceObject.useCallback)((content, textareaRef) => {
-    console.log('🔵 User is editing - content updated locally');
-    console.log('  - Content length:', content?.length || 0);
-    console.log('  - Content (first 200 chars):', content?.substring(0, 200));
+    ;
+    ;
+    ;
     isEditingRef.current = true;
 
     // Store the textarea ref so we can read from it later
@@ -25396,11 +19241,11 @@ const CardsOptimized = ({
     if (isSaving && activeTerm) {
       // Read directly from textarea (like blocks-everywhere does)
       const contentToSave = editorTextareaRef.current?.value || localEditorContent;
-      console.log('🟢 SAVE TRIGGERED - Syncing content to parent');
-      console.log('  - Term ID:', activeTerm.id);
-      console.log('  - Content from textarea:', editorTextareaRef.current?.value?.substring(0, 100));
-      console.log('  - Content length:', contentToSave?.length || 0);
-      console.log('  - Content:', contentToSave);
+      ;
+      ;
+      ;
+      ;
+      ;
       updateActiveTerm('content', contentToSave);
     }
   }, [isSaving, activeTerm, updateActiveTerm, localEditorContent]);
@@ -25859,6 +19704,7 @@ const arePropsEqual = (prevProps, nextProps) => {
 
 
 
+
 const DEBOUNCE_DELAY = 2000;
 const createBlankTerm = () => ({
   id: Date.now(),
@@ -26102,14 +19948,14 @@ const GlossaryAdminApp = () => {
     activeEditorTextareaRef.current = ref;
   }, []);
   const saveTerms = (0,external_wp_element_namespaceObject.useCallback)((isAutoSave = false) => {
-    console.log('🔴 saveTerms() called');
-    console.log('  - unsavedChanges:', unsavedChanges);
-    console.log('  - isSavingRef.current:', isSavingRef.current);
-    console.log('  - modifiedTerms:', Array.from(modifiedTerms));
-    console.log('  - termDrafts:', termDrafts);
-    console.log('  - activeTerm:', activeTerm);
+    ;
+    ;
+    ;
+    ;
+    ;
+    ;
     if (!unsavedChanges || isSavingRef.current) {
-      console.log('  ⚠️ Exiting early - no changes or already saving');
+      ;
       return;
     }
     if (archiveSlugDirty && archiveSlug === '') {
@@ -26120,11 +19966,11 @@ const GlossaryAdminApp = () => {
     }
     const hasTermChanges = modifiedTerms.size > 0;
     if (!hasTermChanges && !autoHighlightDirty && !archiveFeaturesDirty && !archiveSlugDirty && !styleSettingsDirty) {
-      console.log('  ⚠️ No actual changes to save');
+      ;
       setUnsavedChanges(false);
       return;
     }
-    console.log('  ✅ Proceeding with save...');
+    ;
     setIsSaving(true);
     isSavingRef.current = true;
     const operations = [];
@@ -26132,7 +19978,7 @@ const GlossaryAdminApp = () => {
 
     // Save all modified terms using their draft data
     if (hasTermChanges) {
-      console.log('  📝 Saving', modifiedTerms.size, 'modified terms');
+      ;
       Array.from(modifiedTerms).forEach(termId => {
         var _effectiveDraftData$t, _ref, _effectiveDraftData$c, _ref2, _effectiveDraftData$r, _baseData$categories, _baseData$tags, _ref3, _effectiveDraftData$a, _ref4, _effectiveDraftData$e, _ref5, _effectiveDraftData$p;
         const draftData = termDrafts[termId] || {};
@@ -26144,13 +19990,13 @@ const GlossaryAdminApp = () => {
             content: liveEditorValue
           } : {})
         };
-        console.log('    - Term', termId, 'draft data:', effectiveDraftData);
+        ;
 
         // Find the original term data to merge with drafts
         const originalTerm = terms.find(t => t.id === termId);
         const baseData = activeTerm && activeTerm.id === termId ? activeTerm : originalTerm;
         if (!baseData) {
-          console.log('    ⚠️ No base data for term', termId);
+          ;
           return;
         }
         const termData = {
@@ -26164,16 +20010,11 @@ const GlossaryAdminApp = () => {
           enablePostRelations: (_ref4 = (_effectiveDraftData$e = effectiveDraftData.enablePostRelations) !== null && _effectiveDraftData$e !== void 0 ? _effectiveDraftData$e : baseData.enablePostRelations) !== null && _ref4 !== void 0 ? _ref4 : false,
           priority: (_ref5 = (_effectiveDraftData$p = effectiveDraftData.priority) !== null && _effectiveDraftData$p !== void 0 ? _effectiveDraftData$p : baseData.priority) !== null && _ref5 !== void 0 ? _ref5 : false
         };
-        console.log('    🚀 Sending to API:', {
-          id: termData.id,
-          title: termData.title,
-          contentLength: termData.content?.length || 0,
-          content: termData.content
-        });
+        ;
         operations.push(fetchFromAPI('/wp/v2/glossary', 'POST', termData, {
           'X-WP-Nonce': AceMediaGlossaryAdmin.nonce
         }).then(response => {
-          console.log('    ✅ API response:', response);
+          ;
           const savedId = response?.id || termData.id;
           const savedModified = new Date().toISOString();
 
@@ -26325,7 +20166,7 @@ const GlossaryAdminApp = () => {
       'X-WP-Nonce': AceMediaGlossaryAdmin.nonce
     }).then(response => {
       if (response.removed_references > 0) {
-        console.log(response.message);
+        ;
       }
     }).catch(error => {
       console.error('Error cleaning up orphaned references:', error);
@@ -26364,7 +20205,7 @@ const GlossaryAdminApp = () => {
   const handleDownload = (0,external_wp_element_namespaceObject.useCallback)(() => {
     // Trigger the PHP export function via an API call
     const restRoot = getRestRoot();
-    fetch(`${restRoot}/wp/v2/glossary/export`, {
+    fetch(buildRestUrl(`wp/v2/glossary/export`, restRoot), {
       method: 'GET',
       headers: {
         'X-WP-Nonce': AceMediaGlossaryAdmin.nonce // Adjust if you have CSRF protection
@@ -26486,7 +20327,7 @@ const GlossaryAdminApp = () => {
       return;
     }
     try {
-      const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/bulk-delete`, {
+      const response = await fetch(buildRestUrl(`wp/v2/glossary/bulk-delete`, AceMediaGlossaryAdmin.apiUrl), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -26526,7 +20367,7 @@ const GlossaryAdminApp = () => {
   const removeTerm = async termId => {
     setIsSaving(true);
     try {
-      const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/${termId}`, {
+      const response = await fetch(buildRestUrl(`wp/v2/glossary/${termId}`, AceMediaGlossaryAdmin.apiUrl), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -26594,10 +20435,10 @@ const GlossaryAdminApp = () => {
 
       // Apply any draft changes if they exist for this term
       const draftChanges = termDrafts[termId] || {};
-      console.log('Loading term:', termId);
-      console.log('Fresh data from API:', termData);
-      console.log('Draft changes:', draftChanges);
-      console.log('Has draft content?', !!draftChanges.content);
+      ;
+      ;
+      ;
+      ;
 
       // Ensure the term is marked as open when we set it as active
       const activeTermData = {
@@ -26608,8 +20449,8 @@ const GlossaryAdminApp = () => {
         isLoaded: true,
         isLoading: false
       };
-      console.log('Final active term data:', activeTermData);
-      console.log('Content length:', activeTermData.content?.length || 0);
+      ;
+      ;
       setActiveTerm(prev => ({
         ...prev,
         ...activeTermData
@@ -26664,7 +20505,7 @@ const GlossaryAdminApp = () => {
   // Function to update active term data
   const updateActiveTerm = (0,external_wp_element_namespaceObject.useCallback)((key, value) => {
     if (!activeTerm) return;
-    console.log('updateActiveTerm called:', key, '=', value?.substring?.(0, 50) || value);
+    ;
 
     // For 'content' key, only update drafts to avoid re-renders while typing
     // The editor maintains its own internal state
@@ -26678,7 +20519,7 @@ const GlossaryAdminApp = () => {
             [key]: value
           }
         };
-        console.log('Updated termDrafts (content):', newDrafts[activeTerm.id]);
+        ;
         return newDrafts;
       });
 
@@ -26689,7 +20530,7 @@ const GlossaryAdminApp = () => {
         }
         const newSet = new Set(prev);
         newSet.add(activeTerm.id);
-        console.log('Term marked as modified:', activeTerm.id);
+        ;
         return newSet;
       });
       setUnsavedChanges(true);
@@ -26711,7 +20552,7 @@ const GlossaryAdminApp = () => {
           [key]: value
         }
       };
-      console.log('Updated termDrafts:', newDrafts);
+      ;
       return newDrafts;
     });
 
@@ -26722,7 +20563,7 @@ const GlossaryAdminApp = () => {
       }
       const newSet = new Set(prev);
       newSet.add(activeTerm.id);
-      console.log('Term marked as modified:', activeTerm.id);
+      ;
       return newSet;
     });
     setUnsavedChanges(true);
@@ -26905,21 +20746,10 @@ const GlossaryAdminApp = () => {
 
 
 
-
-external_wp_domReady_default()(() => {
-  const blocks = window.wp?.blocks;
-  if (blocks?.unregisterBlockType && blocks?.getBlockType) {
-    ['core/freeform', 'core/classic'].forEach(blockName => {
-      if (blocks.getBlockType(blockName)) {
-        blocks.unregisterBlockType(blockName);
-      }
-    });
-  }
-});
 const initApp = () => {
   const rootElement = document.getElementById('ace-settings-root');
   if (rootElement) {
-    console.log('Initializing Glossary Admin App');
+    ;
     // Render the app
     (0,external_wp_element_namespaceObject.render)(/*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(src_GlossaryAdminApp, {}), rootElement);
   } else {
@@ -26934,1290 +20764,7 @@ if (document.readyState === 'loading') {
   // DOM already loaded
   initApp();
 }
-
-/***/ }),
-
-/***/ 283:
-/***/ ((module) => {
-
-// This code has been refactored for 140 bytes
-// You can see the original here: https://github.com/twolfson/computedStyle/blob/04cd1da2e30fa45844f95f5cb1ac898e9b9ef050/lib/computedStyle.js
-var computedStyle = function (el, prop, getComputedStyle) {
-  getComputedStyle = window.getComputedStyle;
-
-  // In one fell swoop
-  return (
-    // If we have getComputedStyle
-    getComputedStyle ?
-      // Query it
-      // TODO: From CSS-Query notes, we might need (node, null) for FF
-      getComputedStyle(el) :
-
-    // Otherwise, we are in IE and use currentStyle
-      el.currentStyle
-  )[
-    // Switch to camelCase for CSSOM
-    // DEV: Grabbed from jQuery
-    // https://github.com/jquery/jquery/blob/1.9-stable/src/css.js#L191-L194
-    // https://github.com/jquery/jquery/blob/1.9-stable/src/core.js#L593-L597
-    prop.replace(/-(\w)/gi, function (word, letter) {
-      return letter.toUpperCase();
-    })
-  ];
-};
-
-module.exports = computedStyle;
-
-
-/***/ }),
-
-/***/ 467:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-// Load in dependencies
-var computedStyle = __webpack_require__(283);
-
-/**
- * Calculate the `line-height` of a given node
- * @param {HTMLElement} node Element to calculate line height of. Must be in the DOM.
- * @returns {Number} `line-height` of the element in pixels
- */
-function lineHeight(node) {
-  // Grab the line-height via style
-  var lnHeightStr = computedStyle(node, 'line-height');
-  var lnHeight = parseFloat(lnHeightStr, 10);
-
-  // If the lineHeight did not contain a unit (i.e. it was numeric), convert it to ems (e.g. '2.3' === '2.3em')
-  if (lnHeightStr === lnHeight + '') {
-    // Save the old lineHeight style and update the em unit to the element
-    var _lnHeightStyle = node.style.lineHeight;
-    node.style.lineHeight = lnHeightStr + 'em';
-
-    // Calculate the em based height
-    lnHeightStr = computedStyle(node, 'line-height');
-    lnHeight = parseFloat(lnHeightStr, 10);
-
-    // Revert the lineHeight style
-    if (_lnHeightStyle) {
-      node.style.lineHeight = _lnHeightStyle;
-    } else {
-      delete node.style.lineHeight;
-    }
-  }
-
-  // If the lineHeight is in `pt`, convert it to pixels (4px for 3pt)
-  // DEV: `em` units are converted to `pt` in IE6
-  // Conversion ratio from https://developer.mozilla.org/en-US/docs/Web/CSS/length
-  if (lnHeightStr.indexOf('pt') !== -1) {
-    lnHeight *= 4;
-    lnHeight /= 3;
-  // Otherwise, if the lineHeight is in `mm`, convert it to pixels (96px for 25.4mm)
-  } else if (lnHeightStr.indexOf('mm') !== -1) {
-    lnHeight *= 96;
-    lnHeight /= 25.4;
-  // Otherwise, if the lineHeight is in `cm`, convert it to pixels (96px for 2.54cm)
-  } else if (lnHeightStr.indexOf('cm') !== -1) {
-    lnHeight *= 96;
-    lnHeight /= 2.54;
-  // Otherwise, if the lineHeight is in `in`, convert it to pixels (96px for 1in)
-  } else if (lnHeightStr.indexOf('in') !== -1) {
-    lnHeight *= 96;
-  // Otherwise, if the lineHeight is in `pc`, convert it to pixels (12pt for 1pc)
-  } else if (lnHeightStr.indexOf('pc') !== -1) {
-    lnHeight *= 16;
-  }
-
-  // Continue our computation
-  lnHeight = Math.round(lnHeight);
-
-  // If the line-height is "normal", calculate by font-size
-  if (lnHeightStr === 'normal') {
-    // Create a temporary node
-    var nodeName = node.nodeName;
-    var _node = document.createElement(nodeName);
-    _node.innerHTML = '&nbsp;';
-
-    // If we have a text area, reset it to only 1 row
-    // https://github.com/twolfson/line-height/issues/4
-    if (nodeName.toUpperCase() === 'TEXTAREA') {
-      _node.setAttribute('rows', '1');
-    }
-
-    // Set the font-size of the element
-    var fontSizeStr = computedStyle(node, 'font-size');
-    _node.style.fontSize = fontSizeStr;
-
-    // Remove default padding/border which can affect offset height
-    // https://github.com/twolfson/line-height/issues/4
-    // https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/offsetHeight
-    _node.style.padding = '0px';
-    _node.style.border = '0px';
-
-    // Append it to the body
-    var body = document.body;
-    body.appendChild(_node);
-
-    // Assume the line height of the element is the height
-    var height = _node.offsetHeight;
-    lnHeight = height;
-
-    // Remove our child from the DOM
-    body.removeChild(_node);
-  }
-
-  // Return the calculated height
-  return lnHeight;
-}
-
-// Export lineHeight
-module.exports = lineHeight;
-
-
-/***/ }),
-
-/***/ 873:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var root = __webpack_require__(325);
-
-/** Built-in value references. */
-var Symbol = root.Symbol;
-
-module.exports = Symbol;
-
-
-/***/ }),
-
-/***/ 552:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var Symbol = __webpack_require__(873),
-    getRawTag = __webpack_require__(659),
-    objectToString = __webpack_require__(350);
-
-/** `Object#toString` result references. */
-var nullTag = '[object Null]',
-    undefinedTag = '[object Undefined]';
-
-/** Built-in value references. */
-var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
-
-/**
- * The base implementation of `getTag` without fallbacks for buggy environments.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the `toStringTag`.
- */
-function baseGetTag(value) {
-  if (value == null) {
-    return value === undefined ? undefinedTag : nullTag;
-  }
-  return (symToStringTag && symToStringTag in Object(value))
-    ? getRawTag(value)
-    : objectToString(value);
-}
-
-module.exports = baseGetTag;
-
-
-/***/ }),
-
-/***/ 128:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var trimmedEndIndex = __webpack_require__(800);
-
-/** Used to match leading whitespace. */
-var reTrimStart = /^\s+/;
-
-/**
- * The base implementation of `_.trim`.
- *
- * @private
- * @param {string} string The string to trim.
- * @returns {string} Returns the trimmed string.
- */
-function baseTrim(string) {
-  return string
-    ? string.slice(0, trimmedEndIndex(string) + 1).replace(reTrimStart, '')
-    : string;
-}
-
-module.exports = baseTrim;
-
-
-/***/ }),
-
-/***/ 840:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-/** Detect free variable `global` from Node.js. */
-var freeGlobal = typeof __webpack_require__.g == 'object' && __webpack_require__.g && __webpack_require__.g.Object === Object && __webpack_require__.g;
-
-module.exports = freeGlobal;
-
-
-/***/ }),
-
-/***/ 659:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var Symbol = __webpack_require__(873);
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var nativeObjectToString = objectProto.toString;
-
-/** Built-in value references. */
-var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
-
-/**
- * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the raw `toStringTag`.
- */
-function getRawTag(value) {
-  var isOwn = hasOwnProperty.call(value, symToStringTag),
-      tag = value[symToStringTag];
-
-  try {
-    value[symToStringTag] = undefined;
-    var unmasked = true;
-  } catch (e) {}
-
-  var result = nativeObjectToString.call(value);
-  if (unmasked) {
-    if (isOwn) {
-      value[symToStringTag] = tag;
-    } else {
-      delete value[symToStringTag];
-    }
-  }
-  return result;
-}
-
-module.exports = getRawTag;
-
-
-/***/ }),
-
-/***/ 350:
-/***/ ((module) => {
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var nativeObjectToString = objectProto.toString;
-
-/**
- * Converts `value` to a string using `Object.prototype.toString`.
- *
- * @private
- * @param {*} value The value to convert.
- * @returns {string} Returns the converted string.
- */
-function objectToString(value) {
-  return nativeObjectToString.call(value);
-}
-
-module.exports = objectToString;
-
-
-/***/ }),
-
-/***/ 325:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var freeGlobal = __webpack_require__(840);
-
-/** Detect free variable `self`. */
-var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
-
-/** Used as a reference to the global object. */
-var root = freeGlobal || freeSelf || Function('return this')();
-
-module.exports = root;
-
-
-/***/ }),
-
-/***/ 800:
-/***/ ((module) => {
-
-/** Used to match a single whitespace character. */
-var reWhitespace = /\s/;
-
-/**
- * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
- * character of `string`.
- *
- * @private
- * @param {string} string The string to inspect.
- * @returns {number} Returns the index of the last non-whitespace character.
- */
-function trimmedEndIndex(string) {
-  var index = string.length;
-
-  while (index-- && reWhitespace.test(string.charAt(index))) {}
-  return index;
-}
-
-module.exports = trimmedEndIndex;
-
-
-/***/ }),
-
-/***/ 221:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var isObject = __webpack_require__(805),
-    now = __webpack_require__(124),
-    toNumber = __webpack_require__(374);
-
-/** Error message constants. */
-var FUNC_ERROR_TEXT = 'Expected a function';
-
-/* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeMax = Math.max,
-    nativeMin = Math.min;
-
-/**
- * Creates a debounced function that delays invoking `func` until after `wait`
- * milliseconds have elapsed since the last time the debounced function was
- * invoked. The debounced function comes with a `cancel` method to cancel
- * delayed `func` invocations and a `flush` method to immediately invoke them.
- * Provide `options` to indicate whether `func` should be invoked on the
- * leading and/or trailing edge of the `wait` timeout. The `func` is invoked
- * with the last arguments provided to the debounced function. Subsequent
- * calls to the debounced function return the result of the last `func`
- * invocation.
- *
- * **Note:** If `leading` and `trailing` options are `true`, `func` is
- * invoked on the trailing edge of the timeout only if the debounced function
- * is invoked more than once during the `wait` timeout.
- *
- * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
- * until to the next tick, similar to `setTimeout` with a timeout of `0`.
- *
- * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
- * for details over the differences between `_.debounce` and `_.throttle`.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Function
- * @param {Function} func The function to debounce.
- * @param {number} [wait=0] The number of milliseconds to delay.
- * @param {Object} [options={}] The options object.
- * @param {boolean} [options.leading=false]
- *  Specify invoking on the leading edge of the timeout.
- * @param {number} [options.maxWait]
- *  The maximum time `func` is allowed to be delayed before it's invoked.
- * @param {boolean} [options.trailing=true]
- *  Specify invoking on the trailing edge of the timeout.
- * @returns {Function} Returns the new debounced function.
- * @example
- *
- * // Avoid costly calculations while the window size is in flux.
- * jQuery(window).on('resize', _.debounce(calculateLayout, 150));
- *
- * // Invoke `sendMail` when clicked, debouncing subsequent calls.
- * jQuery(element).on('click', _.debounce(sendMail, 300, {
- *   'leading': true,
- *   'trailing': false
- * }));
- *
- * // Ensure `batchLog` is invoked once after 1 second of debounced calls.
- * var debounced = _.debounce(batchLog, 250, { 'maxWait': 1000 });
- * var source = new EventSource('/stream');
- * jQuery(source).on('message', debounced);
- *
- * // Cancel the trailing debounced invocation.
- * jQuery(window).on('popstate', debounced.cancel);
- */
-function debounce(func, wait, options) {
-  var lastArgs,
-      lastThis,
-      maxWait,
-      result,
-      timerId,
-      lastCallTime,
-      lastInvokeTime = 0,
-      leading = false,
-      maxing = false,
-      trailing = true;
-
-  if (typeof func != 'function') {
-    throw new TypeError(FUNC_ERROR_TEXT);
-  }
-  wait = toNumber(wait) || 0;
-  if (isObject(options)) {
-    leading = !!options.leading;
-    maxing = 'maxWait' in options;
-    maxWait = maxing ? nativeMax(toNumber(options.maxWait) || 0, wait) : maxWait;
-    trailing = 'trailing' in options ? !!options.trailing : trailing;
-  }
-
-  function invokeFunc(time) {
-    var args = lastArgs,
-        thisArg = lastThis;
-
-    lastArgs = lastThis = undefined;
-    lastInvokeTime = time;
-    result = func.apply(thisArg, args);
-    return result;
-  }
-
-  function leadingEdge(time) {
-    // Reset any `maxWait` timer.
-    lastInvokeTime = time;
-    // Start the timer for the trailing edge.
-    timerId = setTimeout(timerExpired, wait);
-    // Invoke the leading edge.
-    return leading ? invokeFunc(time) : result;
-  }
-
-  function remainingWait(time) {
-    var timeSinceLastCall = time - lastCallTime,
-        timeSinceLastInvoke = time - lastInvokeTime,
-        timeWaiting = wait - timeSinceLastCall;
-
-    return maxing
-      ? nativeMin(timeWaiting, maxWait - timeSinceLastInvoke)
-      : timeWaiting;
-  }
-
-  function shouldInvoke(time) {
-    var timeSinceLastCall = time - lastCallTime,
-        timeSinceLastInvoke = time - lastInvokeTime;
-
-    // Either this is the first call, activity has stopped and we're at the
-    // trailing edge, the system time has gone backwards and we're treating
-    // it as the trailing edge, or we've hit the `maxWait` limit.
-    return (lastCallTime === undefined || (timeSinceLastCall >= wait) ||
-      (timeSinceLastCall < 0) || (maxing && timeSinceLastInvoke >= maxWait));
-  }
-
-  function timerExpired() {
-    var time = now();
-    if (shouldInvoke(time)) {
-      return trailingEdge(time);
-    }
-    // Restart the timer.
-    timerId = setTimeout(timerExpired, remainingWait(time));
-  }
-
-  function trailingEdge(time) {
-    timerId = undefined;
-
-    // Only invoke if we have `lastArgs` which means `func` has been
-    // debounced at least once.
-    if (trailing && lastArgs) {
-      return invokeFunc(time);
-    }
-    lastArgs = lastThis = undefined;
-    return result;
-  }
-
-  function cancel() {
-    if (timerId !== undefined) {
-      clearTimeout(timerId);
-    }
-    lastInvokeTime = 0;
-    lastArgs = lastCallTime = lastThis = timerId = undefined;
-  }
-
-  function flush() {
-    return timerId === undefined ? result : trailingEdge(now());
-  }
-
-  function debounced() {
-    var time = now(),
-        isInvoking = shouldInvoke(time);
-
-    lastArgs = arguments;
-    lastThis = this;
-    lastCallTime = time;
-
-    if (isInvoking) {
-      if (timerId === undefined) {
-        return leadingEdge(lastCallTime);
-      }
-      if (maxing) {
-        // Handle invocations in a tight loop.
-        clearTimeout(timerId);
-        timerId = setTimeout(timerExpired, wait);
-        return invokeFunc(lastCallTime);
-      }
-    }
-    if (timerId === undefined) {
-      timerId = setTimeout(timerExpired, wait);
-    }
-    return result;
-  }
-  debounced.cancel = cancel;
-  debounced.flush = flush;
-  return debounced;
-}
-
-module.exports = debounce;
-
-
-/***/ }),
-
-/***/ 805:
-/***/ ((module) => {
-
-/**
- * Checks if `value` is the
- * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
- * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
- * @example
- *
- * _.isObject({});
- * // => true
- *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(_.noop);
- * // => true
- *
- * _.isObject(null);
- * // => false
- */
-function isObject(value) {
-  var type = typeof value;
-  return value != null && (type == 'object' || type == 'function');
-}
-
-module.exports = isObject;
-
-
-/***/ }),
-
-/***/ 346:
-/***/ ((module) => {
-
-/**
- * Checks if `value` is object-like. A value is object-like if it's not `null`
- * and has a `typeof` result of "object".
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- * @example
- *
- * _.isObjectLike({});
- * // => true
- *
- * _.isObjectLike([1, 2, 3]);
- * // => true
- *
- * _.isObjectLike(_.noop);
- * // => false
- *
- * _.isObjectLike(null);
- * // => false
- */
-function isObjectLike(value) {
-  return value != null && typeof value == 'object';
-}
-
-module.exports = isObjectLike;
-
-
-/***/ }),
-
-/***/ 394:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var baseGetTag = __webpack_require__(552),
-    isObjectLike = __webpack_require__(346);
-
-/** `Object#toString` result references. */
-var symbolTag = '[object Symbol]';
-
-/**
- * Checks if `value` is classified as a `Symbol` primitive or object.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
- * @example
- *
- * _.isSymbol(Symbol.iterator);
- * // => true
- *
- * _.isSymbol('abc');
- * // => false
- */
-function isSymbol(value) {
-  return typeof value == 'symbol' ||
-    (isObjectLike(value) && baseGetTag(value) == symbolTag);
-}
-
-module.exports = isSymbol;
-
-
-/***/ }),
-
-/***/ 124:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var root = __webpack_require__(325);
-
-/**
- * Gets the timestamp of the number of milliseconds that have elapsed since
- * the Unix epoch (1 January 1970 00:00:00 UTC).
- *
- * @static
- * @memberOf _
- * @since 2.4.0
- * @category Date
- * @returns {number} Returns the timestamp.
- * @example
- *
- * _.defer(function(stamp) {
- *   console.log(_.now() - stamp);
- * }, _.now());
- * // => Logs the number of milliseconds it took for the deferred invocation.
- */
-var now = function() {
-  return root.Date.now();
-};
-
-module.exports = now;
-
-
-/***/ }),
-
-/***/ 374:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var baseTrim = __webpack_require__(128),
-    isObject = __webpack_require__(805),
-    isSymbol = __webpack_require__(394);
-
-/** Used as references for various `Number` constants. */
-var NAN = 0 / 0;
-
-/** Used to detect bad signed hexadecimal string values. */
-var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
-
-/** Used to detect binary string values. */
-var reIsBinary = /^0b[01]+$/i;
-
-/** Used to detect octal string values. */
-var reIsOctal = /^0o[0-7]+$/i;
-
-/** Built-in method references without a dependency on `root`. */
-var freeParseInt = parseInt;
-
-/**
- * Converts `value` to a number.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to process.
- * @returns {number} Returns the number.
- * @example
- *
- * _.toNumber(3.2);
- * // => 3.2
- *
- * _.toNumber(Number.MIN_VALUE);
- * // => 5e-324
- *
- * _.toNumber(Infinity);
- * // => Infinity
- *
- * _.toNumber('3.2');
- * // => 3.2
- */
-function toNumber(value) {
-  if (typeof value == 'number') {
-    return value;
-  }
-  if (isSymbol(value)) {
-    return NAN;
-  }
-  if (isObject(value)) {
-    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
-    value = isObject(other) ? (other + '') : other;
-  }
-  if (typeof value != 'string') {
-    return value === 0 ? value : +value;
-  }
-  value = baseTrim(value);
-  var isBinary = reIsBinary.test(value);
-  return (isBinary || reIsOctal.test(value))
-    ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
-    : (reIsBadHex.test(value) ? NAN : +value);
-}
-
-module.exports = toNumber;
-
-
-/***/ }),
-
-/***/ 694:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-
-
-var ReactPropTypesSecret = __webpack_require__(925);
-
-function emptyFunction() {}
-function emptyFunctionWithReset() {}
-emptyFunctionWithReset.resetWarningCache = emptyFunction;
-
-module.exports = function() {
-  function shim(props, propName, componentName, location, propFullName, secret) {
-    if (secret === ReactPropTypesSecret) {
-      // It is still safe when called from React.
-      return;
-    }
-    var err = new Error(
-      'Calling PropTypes validators directly is not supported by the `prop-types` package. ' +
-      'Use PropTypes.checkPropTypes() to call them. ' +
-      'Read more at http://fb.me/use-check-prop-types'
-    );
-    err.name = 'Invariant Violation';
-    throw err;
-  };
-  shim.isRequired = shim;
-  function getShim() {
-    return shim;
-  };
-  // Important!
-  // Keep this list in sync with production version in `./factoryWithTypeCheckers.js`.
-  var ReactPropTypes = {
-    array: shim,
-    bigint: shim,
-    bool: shim,
-    func: shim,
-    number: shim,
-    object: shim,
-    string: shim,
-    symbol: shim,
-
-    any: shim,
-    arrayOf: getShim,
-    element: shim,
-    elementType: shim,
-    instanceOf: getShim,
-    node: shim,
-    objectOf: getShim,
-    oneOf: getShim,
-    oneOfType: getShim,
-    shape: getShim,
-    exact: getShim,
-
-    checkPropTypes: emptyFunctionWithReset,
-    resetWarningCache: emptyFunction
-  };
-
-  ReactPropTypes.PropTypes = ReactPropTypes;
-
-  return ReactPropTypes;
-};
-
-
-/***/ }),
-
-/***/ 556:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-if (false) { var throwOnDirectAccess, ReactIs; } else {
-  // By explicitly using `prop-types` you are opting into new production behavior.
-  // http://fb.me/prop-types-in-prod
-  module.exports = __webpack_require__(694)();
-}
-
-
-/***/ }),
-
-/***/ 925:
-/***/ ((module) => {
-
-"use strict";
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-
-
-var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
-
-module.exports = ReactPropTypesSecret;
-
-
-/***/ }),
-
-/***/ 736:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
 })();
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
-            t[p[i]] = s[p[i]];
-    return t;
-};
-exports.__esModule = true;
-var React = __webpack_require__(609);
-var PropTypes = __webpack_require__(556);
-var autosize = __webpack_require__(692);
-var _getLineHeight = __webpack_require__(467);
-var getLineHeight = _getLineHeight;
-var RESIZED = "autosize:resized";
-/**
- * A light replacement for built-in textarea component
- * which automaticaly adjusts its height to match the content
- */
-var TextareaAutosizeClass = /** @class */ (function (_super) {
-    __extends(TextareaAutosizeClass, _super);
-    function TextareaAutosizeClass() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.state = {
-            lineHeight: null
-        };
-        _this.textarea = null;
-        _this.onResize = function (e) {
-            if (_this.props.onResize) {
-                _this.props.onResize(e);
-            }
-        };
-        _this.updateLineHeight = function () {
-            if (_this.textarea) {
-                _this.setState({
-                    lineHeight: getLineHeight(_this.textarea)
-                });
-            }
-        };
-        _this.onChange = function (e) {
-            var onChange = _this.props.onChange;
-            _this.currentValue = e.currentTarget.value;
-            onChange && onChange(e);
-        };
-        return _this;
-    }
-    TextareaAutosizeClass.prototype.componentDidMount = function () {
-        var _this = this;
-        var _a = this.props, maxRows = _a.maxRows, async = _a.async;
-        if (typeof maxRows === "number") {
-            this.updateLineHeight();
-        }
-        if (typeof maxRows === "number" || async) {
-            /*
-              the defer is needed to:
-                - force "autosize" to activate the scrollbar when this.props.maxRows is passed
-                - support StyledComponents (see #71)
-            */
-            setTimeout(function () { return _this.textarea && autosize(_this.textarea); });
-        }
-        else {
-            this.textarea && autosize(this.textarea);
-        }
-        if (this.textarea) {
-            this.textarea.addEventListener(RESIZED, this.onResize);
-        }
-    };
-    TextareaAutosizeClass.prototype.componentWillUnmount = function () {
-        if (this.textarea) {
-            this.textarea.removeEventListener(RESIZED, this.onResize);
-            autosize.destroy(this.textarea);
-        }
-    };
-    TextareaAutosizeClass.prototype.render = function () {
-        var _this = this;
-        var _a = this, _b = _a.props, onResize = _b.onResize, maxRows = _b.maxRows, onChange = _b.onChange, style = _b.style, innerRef = _b.innerRef, children = _b.children, props = __rest(_b, ["onResize", "maxRows", "onChange", "style", "innerRef", "children"]), lineHeight = _a.state.lineHeight;
-        var maxHeight = maxRows && lineHeight ? lineHeight * maxRows : null;
-        return (React.createElement("textarea", __assign({}, props, { onChange: this.onChange, style: maxHeight ? __assign({}, style, { maxHeight: maxHeight }) : style, ref: function (element) {
-                _this.textarea = element;
-                if (typeof _this.props.innerRef === 'function') {
-                    _this.props.innerRef(element);
-                }
-                else if (_this.props.innerRef) {
-                    _this.props.innerRef.current = element;
-                }
-            } }), children));
-    };
-    TextareaAutosizeClass.prototype.componentDidUpdate = function () {
-        this.textarea && autosize.update(this.textarea);
-    };
-    TextareaAutosizeClass.defaultProps = {
-        rows: 1,
-        async: false
-    };
-    TextareaAutosizeClass.propTypes = {
-        rows: PropTypes.number,
-        maxRows: PropTypes.number,
-        onResize: PropTypes.func,
-        innerRef: PropTypes.any,
-        async: PropTypes.bool
-    };
-    return TextareaAutosizeClass;
-}(React.Component));
-exports.TextareaAutosize = React.forwardRef(function (props, ref) {
-    return React.createElement(TextareaAutosizeClass, __assign({}, props, { innerRef: ref }));
-});
 
-
-/***/ }),
-
-/***/ 766:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-"use strict";
-var __webpack_unused_export__;
-
-__webpack_unused_export__ = true;
-var TextareaAutosize_1 = __webpack_require__(736);
-exports.A = TextareaAutosize_1.TextareaAutosize;
-
-
-/***/ }),
-
-/***/ 609:
-/***/ ((module) => {
-
-"use strict";
-module.exports = window["React"];
-
-/***/ }),
-
-/***/ 942:
-/***/ ((module, exports) => {
-
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	Copyright (c) 2018 Jed Watson.
-	Licensed under the MIT License (MIT), see
-	http://jedwatson.github.io/classnames
-*/
-/* global define */
-
-(function () {
-	'use strict';
-
-	var hasOwn = {}.hasOwnProperty;
-
-	function classNames () {
-		var classes = '';
-
-		for (var i = 0; i < arguments.length; i++) {
-			var arg = arguments[i];
-			if (arg) {
-				classes = appendClass(classes, parseValue(arg));
-			}
-		}
-
-		return classes;
-	}
-
-	function parseValue (arg) {
-		if (typeof arg === 'string' || typeof arg === 'number') {
-			return arg;
-		}
-
-		if (typeof arg !== 'object') {
-			return '';
-		}
-
-		if (Array.isArray(arg)) {
-			return classNames.apply(null, arg);
-		}
-
-		if (arg.toString !== Object.prototype.toString && !arg.toString.toString().includes('[native code]')) {
-			return arg.toString();
-		}
-
-		var classes = '';
-
-		for (var key in arg) {
-			if (hasOwn.call(arg, key) && arg[key]) {
-				classes = appendClass(classes, key);
-			}
-		}
-
-		return classes;
-	}
-
-	function appendClass (value, newClass) {
-		if (!newClass) {
-			return value;
-		}
-	
-		if (value) {
-			return value + ' ' + newClass;
-		}
-	
-		return value + newClass;
-	}
-
-	if ( true && module.exports) {
-		classNames.default = classNames;
-		module.exports = classNames;
-	} else if (true) {
-		// register as 'classnames', consistent with npm package name
-		!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-			return classNames;
-		}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	} else {}
-}());
-
-
-/***/ })
-
-/******/ 	});
-/************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/ 	
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = __webpack_modules__;
-/******/ 	
-/************************************************************************/
-/******/ 	/* webpack/runtime/chunk loaded */
-/******/ 	(() => {
-/******/ 		var deferred = [];
-/******/ 		__webpack_require__.O = (result, chunkIds, fn, priority) => {
-/******/ 			if(chunkIds) {
-/******/ 				priority = priority || 0;
-/******/ 				for(var i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
-/******/ 				deferred[i] = [chunkIds, fn, priority];
-/******/ 				return;
-/******/ 			}
-/******/ 			var notFulfilled = Infinity;
-/******/ 			for (var i = 0; i < deferred.length; i++) {
-/******/ 				var [chunkIds, fn, priority] = deferred[i];
-/******/ 				var fulfilled = true;
-/******/ 				for (var j = 0; j < chunkIds.length; j++) {
-/******/ 					if ((priority & 1 === 0 || notFulfilled >= priority) && Object.keys(__webpack_require__.O).every((key) => (__webpack_require__.O[key](chunkIds[j])))) {
-/******/ 						chunkIds.splice(j--, 1);
-/******/ 					} else {
-/******/ 						fulfilled = false;
-/******/ 						if(priority < notFulfilled) notFulfilled = priority;
-/******/ 					}
-/******/ 				}
-/******/ 				if(fulfilled) {
-/******/ 					deferred.splice(i--, 1)
-/******/ 					var r = fn();
-/******/ 					if (r !== undefined) result = r;
-/******/ 				}
-/******/ 			}
-/******/ 			return result;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/global */
-/******/ 	(() => {
-/******/ 		__webpack_require__.g = (function() {
-/******/ 			if (typeof globalThis === 'object') return globalThis;
-/******/ 			try {
-/******/ 				return this || new Function('return this')();
-/******/ 			} catch (e) {
-/******/ 				if (typeof window === 'object') return window;
-/******/ 			}
-/******/ 		})();
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/jsonp chunk loading */
-/******/ 	(() => {
-/******/ 		// no baseURI
-/******/ 		
-/******/ 		// object to store loaded and loading chunks
-/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
-/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
-/******/ 		var installedChunks = {
-/******/ 			205: 0,
-/******/ 			844: 0
-/******/ 		};
-/******/ 		
-/******/ 		// no chunk on demand loading
-/******/ 		
-/******/ 		// no prefetching
-/******/ 		
-/******/ 		// no preloaded
-/******/ 		
-/******/ 		// no HMR
-/******/ 		
-/******/ 		// no HMR manifest
-/******/ 		
-/******/ 		__webpack_require__.O.j = (chunkId) => (installedChunks[chunkId] === 0);
-/******/ 		
-/******/ 		// install a JSONP callback for chunk loading
-/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
-/******/ 			var [chunkIds, moreModules, runtime] = data;
-/******/ 			// add "moreModules" to the modules object,
-/******/ 			// then flag all "chunkIds" as loaded and fire callback
-/******/ 			var moduleId, chunkId, i = 0;
-/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
-/******/ 				for(moduleId in moreModules) {
-/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
-/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
-/******/ 					}
-/******/ 				}
-/******/ 				if(runtime) var result = runtime(__webpack_require__);
-/******/ 			}
-/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
-/******/ 			for(;i < chunkIds.length; i++) {
-/******/ 				chunkId = chunkIds[i];
-/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
-/******/ 					installedChunks[chunkId][0]();
-/******/ 				}
-/******/ 				installedChunks[chunkId] = 0;
-/******/ 			}
-/******/ 			return __webpack_require__.O(result);
-/******/ 		}
-/******/ 		
-/******/ 		var chunkLoadingGlobal = globalThis["webpackChunkace_glossary_plugin"] = globalThis["webpackChunkace_glossary_plugin"] || [];
-/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
-/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
-/******/ 	})();
-/******/ 	
-/************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [844], () => (__webpack_require__(790)))
-/******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
-/******/ 	
 /******/ })()
 ;

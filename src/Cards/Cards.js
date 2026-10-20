@@ -1,3 +1,4 @@
+import { buildRestUrl } from '../rest-url';
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from '@wordpress/element';
 import { FlexBlock, Card, CardHeader, CardBody, TextControl, ToggleControl, TextareaControl, PanelRow, Tooltip, IconButton, Flex, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -60,7 +61,7 @@ const Cards = ({
     }, [updateTerm, isAutoSaveEnabled]);
     
     const updateTerm = useCallback((termId, key, value, isEditorChange = false) => {
-        console.log('updateTerm', termId, key, value, isEditorChange);
+        ;
         
         // Only update if this is the active term
         if (!activeTerm || activeTerm.id !== termId) {
@@ -175,7 +176,7 @@ const Cards = ({
         setIsSaving(true);
 
         try {
-            const response = await fetch(`${AceMediaGlossaryAdmin.apiUrl}wp/v2/glossary/bulk-delete`, {
+            const response = await fetch(buildRestUrl(`wp/v2/glossary/bulk-delete`, AceMediaGlossaryAdmin.apiUrl), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,3 +1,4 @@
+import { buildRestUrl } from '../rest-url';
 import React, { useState, useEffect } from '@wordpress/element';
 import { PanelBody, Button, TextControl, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -69,7 +70,7 @@ const TagsAndCategoriesFilter = ({
         setIsFetchingTags(true);
         try {
             const restRoot = getRestRoot();
-            const response = await fetch(`${restRoot}/wp/v2/tags?per_page=10&page=${page}&search=${search}`);
+            const response = await fetch(buildRestUrl(`wp/v2/tags?per_page=10&page=${page}&search=${search}`, restRoot));
             if (!response.ok) throw new Error('Failed to fetch tags');
             const newTags = await response.json();
 
@@ -94,7 +95,7 @@ const TagsAndCategoriesFilter = ({
         setIsFetchingCategories(true);
         try {
             const restRoot = getRestRoot();
-            const response = await fetch(`${restRoot}/wp/v2/categories?per_page=10&page=${page}&search=${search}`);
+            const response = await fetch(buildRestUrl(`wp/v2/categories?per_page=10&page=${page}&search=${search}`, restRoot));
             if (!response.ok) throw new Error('Failed to fetch categories');
             const newCategories = await response.json();
 

@@ -4,6 +4,10 @@ if (!defined('ABSPATH')) {
 }
 
 class AceMediaGlossary_Related_Posts {
+    private static function lowercase($value) {
+        return function_exists('mb_strtolower') ? mb_strtolower($value, 'UTF-8') : strtolower($value);
+    }
+
     public static function fetch($args = array()) {
         $defaults = array(
             'term_id'       => 0,
@@ -68,6 +72,7 @@ class AceMediaGlossary_Related_Posts {
         $base_query = array(
             'post_type'           => $post_types,
             'post_status'         => 'publish',
+            'has_password' => false,
             'ignore_sticky_posts' => true,
             'orderby'             => 'date',
             'order'               => 'DESC',
@@ -231,7 +236,7 @@ class AceMediaGlossary_Related_Posts {
                 
                 foreach ($all_glossary_terms as $other_term) {
                     // Skip if it's the same term (case-insensitive)
-                    if (mb_strtolower($other_term, 'UTF-8') === mb_strtolower($term, 'UTF-8')) {
+                    if (self::lowercase($other_term) === self::lowercase($term)) {
                         continue;
                     }
                     
@@ -241,8 +246,8 @@ class AceMediaGlossary_Related_Posts {
                     }
                     
                     // Check if this longer term contains our term
-                    $other_term_lower = mb_strtolower($other_term, 'UTF-8');
-                    $term_lower = mb_strtolower($term, 'UTF-8');
+                    $other_term_lower = self::lowercase($other_term);
+                    $term_lower = self::lowercase($term);
                     
                     if (strpos($other_term_lower, $term_lower) !== false) {
                         // Check if this longer term matches in the content
@@ -310,10 +315,10 @@ class AceMediaGlossary_Related_Posts {
         // Check each term (longest first) to see if it matches the search term
         // If we find the search term as an exact match, return it
         // This ensures we use the most specific term available
-        $search_lower = mb_strtolower($search_term, 'UTF-8');
+        $search_lower = self::lowercase($search_term);
         
         foreach ($all_terms as $term) {
-            $term_lower = mb_strtolower($term, 'UTF-8');
+            $term_lower = self::lowercase($term);
             // Exact match - this is our term
             if ($term_lower === $search_lower) {
                 return $term;
@@ -358,6 +363,7 @@ class AceMediaGlossary_Related_Posts {
             'post_type' => 'acemedia_glossary',
             'numberposts' => -1,
             'post_status' => 'publish',
+            'has_password' => false,
             'fields' => 'ids', // Only get IDs for efficiency
         ]);
 

@@ -30,7 +30,6 @@ class AceMediaGlossary_Admin {
         wp_enqueue_media();
 
         // Dequeue block editor scripts to avoid conflicts
-        wp_dequeue_script('wp-block-editor');        // Remove the full wp-admin block editor chrome which clashes with the isolated editor instance.
         wp_dequeue_script('wp-edit-post');
 
         // Enqueue the admin color scheme for styling
@@ -46,66 +45,6 @@ class AceMediaGlossary_Admin {
         
         // Custom admin script - no dependencies since we enqueued everything above
         $asset = include ACEMEDIA_GLOSSARY_PATH . 'build/glossary-admin.asset.php';
-
-        wp_add_inline_script(
-            'wp-data',
-            <<<'JS'
-(function suppressDuplicateInterfaceStoreWarning(){
-    var originalError = console.error;
-
-    console.error = function(){
-        if (
-            arguments.length > 0 &&
-            typeof arguments[0] === 'string' &&
-            arguments[0].indexOf('Store "core/interface" is already registered.') !== -1
-        ) {
-            return;
-        }
-
-        return originalError.apply( console, arguments );
-    };
-})();
-JS
-            ,
-            'after'
-        );
-
-        wp_add_inline_script(
-            'wp-rich-text',
-            <<<'JS'
-(function patchGlossaryFormats(){
-    var attempt = function(){
-        if ( ! window.wp || ! window.wp.richText || window.wp.richText.__glossaryPatched ) {
-            if ( window.wp && window.wp.richText && window.wp.richText.__glossaryPatched ) {
-                return;
-            }
-            setTimeout( attempt, 50 );
-            return;
-        }
-
-        var originalRegisterFormatType = window.wp.richText.registerFormatType;
-        if ( typeof originalRegisterFormatType === 'function' ) {
-            window.wp.richText.registerFormatType = function( name ) {
-                try {
-                    if ( name === 'core/footnote' && typeof window.wp.richText.getFormatType === 'function' ) {
-                        var existing = window.wp.richText.getFormatType( name );
-                        if ( existing ) {
-                            return existing;
-                        }
-                    }
-                } catch ( error ) {}
-                return originalRegisterFormatType.apply( this, arguments );
-            };
-        }
-        window.wp.richText.__glossaryPatched = true;
-    };
-
-    attempt();
-})();
-JS
-            ,
-            'after'
-        );
 
         wp_enqueue_script(
             'acemedia-glossary-admin',
@@ -151,6 +90,7 @@ JS
 }
 
 function render_acemedia_glossary_settings_page() {
+    if (!current_user_can('manage_options')) { wp_die(esc_html__('You cannot manage glossary settings.', 'acemedia-glossary')); }
     ?>
         <div class="wrap"><div id="ace-settings-root"></div></div>
     <?php

@@ -1,3 +1,4 @@
+import { buildRestUrl } from '../rest-url';
 import React, { useState, useEffect, useCallback, useMemo } from '@wordpress/element';
 import { Flex, FlexItem, CheckboxControl, Spinner, TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -131,7 +132,7 @@ const RelatedTagsAndCatsOptimized = ({
                 
                 // Log debug information if available
                 if (response?.debug) {
-                    console.log(`Debug info for ${type} update:`, response.debug);
+                    ;
                 }
             } catch (error) {
                 console.error(`Error updating ${type}:`, error);
@@ -242,7 +243,7 @@ const RelatedTagsAndCatsOptimized = ({
         try {
             const restRoot = getRestRoot();
             const response = await fetch(
-                `${restRoot}/wp/v2/categories?per_page=10&page=${page}&search=${search}`,
+                buildRestUrl(`wp/v2/categories?per_page=10&page=${page}&search=${search}`, restRoot),
                 {
                     headers: {
                         'X-WP-Nonce': window.AceMediaGlossaryAdmin?.nonce || '',
@@ -276,7 +277,7 @@ const RelatedTagsAndCatsOptimized = ({
         try {
             const restRoot = getRestRoot();
             const response = await fetch(
-                `${restRoot}/wp/v2/tags?per_page=10&page=${page}&search=${search}`,
+                buildRestUrl(`wp/v2/tags?per_page=10&page=${page}&search=${search}`, restRoot),
                 {
                     headers: {
                         'X-WP-Nonce': window.AceMediaGlossaryAdmin?.nonce || '',
@@ -333,7 +334,7 @@ const RelatedTagsAndCatsOptimized = ({
         // Fallback to API call if lookup is not available
         try {
             const restRoot = getRestRoot();
-            const response = await fetch(`${restRoot}/wp/v2/glossary`, {
+            const response = await fetch(buildRestUrl(`wp/v2/glossary`, restRoot), {
                 headers: {
                     'X-WP-Nonce': window.AceMediaGlossaryAdmin?.nonce || '',
                 },

@@ -36,16 +36,16 @@ function migrate_auto_highlight_for_existing_terms() {
 }
 
 // Hook to run migration on admin page load (one time)
-add_action('admin_init', function() {
+add_action('current_screen', function($screen) {
     // Only run if we're on the glossary admin page and haven't run the migration yet
-    if (isset($_GET['page']) && $_GET['page'] === 'acemedia-glossary-admin' && !get_option('acemedia_glossary_auto_highlight_migrated')) {
+    if (current_user_can('manage_options') && $screen instanceof WP_Screen && $screen->id === 'toplevel_page_acemedia-glossary-admin' && !get_option('acemedia_glossary_auto_highlight_migrated')) {
         $updated_count = migrate_auto_highlight_for_existing_terms();
         update_option('acemedia_glossary_auto_highlight_migrated', true);
         
         if ($updated_count > 0) {
             add_action('admin_notices', function() use ($updated_count) {
                 echo '<div class="notice notice-success is-dismissible">';
-                echo '<p><strong>GlossPress:</strong> Auto-highlight has been enabled for ' . $updated_count . ' existing glossary terms. You can now manage this setting individually for each term.</p>';
+                echo '<p><strong>GlossPress:</strong> Auto-highlight has been enabled for ' . esc_html((string) $updated_count) . ' existing glossary terms. You can now manage this setting individually for each term.</p>';
                 echo '</div>';
             });
         }

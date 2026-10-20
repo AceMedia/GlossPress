@@ -1,3 +1,7 @@
 node_modules
 .webpack-cache
 test.zip
+
+/dist/
+AGENTS.md
+CLAUDE.md

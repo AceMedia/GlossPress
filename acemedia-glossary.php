@@ -1,15 +1,31 @@
 <?php
 /**
- * Plugin Name: AceMedia Glossary
+ * Plugin Name: GlossPress
  * Description: A glossary system with React-based admin and frontend interfaces
- * Version: 1.2.1
+ * Version: 1.2.2
  * Author: AceMedia
  * Author URI: https://github.com/AceMedia
+ * Requires at least: 6.6
+ * Requires PHP: 7.4
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: acemedia-glossary
  */
 
 if (!defined('ABSPATH')) exit;
+
+if (version_compare(PHP_VERSION, '7.4', '<')) {
+    add_action('admin_notices', function () { echo '<div class="notice notice-error"><p>' . esc_html__('GlossPress requires PHP 7.4 or later.', 'acemedia-glossary') . '</p></div>'; });
+    return;
+}
+
+global $wp_version;
+if (isset($wp_version) && version_compare($wp_version, '6.6', '<')) {
+    add_action('admin_notices', static function () {
+        echo '<div class="notice notice-error"><p>' . esc_html__('GlossPress requires WordPress 6.6 or later.', 'acemedia-glossary') . '</p></div>';
+    });
+    return;
+}
 
 class AceMediaGlossary {
     private static $instance = null;
@@ -30,7 +46,7 @@ class AceMediaGlossary {
     private function defineConstants() {
         define('ACEMEDIA_GLOSSARY_PATH', plugin_dir_path(__FILE__));
         define('ACEMEDIA_GLOSSARY_URL', plugin_dir_url(__FILE__));
-        define('ACEMEDIA_GLOSSARY_VERSION', '1.2.1');
+        define('ACEMEDIA_GLOSSARY_VERSION', '1.2.2');
     }
 
     /**
