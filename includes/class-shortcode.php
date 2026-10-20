@@ -812,8 +812,8 @@ function acemedia_glossary_term_pattern($term) {
  *
  * Terms arrive longest first, so a longer phrase claims its text before a
  * shorter term nested inside it can. Every occurrence is claimed, not only
- * the highlighted one, so once "Parkour Park" has been used, "Parkour" still
- * never lands inside a later "Parkour Park", and a term that first turns up
+ * the highlighted one, so once "Garden Centre" has been used, "Garden" still
+ * never lands inside a later "Garden Centre", and a term that first turns up
  * inside a longer one is highlighted where it stands alone instead.
  *
  * @param string $content       Post HTML.

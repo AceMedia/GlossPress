@@ -4,6 +4,9 @@
  * Description: A glossary system with React-based admin and frontend interfaces
  * Version: 1.2.1
  * Author: AceMedia
+ * Author URI: https://github.com/AceMedia
+ * License: GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 if (!defined('ABSPATH')) exit;
