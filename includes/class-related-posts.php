@@ -214,6 +214,19 @@ class AceMediaGlossary_Related_Posts {
         $pattern = self::build_term_boundary_pattern($term);
         $filtered = array();
 
+        // Longer glossary terms that contain this one, worked out once per call.
+        $term_lower = self::lowercase($term);
+        $containing = array();
+        foreach ($all_glossary_terms as $other_term) {
+            $other_term_lower = self::lowercase($other_term);
+            if ($other_term_lower === $term_lower || strlen($other_term) <= strlen($term)) {
+                continue;
+            }
+            if (strpos($other_term_lower, $term_lower) !== false) {
+                $containing[] = self::build_term_boundary_pattern($other_term);
+            }
+        }
+
         $charset = get_bloginfo('charset');
 
         foreach ($posts as $post) {
@@ -224,69 +237,25 @@ class AceMediaGlossary_Related_Posts {
             );
 
             $should_include = false;
-            
+
             foreach ($haystacks as $haystack) {
-                if ($haystack === '') {
+                if ($haystack === '' || !preg_match($pattern, $haystack)) {
                     continue;
                 }
-                
-                // First, check if any longer term that contains our term matches
-                // If it does, we need to check if the LONGER term is what's actually in the content
-                $longer_term_matches = array();
-                
-                foreach ($all_glossary_terms as $other_term) {
-                    // Skip if it's the same term (case-insensitive)
-                    if (self::lowercase($other_term) === self::lowercase($term)) {
-                        continue;
-                    }
-                    
-                    // Skip if the other term is not longer
-                    if (strlen($other_term) <= strlen($term)) {
-                        continue;
-                    }
-                    
-                    // Check if this longer term contains our term
-                    $other_term_lower = self::lowercase($other_term);
-                    $term_lower = self::lowercase($term);
-                    
-                    if (strpos($other_term_lower, $term_lower) !== false) {
-                        // Check if this longer term matches in the content
-                        $other_pattern = self::build_term_boundary_pattern($other_term);
-                        if (preg_match($other_pattern, $haystack)) {
-                            $longer_term_matches[] = $other_term;
-                        }
-                    }
+
+                // The term counts only where it stands outside every longer
+                // term containing it. Matches are replaced with a space so the
+                // words either side are not joined into a new match.
+                foreach ($containing as $longer_pattern) {
+                    $haystack = preg_replace($longer_pattern, ' ', $haystack);
                 }
-                
-                // Now check if the current term matches AS A STANDALONE WORD
-                // (not as part of a longer term that we found)
+
                 if (preg_match($pattern, $haystack)) {
-                    // If we found longer term matches, we need to check if the shorter term
-                    // appears OUTSIDE of those longer terms
-                    if (!empty($longer_term_matches)) {
-                        // Remove all instances of longer terms from the haystack
-                        $haystack_without_longer_terms = $haystack;
-                        foreach ($longer_term_matches as $longer_term) {
-                            $longer_pattern = self::build_term_boundary_pattern($longer_term);
-                            $haystack_without_longer_terms = preg_replace($longer_pattern, '', $haystack_without_longer_terms);
-                        }
-                        
-                        // Now check if the shorter term still appears in the modified haystack
-                        if (preg_match($pattern, $haystack_without_longer_terms)) {
-                            // The shorter term appears independently, so include this post
-                            $should_include = true;
-                            break;
-                        }
-                        // Otherwise, the shorter term only appears as part of longer terms,
-                        // so don't include this post
-                    } else {
-                        // No longer terms matched, so this post is valid for the shorter term
-                        $should_include = true;
-                        break;
-                    }
+                    $should_include = true;
+                    break;
                 }
             }
-            
+
             if ($should_include) {
                 $filtered[] = $post;
             }

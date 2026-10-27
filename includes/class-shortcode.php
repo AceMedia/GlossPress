@@ -816,6 +816,37 @@ function acemedia_glossary_term_pattern($term) {
 }
 
 /**
+ * Lowercased strpos needles for each term, used to skip terms that cannot match.
+ *
+ * Forms with non-ASCII bytes (other than the curly apostrophe, folded to a
+ * straight one on both sides) get null, so they always run the full regex and
+ * keep its Unicode case folding.
+ *
+ * @param array $glossary_data Terms with 'title' and 'synonyms'.
+ * @param array $patterns      Patterns keyed like $glossary_data.
+ * @return array Needle lists (or null) keyed like $patterns.
+ */
+function acemedia_glossary_term_needles($glossary_data, $patterns) {
+    $needles = array();
+    foreach ($patterns as $i => $pattern) {
+        $term = $glossary_data[$i];
+        $forms = array_merge(array($term['title']), isset($term['synonyms']) ? (array) $term['synonyms'] : array());
+        $forms = array_values(array_unique(array_filter(array_map('trim', $forms), 'strlen')));
+        $list = array();
+        foreach ($forms as $form) {
+            $form = str_replace("\u{2019}", "'", $form);
+            if (preg_match('/[\x80-\xff]/', $form)) {
+                $list = null;
+                break;
+            }
+            $list[] = strtolower($form);
+        }
+        $needles[$i] = $list;
+    }
+    return $needles;
+}
+
+/**
  * Wraps the first free occurrence of each term in span.glossary-highlight.
  *
  * Terms arrive longest first, so a longer phrase claims its text before a
@@ -842,6 +873,7 @@ function acemedia_glossary_highlight_html($content, $glossary_data) {
     if (!$patterns || trim($content) === '') {
         return array('html' => $content, 'has' => false);
     }
+    $needles = acemedia_glossary_term_needles($glossary_data, $patterns);
 
     // Parse inside a wrapper div, with an encoding hint so UTF-8 survives.
     $dom = new DOMDocument('1.0', 'UTF-8');
@@ -874,7 +906,21 @@ function acemedia_glossary_highlight_html($content, $glossary_data) {
 
         $claimed = array();
         $found = array();
+        // A cheap strpos on the lowercased node skips the regex for absent terms.
+        $haystack = strtolower(str_replace("\u{2019}", "'", $text));
         foreach ($patterns as $i => $pattern) {
+            if ($needles[$i] !== null) {
+                $hit = false;
+                foreach ($needles[$i] as $needle) {
+                    if (strpos($haystack, $needle) !== false) {
+                        $hit = true;
+                        break;
+                    }
+                }
+                if (!$hit) {
+                    continue;
+                }
+            }
             if (!preg_match_all($pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
                 continue;
             }
