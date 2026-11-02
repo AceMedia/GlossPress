@@ -1079,13 +1079,6 @@ function acemedia_register_glossary_block() {
         true
     );
 
-    wp_register_style(
-        'acemedia-glossary-block-editor',
-        ACEMEDIA_GLOSSARY_URL . 'build/glossary-block-editor.css',
-        array('wp-edit-blocks'),
-        AceMediaGlossary::assetVersion('build/glossary-block-editor.css')
-    );
-
     $styles = AceMediaGlossary_Style_Settings::get_styles();
     $palette = AceMediaGlossary_Style_Settings::get_color_palette();
 
@@ -1105,7 +1098,6 @@ function acemedia_register_glossary_block() {
     register_block_type('acemedia/glossary', array(
         'api_version' => 3,
         'editor_script'   => 'acemedia-glossary-block',
-        'editor_style'    => 'acemedia-glossary-block-editor',
         'style'           => 'acemedia-glossary-block-frontend',
         'render_callback' => 'acemedia_render_glossary_block',
         'attributes'      => array(
