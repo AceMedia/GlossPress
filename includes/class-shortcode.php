@@ -355,6 +355,7 @@ endforeach; ?>
 </ul>
 </nav>
 <div class="glossary-sections">
+<?php $term_links = get_post_type_object('acemedia_glossary')->publicly_queryable; ?>
 <?php foreach ($groups as $letter => $ids) :
     $letter_id = self::letterId($letter);
     $count = count($ids); ?>
@@ -376,7 +377,7 @@ endforeach; ?>
                 '@id' => $page_url . '#' . $term['anchor'],
                 'name' => $term['title'],
                 'description' => self::plainText($post->post_content),
-                'url' => $page_url . '#' . $term['anchor'],
+                'url' => $term_links ? get_permalink($post) : $page_url . '#' . $term['anchor'],
             );
         }
 
@@ -408,7 +409,7 @@ endforeach; ?>
         }
         ?>
 <article class="glossary-term" id="<?php echo esc_attr($term['anchor']); ?>">
-<h3 class="glossary-term__title"><?php echo esc_html($term['title']); ?></h3>
+<h3 class="glossary-term__title"><?php if ($term_links) : ?><a href="<?php echo esc_url(get_permalink($post)); ?>"><?php echo esc_html($term['title']); ?></a><?php else : echo esc_html($term['title']); endif; ?></h3>
 <div class="glossary-term__definition"><?php
 // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Stored WordPress post content uses core save-time KSES permissions; retain rendered block HTML.
 echo $definition !== '' ? $definition : '<p>' . esc_html__('No definition yet.', 'acemedia-glossary') . '</p>'; ?></div>

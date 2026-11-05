@@ -27,6 +27,10 @@ class AceMediaGlossary_PostType {
             $archive_slug = 'glossary';
         }
 
+        // A published page already at the archive slug stays as the glossary's home. Terms still get
+        // their own URLs beneath it.
+        $page_holds_slug = (bool) get_page_by_path($archive_slug);
+
         if (post_type_exists('acemedia_glossary')) {
             if (function_exists('unregister_post_type')) {
                 unregister_post_type('acemedia_glossary');
@@ -52,7 +56,7 @@ class AceMediaGlossary_PostType {
             'show_in_nav_menus' => $frontend_enabled,
             'supports' => array('title', 'editor', 'custom-fields'),
             'menu_icon' => 'dashicons-book-alt',
-            'has_archive' => $frontend_enabled ? $archive_slug : false,
+            'has_archive' => ($frontend_enabled && !$page_holds_slug) ? $archive_slug : false,
             'rewrite' => $frontend_enabled ? array('slug' => $archive_slug, 'with_front' => false) : false,
             'exclude_from_search' => !$frontend_enabled,
             'taxonomies' => array('category', 'post_tag'),  // Enable categories and tags
