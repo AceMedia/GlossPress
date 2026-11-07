@@ -71,6 +71,7 @@ class AceMediaGlossary {
     require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-related-posts.php';
     require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-query-loop-integration.php';
     require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-block-templates.php';
+    require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-term-page.php';
         require_once ACEMEDIA_GLOSSARY_PATH . 'admin/class-admin.php';
         require_once ACEMEDIA_GLOSSARY_PATH . 'admin/class-api.php';
         require_once ACEMEDIA_GLOSSARY_PATH . 'includes/migration-auto-highlight.php';
