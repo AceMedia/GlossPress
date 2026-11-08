@@ -4,7 +4,7 @@ Tags: glossary, definitions, tooltip, dictionary
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.2
+Stable tag: 1.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,9 @@ Developer documentation covers highlighting filters, related post types, saved b
 2. Edit a definition and connect related terms in the admin interface.
 
 == Changelog ==
+
+= 1.3.3 =
+* Related articles: a trailing qualifier such as "(Horse Racing)" is dropped from the search, and both the hyphenated and spaced forms of a term are tried ("each way" and "each-way").
 
 = 1.3.2 =
 * Fix: the term page's article loop is recognised by a marker in its query settings (acemediaGlossaryRelated), because core hands the post template block to query_loop_block_query_vars, so the loop now lists articles that use the term instead of the latest posts.

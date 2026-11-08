@@ -54,6 +54,12 @@ class AceMediaGlossary_Related_Posts {
 
         // If we have a search term, check if there's a longer glossary term that contains it
         // This prevents "ace" from matching posts about "ace 123" when "ace 123" is its own term
+        // "Withdrawn (Horse Racing)" is written as "withdrawn" in articles: drop a trailing qualifier.
+        $bare = trim((string) preg_replace('/\s*\([^)]*\)\s*$/u', '', $search_term));
+        if ($bare !== '') {
+            $search_term = $bare;
+        }
+
         if ($search_term !== '') {
             $search_term = self::get_longest_matching_term($search_term);
         }
@@ -90,9 +96,11 @@ class AceMediaGlossary_Related_Posts {
 
         $used_fallback = false;
 
-        if ($search_term !== '') {
+        // Articles write some terms with a hyphen ("each-way") and some without; try both forms.
+        $variants = array_values(array_unique(array_filter(array($search_term, str_replace(' ', '-', $search_term), str_replace('-', ' ', $search_term)))));
+        foreach ($search_term !== '' ? $variants : array() as $variant) {
             $primary_query_args = $base_query;
-            $primary_query_args['s'] = $search_term;
+            $primary_query_args['s'] = $variant;
             $primary_query_args['sentence'] = true;
             $primary_query_args['exact'] = true;
             $primary_query_args['search_columns'] = array('post_title', 'post_content');
@@ -106,7 +114,7 @@ class AceMediaGlossary_Related_Posts {
             $primary_query = new WP_Query($primary_query_args);
 
             if ($primary_query->have_posts()) {
-                $filtered_posts = self::filter_posts_by_exact_term($primary_query->posts, $search_term);
+                $filtered_posts = self::filter_posts_by_exact_term($primary_query->posts, $variant);
 
                 if (!empty($filtered_posts)) {
                     $limited_posts = self::maybe_limit_posts($filtered_posts, $per_page);
@@ -125,7 +133,7 @@ class AceMediaGlossary_Related_Posts {
                                 'posts_per_page'     => ($per_page > 0 ? $per_page : -1),
                             )
                         ),
-                        'search_term'   => $search_term,
+                        'search_term'   => $variant,
                     );
 
                     if (!empty($post_ids)) {
