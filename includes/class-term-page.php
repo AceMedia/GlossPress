@@ -71,6 +71,14 @@ final class AceMedia_Glossary_Term_Page {
     }
 
     public static function register_block() {
+        register_block_type('acemedia/glossary-term-header', array(
+            'api_version'     => 3,
+            'render_callback' => array(__CLASS__, 'render_header'),
+            'supports'        => array('html' => false),
+            'attributes'      => array(
+                'kicker' => array('type' => 'string', 'default' => ''),
+            ),
+        ));
         register_block_type('acemedia/glossary-term-nav', array(
             'api_version'     => 3,
             'render_callback' => array(__CLASS__, 'render_nav'),
@@ -80,6 +88,125 @@ final class AceMedia_Glossary_Term_Page {
                 'related' => array('type' => 'string', 'default' => ''),
             ),
         ));
+    }
+
+
+    /** Every published term as [id, title], A to Z, cached until the term set changes. */
+    private static function ordered_terms() {
+        $key  = 'acemedia_glossary_order_' . (function_exists('acemedia_glossary_terms_version') ? acemedia_glossary_terms_version() : '0');
+        $list = get_transient($key);
+        if (is_array($list)) {
+            return $list;
+        }
+        $list = array();
+        foreach (get_posts(array('post_type' => 'acemedia_glossary', 'post_status' => 'publish', 'has_password' => false, 'posts_per_page' => -1, 'orderby' => 'title', 'order' => 'ASC', 'no_found_rows' => true)) as $p) {
+            $list[] = array((int) $p->ID, html_entity_decode($p->post_title, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+        usort($list, function ($a, $b) {
+            return strnatcasecmp($a[1], $b[1]);
+        });
+        set_transient($key, $list, DAY_IN_SECONDS);
+        return $list;
+    }
+
+    /** The A to Z page, opened at a letter. */
+    public static function letter_url($letter) {
+        $base = self::glossary_url();
+        $slug = $letter === '#' ? 'num' : strtolower($letter);
+        return add_query_arg('letter', $slug, $base) . '#' . AceMediaGlossary_Shortcode::letterId($letter);
+    }
+
+    /**
+     * The term page's header: where it sits in the glossary, the term and its definition, its
+     * topics and related terms, and the terms either side of it in the A to Z. The definition is
+     * rendered without the_content filters, so nothing is injected into it.
+     */
+    public static function render_header($attributes = array()) {
+        if (!is_singular('acemedia_glossary')) {
+            return '';
+        }
+        $post = get_queried_object();
+        if (!$post instanceof WP_Post) {
+            return '';
+        }
+        if (class_exists('AceMediaGlossary_Shortcode')) {
+            AceMediaGlossary_Shortcode::enqueueAssets();
+        }
+        $set    = (string) apply_filters('acemedia_glossary_term_set_name', get_post_type_object('acemedia_glossary')->labels->name);
+        $title  = html_entity_decode(get_the_title($post), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $letter = AceMediaGlossary_Shortcode::indexLetter($title);
+        $kicker = trim((string) ($attributes['kicker'] ?? '')) ?: __('Glossary term', 'acemedia-glossary');
+        $def    = AceMediaGlossary_Shortcode::definitionHtml($post->post_content);
+
+        $h  = '<header class="glossary-entry">';
+        $h .= '<nav class="glossary-entry__crumbs" aria-label="' . esc_attr__('Breadcrumb', 'acemedia-glossary') . '"><ol>';
+        $h .= '<li><a href="' . esc_url(self::glossary_url()) . '">' . esc_html($set) . '</a></li>';
+        $h .= '<li><a href="' . esc_url(self::letter_url($letter)) . '">' . esc_html(sprintf(__('Letter %s', 'acemedia-glossary'), $letter)) . '</a></li>';
+        $h .= '<li aria-current="page">' . esc_html($title) . '</li></ol></nav>';
+        $h .= '<div class="glossary-entry__card">';
+        $h .= '<p class="glossary-entry__kicker">' . esc_html($kicker) . '</p>';
+        $h .= '<h1 class="glossary-entry__title">' . esc_html($title) . '</h1>';
+
+        $synonyms = get_post_meta($post->ID, 'synonyms', true);
+        $synonyms = is_array($synonyms) ? array_values(array_filter(array_map('strval', $synonyms))) : array();
+        if ($synonyms) {
+            $h .= '<p class="glossary-entry__aka"><span class="glossary-term__label">' . esc_html__('Also known as', 'acemedia-glossary') . '</span> ' . esc_html(implode(', ', $synonyms)) . '</p>';
+        }
+        $h .= '<div class="glossary-entry__def">' . ($def !== '' ? $def : '<p>' . esc_html__('No definition yet.', 'acemedia-glossary') . '</p>') . '</div>';
+
+        $cats = get_the_terms($post->ID, 'category');
+        $cats = is_array($cats) ? array_filter($cats, function ($c) {
+            return $c->slug !== 'uncategorized';
+        }) : array();
+        $related = array();
+        $ids     = get_post_meta($post->ID, 'related_terms', true);
+        foreach (is_array($ids) ? $ids : array() as $id) {
+            $r = get_post((int) $id);
+            if ($r instanceof WP_Post && 'acemedia_glossary' === $r->post_type && 'publish' === $r->post_status && $r->ID !== $post->ID) {
+                $related[] = $r;
+            }
+        }
+        if ($cats || $related) {
+            $h .= '<div class="glossary-entry__facts">';
+            if ($cats) {
+                $h .= '<div class="glossary-entry__fact"><span class="glossary-term__label">' . esc_html__('Topics', 'acemedia-glossary') . '</span><ul class="glossary-entry__chips">';
+                foreach ($cats as $c) {
+                    $link = get_term_link($c);
+                    $h   .= '<li>' . (is_wp_error($link) ? '<span class="glossary-tag">' . esc_html($c->name) . '</span>' : '<a class="glossary-tag" href="' . esc_url($link) . '">' . esc_html($c->name) . '</a>') . '</li>';
+                }
+                $h .= '</ul></div>';
+            }
+            if ($related) {
+                $h .= '<div class="glossary-entry__fact"><span class="glossary-term__label">' . esc_html__('Related terms', 'acemedia-glossary') . '</span><ul class="glossary-entry__chips">';
+                foreach ($related as $r) {
+                    $h .= '<li><a class="glossary-mini" href="' . esc_url(get_permalink($r)) . '">' . esc_html(get_the_title($r)) . '</a></li>';
+                }
+                $h .= '</ul></div>';
+            }
+            $h .= '</div>';
+        }
+        $h .= '</div>';
+
+        // The terms either side in the A to Z.
+        $list = self::ordered_terms();
+        $pos  = null;
+        foreach ($list as $i => $row) {
+            if ($row[0] === (int) $post->ID) {
+                $pos = $i;
+                break;
+            }
+        }
+        if (null !== $pos && count($list) > 1) {
+            $prev = $list[($pos - 1 + count($list)) % count($list)];
+            $next = $list[($pos + 1) % count($list)];
+            $h   .= '<nav class="glossary-entry__pager" aria-label="' . esc_attr__('More terms', 'acemedia-glossary') . '">';
+            $h   .= '<a class="glossary-entry__step is-prev" href="' . esc_url(get_permalink($prev[0])) . '" rel="prev"><span class="glossary-term__label">' . esc_html__('Previous term', 'acemedia-glossary') . '</span><span class="glossary-entry__step-title">' . esc_html($prev[1]) . '</span></a>';
+            $h   .= '<a class="glossary-entry__step is-index" href="' . esc_url(self::letter_url($letter)) . '"><span class="glossary-term__label">' . esc_html__('Back to', 'acemedia-glossary') . '</span><span class="glossary-entry__step-title">' . esc_html(sprintf(__('All %s terms', 'acemedia-glossary'), $letter)) . '</span></a>';
+            $h   .= '<a class="glossary-entry__step is-next" href="' . esc_url(get_permalink($next[0])) . '" rel="next"><span class="glossary-term__label">' . esc_html__('Next term', 'acemedia-glossary') . '</span><span class="glossary-entry__step-title">' . esc_html($next[1]) . '</span></a>';
+            $h   .= '</nav>';
+        }
+
+        return $h . '</header>';
     }
 
     /** "Part of the Glossary" with the A to Z link, then the term's related terms as pills. */

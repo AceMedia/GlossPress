@@ -1,23 +1,22 @@
 <!-- wp:template-part {"slug":"header","tagName":"header"} /-->
-<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->
-<main class="wp-block-group">
-<!-- wp:post-title {"level":1} /-->
-<!-- wp:acemedia/glossary-term-nav /-->
-<!-- wp:post-content /-->
-<!-- wp:group {"tagName":"section","className":"glossary-related-posts","layout":{"type":"constrained"}} -->
+<!-- wp:group {"tagName":"main","layout":{"type":"constrained","contentSize":"1200px"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|40","bottom":"var:preset|spacing|50"},"blockGap":"var:preset|spacing|40"}}} -->
+<main class="wp-block-group" style="padding-top:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--50)">
+<!-- wp:acemedia/glossary-term-header /-->
+<!-- wp:group {"tagName":"section","className":"glossary-related-posts","layout":{"type":"default"}} -->
 <section class="wp-block-group glossary-related-posts">
 <!-- wp:heading {"level":2} -->
-<h2 class="wp-block-heading">Related Posts</h2>
+<h2 class="wp-block-heading">Articles that use this term</h2>
 <!-- /wp:heading -->
-<!-- wp:query {"queryId":0,"query":{"perPage":6,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"exclude","inherit":false},"displayLayout":{"type":"list"},"className":"acemedia-glossary-related-query"} -->
+<!-- wp:query {"queryId":0,"query":{"perPage":6,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"exclude","inherit":false},"className":"acemedia-glossary-related-query"} -->
 <div class="wp-block-query acemedia-glossary-related-query">
-<!-- wp:post-template -->
-<!-- wp:post-title {"isLink":true} /-->
-<!-- wp:post-excerpt {"moreText":"Read more"} /-->
+<!-- wp:post-template {"layout":{"type":"grid","columnCount":3}} -->
+<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"16/9","style":{"border":{"radius":"0.5rem"}}} /-->
+<!-- wp:post-title {"isLink":true,"level":3} /-->
+<!-- wp:post-excerpt {"excerptLength":24} /-->
 <!-- /wp:post-template -->
 <!-- wp:query-no-results -->
 <!-- wp:paragraph -->
-<p>No related posts found.</p>
+<p>No articles use this term yet.</p>
 <!-- /wp:paragraph -->
 <!-- /wp:query-no-results -->
 </div>

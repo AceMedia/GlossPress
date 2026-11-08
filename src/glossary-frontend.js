@@ -7,6 +7,7 @@
  * No framework and no dependencies.
  */
 import './styles/scss/frontend.scss';
+import { initApp } from './glossary-app';
 
 const normalise = ( text ) =>
 	text
@@ -365,7 +366,13 @@ function initGlossary( root ) {
 }
 
 const start = () =>
-	document.querySelectorAll( '.acemedia-glossary' ).forEach( initGlossary );
+	document
+		.querySelectorAll( '.acemedia-glossary' )
+		.forEach( ( root ) =>
+			root.classList.contains( 'is-app' )
+				? initApp( root )
+				: initGlossary( root )
+		);
 
 if ( document.readyState === 'loading' ) {
 	document.addEventListener( 'DOMContentLoaded', start );

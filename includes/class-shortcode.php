@@ -34,7 +34,13 @@ class AceMediaGlossary_Shortcode {
             'cardBackgroundColor' => '',
             'contentGap' => '1.5rem',
             'headingPadding' => '1.25rem',
+            // "classic" keeps the original list; "app" renders a filter rail
+            // beside the terms, for a page given over to the glossary.
+            'layout' => 'classic',
+            'title' => '',
+            'intro' => '',
         ), $atts, 'glossary');
+        $atts['layout'] = $atts['layout'] === 'app' ? 'app' : 'classic';
 
         foreach (array_keys(AceMediaGlossary_Style_Settings::get_default_styles()) as $style_key) {
             if (array_key_exists($style_key, $global_styles)) {
@@ -140,6 +146,26 @@ class AceMediaGlossary_Shortcode {
             'loadingRelated' => __('Loading related articles', 'acemedia-glossary'),
             'noRelated' => __('No related articles yet.', 'acemedia-glossary'),
             'relatedError' => __('Related articles could not be loaded.', 'acemedia-glossary'),
+            /* translators: %s: number of terms. */
+            'term1' => __('%s term', 'acemedia-glossary'),
+            /* translators: %s: number of terms. */
+            'termN' => __('%s terms', 'acemedia-glossary'),
+            /* translators: %s: index letter. */
+            'under' => __('under %s', 'acemedia-glossary'),
+            /* translators: %s: topic name. */
+            'inTopic' => __('in %s', 'acemedia-glossary'),
+            /* translators: %s: search text. */
+            'matching' => __('matching “%s”', 'acemedia-glossary'),
+            'newest' => __('newest first', 'acemedia-glossary'),
+            /* translators: %s: number of terms. */
+            'show1' => __('Show %s term', 'acemedia-glossary'),
+            /* translators: %s: number of terms. */
+            'showN' => __('Show %s terms', 'acemedia-glossary'),
+            /* translators: %s: index letter. */
+            'letterChip' => __('Letter %s', 'acemedia-glossary'),
+            'updatedChip' => __('Recently updated', 'acemedia-glossary'),
+            /* translators: %s: the filter being removed. */
+            'remove' => __('Remove %s', 'acemedia-glossary'),
         );
     }
 
@@ -230,12 +256,12 @@ class AceMediaGlossary_Shortcode {
     /**
      * Index letter for a term: A to Z, or # for anything else.
      */
-    private static function indexLetter($title) {
+    public static function indexLetter($title) {
         $first = strtoupper(substr(remove_accents(trim(html_entity_decode($title, ENT_QUOTES | ENT_HTML5, 'UTF-8'))), 0, 1));
         return ($first !== '' && ctype_alpha($first)) ? $first : '#';
     }
 
-    private static function letterId($letter) {
+    public static function letterId($letter) {
         return 'glossary-letter-' . ($letter === '#' ? 'num' : strtolower($letter));
     }
 
@@ -243,7 +269,7 @@ class AceMediaGlossary_Shortcode {
      * Definition HTML, rendered like post content but without the_content
      * filters (ads, related posts and other injections have no place here).
      */
-    private static function definitionHtml($content) {
+    public static function definitionHtml($content) {
         if ($content === '') {
             return '';
         }
@@ -261,9 +287,13 @@ class AceMediaGlossary_Shortcode {
     }
 
     /**
-     * Builds the complete glossary markup.
+     * Every published term, keyed by ID with a unique anchor, sorted, and
+     * grouped by index letter (# first, then A to Z).
+     *
+     * @param bool $sort_updated Newest first instead of A to Z.
+     * @return array{0: array, 1: array}
      */
-    private function renderGlossary($atts, $page_url) {
+    private function collectTerms($sort_updated) {
         $posts = get_posts(array(
             'post_type' => 'acemedia_glossary',
             'post_status' => 'publish',
@@ -298,7 +328,6 @@ class AceMediaGlossary_Shortcode {
             );
         }
 
-        $sort_updated = $atts['sort'] === 'updated';
         uasort($terms, function ($a, $b) use ($sort_updated) {
             if ($sort_updated) {
                 return strcmp($b['post']->post_modified, $a['post']->post_modified);
@@ -319,6 +348,61 @@ class AceMediaGlossary_Shortcode {
             }
             return strcmp($a, $b);
         });
+
+        return array($terms, $groups);
+    }
+
+    /**
+     * Related terms ("See also") that exist in the set, capped.
+     */
+    private static function seeAlso($id, $terms) {
+        $see_also = array();
+        $related_ids = get_post_meta($id, 'related_terms', true);
+        if (is_array($related_ids)) {
+            foreach ($related_ids as $related_id) {
+                $related_id = (int) $related_id;
+                if ($related_id !== $id && isset($terms[$related_id])) {
+                    $see_also[$related_id] = $terms[$related_id];
+                }
+                if (count($see_also) >= self::SEE_ALSO_LIMIT) {
+                    break;
+                }
+            }
+        }
+        return $see_also;
+    }
+
+    /**
+     * One DefinedTermSet script for the page, listing the priority terms.
+     */
+    private static function schemaScript($page_url, $schema_terms) {
+        $schema = array(
+            '@context' => 'https://schema.org',
+            '@type' => 'DefinedTermSet',
+            '@id' => $page_url . '#glossary',
+            'name' => self::currentPageTitle(),
+            'url' => $page_url,
+        );
+        if (!empty($schema_terms)) {
+            foreach ($schema_terms as &$schema_term) {
+                $schema_term['inDefinedTermSet'] = array('@id' => $page_url . '#glossary');
+            }
+            unset($schema_term);
+            $schema['hasDefinedTerm'] = $schema_terms;
+        }
+
+        return '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . '</script>';
+    }
+
+    /**
+     * Builds the complete glossary markup.
+     */
+    private function renderGlossary($atts, $page_url) {
+        if ($atts['layout'] === 'app') {
+            return $this->renderApp($atts, $page_url);
+        }
+
+        list($terms, $groups) = $this->collectTerms($atts['sort'] === 'updated');
 
         $total = count($terms);
         $related_endpoint = rest_url('wp/v2/related-posts');
@@ -381,19 +465,7 @@ endforeach; ?>
             );
         }
 
-        $see_also = array();
-        $related_ids = get_post_meta($id, 'related_terms', true);
-        if (is_array($related_ids)) {
-            foreach ($related_ids as $related_id) {
-                $related_id = (int) $related_id;
-                if ($related_id !== $id && isset($terms[$related_id])) {
-                    $see_also[$related_id] = $terms[$related_id];
-                }
-                if (count($see_also) >= self::SEE_ALSO_LIMIT) {
-                    break;
-                }
-            }
-        }
+        $see_also = self::seeAlso($id, $terms);
 
         $taxonomy_links = array();
         foreach (array('category' => __('Categories', 'acemedia-glossary'), 'post_tag' => __('Tags', 'acemedia-glossary')) as $taxonomy => $label) {
@@ -443,24 +515,200 @@ echo $definition !== '' ? $definition : '<p>' . esc_html__('No definition yet.',
 <?php
         $html = ob_get_clean();
 
-        // One DefinedTermSet for the page. Only priority terms are listed, so
-        // the structured data stays a sensible size however big the glossary gets.
-        $schema = array(
-            '@context' => 'https://schema.org',
-            '@type' => 'DefinedTermSet',
-            '@id' => $page_url . '#glossary',
-            'name' => self::currentPageTitle(),
-            'url' => $page_url,
-        );
-        if (!empty($schema_terms)) {
-            foreach ($schema_terms as &$schema_term) {
-                $schema_term['inDefinedTermSet'] = array('@id' => $page_url . '#glossary');
+        // Only priority terms are listed, so the structured data stays a
+        // sensible size however big the glossary gets.
+        $html .= self::schemaScript($page_url, $schema_terms);
+
+        return $html;
+    }
+
+    /**
+     * The glossary as a page of its own: a filter rail (search, an A to Z
+     * with a count per letter, topics and sort) beside the terms. Everything
+     * is in the HTML, so it reads and links without scripts; the front-end
+     * script turns the rail into live filters kept in the address bar, and
+     * into a sheet on phones.
+     */
+    private function renderApp($atts, $page_url) {
+        list($terms, $groups) = $this->collectTerms(false);
+
+        $total = count($terms);
+        $title = trim((string) $atts['title']);
+        if ($title === '') {
+            $title = self::currentPageTitle();
+        }
+        $intro = trim((string) $atts['intro']);
+        $schema_terms = array();
+        $schema_limit = (int) apply_filters('acemedia_glossary_schema_term_limit', 50);
+        $term_links = get_post_type_object('acemedia_glossary')->publicly_queryable;
+
+        // Topics: the categories the terms are filed under, with counts.
+        $topics = array();
+        $term_topics = array();
+        foreach ($terms as $id => $term) {
+            $term_topics[$id] = array();
+            $cats = get_the_terms($id, 'category');
+            if (!is_array($cats)) {
+                continue;
             }
-            unset($schema_term);
-            $schema['hasDefinedTerm'] = $schema_terms;
+            foreach ($cats as $cat) {
+                if ($cat->slug === 'uncategorized') {
+                    continue;
+                }
+                $term_topics[$id][] = $cat;
+                if (!isset($topics[$cat->slug])) {
+                    $topics[$cat->slug] = array('name' => $cat->name, 'count' => 0, 'term' => $cat);
+                }
+                $topics[$cat->slug]['count']++;
+            }
+        }
+        uasort($topics, function ($a, $b) {
+            return $b['count'] <=> $a['count'] ?: strnatcasecmp($a['name'], $b['name']);
+        });
+        $topics = apply_filters('acemedia_glossary_app_topics', $topics, $terms);
+
+        ob_start();
+        ?>
+<div id="acemedia-glossary-root" class="acemedia-glossary is-app" data-strings="<?php echo esc_attr(wp_json_encode(self::scriptStrings())); ?>" data-total="<?php echo esc_attr($total); ?>">
+<div class="glossary-app">
+<aside class="glossary-rail" id="glossary-rail" aria-label="<?php esc_attr_e('Glossary filters', 'acemedia-glossary'); ?>">
+<div class="glossary-rail__sheet-head">
+<p class="glossary-rail__sheet-title"><?php esc_html_e('Filters', 'acemedia-glossary'); ?></p>
+<button type="button" class="glossary-rail__close" aria-label="<?php esc_attr_e('Close filters', 'acemedia-glossary'); ?>"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z" fill="currentColor"/></svg></button>
+</div>
+<div class="glossary-rail__scroll">
+<div class="glossary-rail__intro">
+<div class="glossary-search" hidden>
+<label class="glossary-group__label" for="glossary-search-input"><?php esc_html_e('Search', 'acemedia-glossary'); ?></label>
+<div class="glossary-search__field">
+<svg class="glossary-search__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.06-1.06-4.43-4.43A6.5 6.5 0 0 0 10.5 4zm0 1.5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z" fill="currentColor"/></svg>
+<?php /* translators: %s: Number of glossary terms available to search. */ ?>
+<input type="search" id="glossary-search-input" class="glossary-search__input" placeholder="<?php echo esc_attr(sprintf(_n('Search %s term', 'Search %s terms', $total, 'acemedia-glossary'), number_format_i18n($total))); ?>" autocomplete="off" spellcheck="false" enterkeyhint="search">
+</div>
+</div>
+<div class="glossary-applied" hidden>
+<ul class="glossary-applied__list"></ul>
+<button type="button" class="glossary-applied__clear glossary-reset"><?php esc_html_e('Clear all', 'acemedia-glossary'); ?></button>
+</div>
+</div>
+<section class="glossary-group" aria-labelledby="glossary-g-az">
+<h2 class="glossary-group__label" id="glossary-g-az"><?php esc_html_e('A to Z', 'acemedia-glossary'); ?></h2>
+<ul class="glossary-azgrid">
+<li class="glossary-azgrid__all"><a class="glossary-az__cell is-all" href="#glossary-sections" data-letter="" aria-current="true"><span class="glossary-az__l"><?php esc_html_e('All', 'acemedia-glossary'); ?></span><span class="glossary-az__n"><?php echo esc_html(number_format_i18n($total)); ?></span><span class="glossary-sr"> <?php esc_html_e('terms', 'acemedia-glossary'); ?></span></a></li>
+<?php foreach (array_merge(array('#'), range('A', 'Z')) as $letter) :
+    $count = isset($groups[$letter]) ? count($groups[$letter]) : 0;
+    if ($count) : ?>
+<li><a class="glossary-az__cell" href="#<?php echo esc_attr(self::letterId($letter)); ?>" data-letter="<?php echo esc_attr($letter); ?>"><span class="glossary-az__l"><?php echo esc_html($letter); ?></span><span class="glossary-az__n"><?php echo esc_html(number_format_i18n($count)); ?></span><span class="glossary-sr"> <?php echo esc_html(_n('term', 'terms', $count, 'acemedia-glossary')); ?></span></a></li>
+<?php else : ?>
+<li><span class="glossary-az__cell is-empty" data-letter="<?php echo esc_attr($letter); ?>"><span class="glossary-az__l"><?php echo esc_html($letter); ?></span><span class="glossary-az__n">0</span><span class="glossary-sr"> <?php esc_html_e('terms', 'acemedia-glossary'); ?></span></span></li>
+<?php endif;
+endforeach; ?>
+</ul>
+</section>
+<?php if (!empty($topics)) : ?>
+<section class="glossary-group" aria-labelledby="glossary-g-topics" data-js-only hidden>
+<h2 class="glossary-group__label" id="glossary-g-topics"><?php esc_html_e('Topics', 'acemedia-glossary'); ?></h2>
+<div class="glossary-chips" role="group" aria-labelledby="glossary-g-topics">
+<?php foreach ($topics as $slug => $topic) : ?>
+<button type="button" class="glossary-chip" data-topic="<?php echo esc_attr($slug); ?>" data-name="<?php echo esc_attr($topic['name']); ?>" aria-pressed="false"><?php echo esc_html($topic['name']); ?> <span class="glossary-chip__n"><?php echo esc_html(number_format_i18n($topic['count'])); ?></span></button>
+<?php endforeach; ?>
+</div>
+</section>
+<?php endif; ?>
+<section class="glossary-group" aria-labelledby="glossary-g-sort" data-js-only hidden>
+<h2 class="glossary-group__label" id="glossary-g-sort"><?php esc_html_e('Sort', 'acemedia-glossary'); ?></h2>
+<div class="glossary-seg" role="group" aria-labelledby="glossary-g-sort">
+<button type="button" data-sort="az" aria-pressed="true"><?php esc_html_e('A to Z', 'acemedia-glossary'); ?></button>
+<button type="button" data-sort="updated" aria-pressed="false"><?php esc_html_e('Recently updated', 'acemedia-glossary'); ?></button>
+</div>
+</section>
+</div>
+<div class="glossary-rail__foot" data-js-only hidden>
+<button type="button" class="glossary-reset glossary-btn glossary-btn--ghost"><?php esc_html_e('Reset', 'acemedia-glossary'); ?></button>
+<button type="button" class="glossary-show glossary-btn glossary-btn--fill"><?php echo esc_html(sprintf(_n('Show %s term', 'Show %s terms', $total, 'acemedia-glossary'), number_format_i18n($total))); ?></button>
+</div>
+</aside>
+<div class="glossary-main" id="glossary-main">
+<header class="glossary-main__head">
+<div class="glossary-main__titles">
+<h1 class="glossary-main__title"><?php echo esc_html($title); ?></h1>
+<?php if ($intro !== '') : ?><p class="glossary-main__intro"><?php echo esc_html($intro); ?></p><?php endif; ?>
+</div>
+<button type="button" class="glossary-filters-open glossary-btn glossary-btn--ghost" aria-controls="glossary-rail" aria-expanded="false" data-js-only hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M3 6h18v2H3zm4 5h10v2H7zm3 5h4v2h-4z" fill="currentColor"/></svg> <?php esc_html_e('Filters', 'acemedia-glossary'); ?><span class="glossary-filters-open__n"></span></button>
+<p class="glossary-main__status" role="status" aria-live="polite"><?php echo esc_html(sprintf(_n('%s term', '%s terms', $total, 'acemedia-glossary'), number_format_i18n($total))); ?></p>
+</header>
+<?php if ($total === 0) : ?>
+<p class="glossary-empty"><?php esc_html_e('No glossary terms found.', 'acemedia-glossary'); ?></p>
+<?php else : ?>
+<div class="glossary-sections" id="glossary-sections">
+<?php foreach ($groups as $letter => $ids) :
+    $count = count($ids); ?>
+<section class="glossary-letter" id="<?php echo esc_attr(self::letterId($letter)); ?>" data-letter="<?php echo esc_attr($letter); ?>">
+<div class="glossary-letter__head">
+<h2 class="glossary-letter__title" tabindex="-1"><?php echo esc_html($letter); ?></h2>
+<?php /* translators: %s: Number of terms under this letter. */ ?>
+<span class="glossary-letter__count"><?php echo esc_html(sprintf(_n('%s term', '%s terms', $count, 'acemedia-glossary'), number_format_i18n($count))); ?></span>
+</div>
+<div class="glossary-letter__terms">
+<?php foreach ($ids as $id) :
+        $term = $terms[$id];
+        $post = $term['post'];
+        $definition = self::definitionHtml($post->post_content);
+        $url = $term_links ? get_permalink($post) : $page_url . '#' . $term['anchor'];
+
+        if ($term['priority'] && count($schema_terms) < $schema_limit) {
+            $schema_terms[] = array(
+                '@type' => 'DefinedTerm',
+                '@id' => $page_url . '#' . $term['anchor'],
+                'name' => $term['title'],
+                'description' => self::plainText($post->post_content),
+                'url' => $url,
+            );
         }
 
-        $html .= '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . '</script>';
+        $see_also = self::seeAlso($id, $terms);
+        $slugs = implode(' ', array_map(function ($cat) {
+            return $cat->slug;
+        }, $term_topics[$id]));
+        ?>
+<article class="glossary-term" id="<?php echo esc_attr($term['anchor']); ?>" data-topics="<?php echo esc_attr($slugs); ?>" data-modified="<?php echo esc_attr(strtotime($post->post_modified_gmt . ' UTC')); ?>">
+<h3 class="glossary-term__title"><?php if ($term_links) : ?><a href="<?php echo esc_url($url); ?>"><?php echo esc_html($term['title']); ?></a><?php else : echo esc_html($term['title']); endif; ?></h3>
+<div class="glossary-term__definition"><?php
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Stored WordPress post content uses core save-time KSES permissions; retain rendered block HTML.
+echo $definition !== '' ? $definition : '<p>' . esc_html__('No definition yet.', 'acemedia-glossary') . '</p>'; ?></div>
+<?php if (!empty($see_also) || !empty($term_topics[$id])) : ?>
+<div class="glossary-term__foot">
+<?php if (!empty($term_topics[$id])) : ?>
+<ul class="glossary-term__topics" aria-label="<?php esc_attr_e('Topics', 'acemedia-glossary'); ?>">
+<?php foreach ($term_topics[$id] as $cat) : ?>
+<li><span class="glossary-tag"><?php echo esc_html($cat->name); ?></span></li>
+<?php endforeach; ?>
+</ul>
+<?php endif; ?>
+<?php if (!empty($see_also)) : ?>
+<p class="glossary-term__see"><span class="glossary-term__label"><?php esc_html_e('See also', 'acemedia-glossary'); ?></span> <?php
+            echo wp_kses_post(implode(' ', array_map(function ($related) {
+                return '<a class="glossary-mini" href="#' . esc_attr($related['anchor']) . '">' . esc_html($related['title']) . '</a>';
+            }, $see_also)));
+        ?></p>
+<?php endif; ?>
+</div>
+<?php endif; ?>
+</article>
+<?php endforeach; ?>
+</div>
+</section>
+<?php endforeach; ?>
+</div>
+<div class="glossary-flat" hidden></div>
+<p class="glossary-empty" hidden><?php esc_html_e('No terms match these filters. Try a shorter word or clear a filter.', 'acemedia-glossary'); ?></p>
+<?php endif; ?>
+</div>
+</div>
+</div>
+<?php
+        $html = ob_get_clean();
+        $html .= self::schemaScript($page_url, $schema_terms);
 
         return $html;
     }
@@ -1129,6 +1377,19 @@ function acemedia_register_glossary_block() {
             'headingPadding' => array(
                 'type' => 'string',
                 'default' => '1.25rem',
+            ),
+            'layout' => array(
+                'type' => 'string',
+                'default' => 'classic',
+                'enum' => array('classic', 'app'),
+            ),
+            'title' => array(
+                'type' => 'string',
+                'default' => '',
+            ),
+            'intro' => array(
+                'type' => 'string',
+                'default' => '',
             ),
         ),
     ));

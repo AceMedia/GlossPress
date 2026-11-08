@@ -1,0 +1,760 @@
+// GlossPress app layout: a filter rail beside the terms, for a page given
+// over to the glossary. Colours come from the theme's palette presets
+// (foreground, background, tertiary, lightgrey, darkgrey), so the glossary
+// follows the site's brand and its dark mode without colours of its own.
+// A theme can tune any --gp-* property on .acemedia-glossary.is-app.
+
+$gp-sheet: 781.98px;
+
+.acemedia-glossary.is-app {
+	--gp-ink: var(--wp--preset--color--foreground, #000);
+	--gp-bg: var(--wp--preset--color--background, #fff);
+	--gp-card: var(--pp-surface, var(--wp--preset--color--background, #fff));
+	--gp-line: var(--wp--preset--color--lightgrey, #bed1cb);
+	--gp-muted: var(--wp--preset--color--darkgrey, #2d2d2d);
+	--gp-accent: var(--wp--preset--color--tertiary, #004833);
+	--gp-fill: var(--pp-brand-deep, var(--wp--preset--color--tertiary, #004833));
+	--gp-on-fill: #fff;
+	--gp-soft: color-mix(in srgb, var(--gp-line) 34%, var(--gp-bg));
+	--gp-rail-w: 288px;
+	--gp-top: var(--glossary-sticky-top, var(--pp-header-offset, 60px));
+	--gp-gutter-l: var(--pp-main-inset, var(--pp-wide-gutter, 1.25rem));
+	--gp-gutter-r: var(--pp-wide-gutter, 1.25rem);
+
+	display: block;
+	margin: 0;
+	padding: 0;
+	color: var(--gp-ink);
+
+	a:focus-visible,
+	button:focus-visible,
+	input:focus-visible,
+	h2:focus-visible {
+		outline: 2px solid var(--gp-accent);
+		outline-offset: 2px;
+	}
+}
+
+.acemedia-glossary.is-app .glossary-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+.glossary-app {
+	display: grid;
+	grid-template-columns: var(--gp-rail-w) minmax(0, 1fr);
+	align-items: start;
+}
+
+// The rail --------------------------------------------------------------------
+
+.acemedia-glossary.is-app .glossary-rail {
+	position: sticky;
+	top: var(--gp-top);
+	z-index: 3;
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	height: calc(100vh - var(--gp-top));
+	height: calc(100dvh - var(--gp-top));
+	min-height: 0;
+	border-right: 1px solid var(--gp-line);
+	background: var(--gp-bg);
+}
+
+.glossary-rail__sheet-head {
+	display: none;
+}
+
+.glossary-rail__scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	scrollbar-color: var(--gp-line) transparent;
+}
+
+.glossary-rail__intro {
+	padding: 16px 16px 12px;
+}
+
+.acemedia-glossary.is-app .glossary-group__label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 10px;
+	padding: 0;
+	color: var(--gp-muted);
+	font-family: inherit;
+	font-size: 10.5px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	line-height: 1.2;
+	text-transform: uppercase;
+}
+
+.acemedia-glossary.is-app .glossary-group {
+	padding: 14px 16px 16px;
+	border-top: 1px solid var(--gp-line);
+}
+
+// Search.
+.acemedia-glossary.is-app .glossary-search__icon {
+	left: 12px;
+	opacity: 1;
+	color: var(--gp-muted);
+}
+
+.acemedia-glossary.is-app .glossary-search__input {
+	height: 42px;
+	padding: 0 12px 0 38px;
+	border: 1px solid var(--gp-line);
+	border-radius: 10px;
+	background: var(--gp-card);
+	color: var(--gp-ink);
+	font-size: 0.95rem;
+
+	&::placeholder {
+		color: var(--gp-muted);
+		opacity: 1;
+	}
+
+	&:focus {
+		border-color: var(--gp-accent);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--gp-accent) 22%, transparent);
+	}
+}
+
+// Applied filters.
+.glossary-applied {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 10px;
+	margin-top: 12px;
+}
+
+.acemedia-glossary.is-app .glossary-applied__list {
+	display: contents;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		margin: 0;
+	}
+}
+
+.acemedia-glossary.is-app .glossary-applied__chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 28px;
+	padding: 0 10px;
+	border: 1px solid var(--gp-fill);
+	border-radius: 999px;
+	background: var(--gp-fill);
+	color: var(--gp-on-fill);
+	font: inherit;
+	font-size: 0.78rem;
+	font-weight: 700;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.acemedia-glossary.is-app .glossary-applied__clear {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--gp-accent);
+	font: inherit;
+	font-size: 0.8rem;
+	font-weight: 700;
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+	cursor: pointer;
+}
+
+// A to Z: a grid of letters, each with its count.
+.acemedia-glossary.is-app .glossary-azgrid {
+	display: grid;
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	gap: 4px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		margin: 0;
+		padding: 0;
+	}
+}
+
+.acemedia-glossary.is-app .glossary-azgrid__all {
+	grid-column: span 2;
+}
+
+.acemedia-glossary.is-app .glossary-az__cell {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 3px;
+	box-sizing: border-box;
+	min-height: 46px;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	background: var(--gp-soft);
+	color: var(--gp-ink);
+	text-decoration: none;
+	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+	&:hover {
+		border-color: var(--gp-accent);
+	}
+
+	&[aria-current="true"] {
+		border-color: var(--gp-fill);
+		background: var(--gp-fill);
+		color: var(--gp-on-fill);
+
+		.glossary-az__n {
+			color: var(--gp-on-fill);
+		}
+	}
+
+	&.is-empty,
+	&.is-zero {
+		border-color: transparent;
+		background: transparent;
+		opacity: 0.45;
+		pointer-events: none;
+	}
+}
+
+.glossary-az__l {
+	font-size: 15px;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.glossary-az__cell.is-all .glossary-az__l {
+	font-size: 13px;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.glossary-az__n {
+	color: var(--gp-muted);
+	font-size: 10.5px;
+	font-weight: 600;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+}
+
+// Topic chips.
+.glossary-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.acemedia-glossary.is-app .glossary-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 32px;
+	padding: 0 12px;
+	border: 1px solid var(--gp-line);
+	border-radius: 999px;
+	background: var(--gp-card);
+	color: var(--gp-ink);
+	font: inherit;
+	font-size: 0.8rem;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+
+	&:hover {
+		border-color: var(--gp-accent);
+	}
+
+	&[aria-pressed="true"] {
+		border-color: var(--gp-fill);
+		background: var(--gp-fill);
+		color: var(--gp-on-fill);
+
+		.glossary-chip__n {
+			color: var(--gp-on-fill);
+		}
+	}
+}
+
+.glossary-chip__n {
+	color: var(--gp-muted);
+	font-size: 0.72rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+// Sort: a two-way switch.
+.glossary-seg {
+	display: grid;
+	grid-auto-columns: 1fr;
+	grid-auto-flow: column;
+	gap: 2px;
+	padding: 3px;
+	border-radius: 10px;
+	background: var(--gp-soft);
+}
+
+.acemedia-glossary.is-app .glossary-seg button {
+	min-height: 34px;
+	padding: 0 8px;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+	color: var(--gp-ink);
+	font: inherit;
+	font-size: 0.8rem;
+	font-weight: 700;
+	line-height: 1.1;
+	cursor: pointer;
+
+	&[aria-pressed="true"] {
+		background: var(--gp-card);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+	}
+}
+
+// Rail foot.
+.acemedia-glossary.is-app .glossary-rail__foot {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 8px;
+	padding: 12px 16px;
+	border-top: 1px solid var(--gp-line);
+	background: var(--gp-bg);
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.acemedia-glossary.is-app .glossary-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 40px;
+	padding: 0 16px;
+	border: 1px solid var(--gp-line);
+	border-radius: 999px;
+	background: var(--gp-card);
+	color: var(--gp-ink);
+	font: inherit;
+	font-size: 0.85rem;
+	font-weight: 700;
+	line-height: 1;
+	cursor: pointer;
+
+	&:hover {
+		border-color: var(--gp-accent);
+	}
+}
+
+.acemedia-glossary.is-app .glossary-btn--fill {
+	flex: 1 1 auto;
+	border-color: var(--gp-fill);
+	background: var(--gp-fill);
+	color: var(--gp-on-fill);
+}
+
+.acemedia-glossary.is-app .glossary-show {
+	display: none;
+}
+
+.acemedia-glossary.is-app .glossary-rail__foot .glossary-reset {
+	flex: 1 1 auto;
+}
+
+// The terms -------------------------------------------------------------------
+
+.glossary-main {
+	box-sizing: border-box;
+	min-width: 0;
+	padding: 20px var(--gp-gutter-r) 48px var(--gp-gutter-l);
+}
+
+.glossary-main__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 10px 16px;
+	margin: 0 0 20px;
+	padding: 0 0 16px;
+	border-bottom: 1px solid var(--gp-line);
+}
+
+.glossary-main__titles {
+	flex: 1 1 320px;
+	min-width: 0;
+}
+
+.acemedia-glossary.is-app .glossary-main__title {
+	margin: 0;
+	padding: 0;
+	color: var(--gp-accent);
+	font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.75rem);
+	line-height: 1;
+}
+
+.acemedia-glossary.is-app .glossary-main__intro {
+	max-width: 68ch;
+	margin: 0.5rem 0 0;
+	color: var(--gp-muted);
+	font-size: 1rem;
+	line-height: 1.5;
+}
+
+.acemedia-glossary.is-app .glossary-main__status {
+	flex: 1 0 100%;
+	margin: 0;
+	color: var(--gp-muted);
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+
+.acemedia-glossary.is-app .glossary-filters-open {
+	display: none;
+}
+
+.glossary-filters-open__n:not(:empty) {
+	display: inline-grid;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 999px;
+	background: var(--gp-fill);
+	color: var(--gp-on-fill);
+	font-size: 0.68rem;
+	font-weight: 800;
+	line-height: 1;
+	place-items: center;
+}
+
+.acemedia-glossary.is-app .glossary-letter + .glossary-letter {
+	margin-top: 32px;
+}
+
+.acemedia-glossary.is-app .glossary-letter,
+.acemedia-glossary.is-app .glossary-term {
+	scroll-margin-top: calc(var(--gp-top) + 16px);
+}
+
+.acemedia-glossary.is-app .glossary-letter__head {
+	gap: 12px;
+	margin-bottom: 14px;
+
+	&::after {
+		background: var(--gp-line);
+	}
+}
+
+.acemedia-glossary.is-app .glossary-letter__title {
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background: var(--gp-fill);
+	color: var(--gp-on-fill);
+	font-size: 1.25rem;
+}
+
+.acemedia-glossary.is-app .glossary-letter__count {
+	color: var(--gp-muted);
+	opacity: 1;
+}
+
+.acemedia-glossary.is-app .glossary-letter__terms,
+.acemedia-glossary.is-app .glossary-flat {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.acemedia-glossary.is-app .glossary-term {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 16px 18px;
+	border: 1px solid var(--gp-line);
+	border-radius: 12px;
+	background: var(--gp-card);
+	color: var(--gp-ink);
+	transition: border-color 0.15s ease, box-shadow 0.3s ease;
+
+	&:hover {
+		border-color: color-mix(in srgb, var(--gp-accent) 55%, var(--gp-line));
+	}
+
+	&.is-target {
+		box-shadow: 0 0 0 2px var(--gp-accent);
+	}
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.acemedia-glossary.is-app .glossary-term__title {
+	margin: 0;
+	font-size: 1.1rem;
+	line-height: 1.2;
+
+	&::before {
+		display: none;
+	}
+
+	a {
+		color: var(--gp-accent);
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: underline;
+			text-underline-offset: 0.18em;
+		}
+	}
+}
+
+.acemedia-glossary.is-app .glossary-term__definition {
+	flex: 1 1 auto;
+	font-size: 0.95rem;
+	line-height: 1.55;
+
+	a {
+		color: var(--gp-accent);
+		text-decoration-color: currentColor;
+		text-decoration-thickness: 1px;
+	}
+}
+
+.glossary-term__foot {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-top: 10px;
+	border-top: 1px solid var(--gp-line);
+}
+
+.acemedia-glossary .glossary-term__topics {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		margin: 0;
+	}
+}
+
+.acemedia-glossary .glossary-term__see {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	font-size: 0.85rem;
+}
+
+// Small labels and chips shared with the term page.
+.glossary-tag,
+.glossary-mini {
+	display: inline-flex;
+	align-items: center;
+	min-height: 26px;
+	padding: 0 10px;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1;
+	text-decoration: none;
+}
+
+.glossary-tag {
+	background: var(--gp-soft, color-mix(in srgb, currentColor 8%, transparent));
+	color: var(--gp-ink, inherit);
+}
+
+a.glossary-tag:hover {
+	box-shadow: inset 0 0 0 1px var(--gp-accent, currentColor);
+}
+
+.acemedia-glossary .glossary-term a.glossary-mini,
+a.glossary-mini {
+	border: 1px solid var(--gp-line, currentColor);
+	color: var(--gp-accent, inherit);
+	text-decoration: none;
+
+	&:hover {
+		border-color: var(--gp-accent, currentColor);
+	}
+}
+
+.acemedia-glossary.is-app .glossary-empty {
+	margin-top: 16px;
+	border-color: var(--gp-line);
+	color: var(--gp-muted);
+}
+
+// Phones: the rail becomes a sheet ------------------------------------------
+
+@media (max-width: $gp-sheet) {
+	.glossary-app {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.glossary-main {
+		padding: 16px var(--gp-gutter-r) 40px;
+	}
+
+	.acemedia-glossary.is-app .glossary-filters-open {
+		display: inline-flex;
+		flex: 0 0 auto;
+	}
+
+	.glossary-main__titles {
+		flex-basis: 0;
+	}
+
+	.acemedia-glossary.is-app .glossary-main__head {
+		position: sticky;
+		top: var(--gp-top);
+		z-index: 2;
+		align-items: center;
+		margin: -16px calc(-1 * var(--gp-gutter-r)) 16px;
+		padding: 12px var(--gp-gutter-r);
+		background: var(--gp-bg);
+	}
+
+	.acemedia-glossary.is-app .glossary-main__intro {
+		display: none;
+	}
+
+	.acemedia-glossary.is-app .glossary-main__title {
+		font-size: 1.6rem;
+	}
+
+	.acemedia-glossary.is-app .glossary-rail {
+		position: fixed;
+		top: auto;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 2147483601;
+		height: auto;
+		max-height: min(86vh, 720px);
+		max-height: min(86dvh, 720px);
+		border-right: 0;
+		border-radius: 16px 16px 0 0;
+		box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.28);
+		transform: translateY(105%);
+		visibility: hidden;
+		transition: transform 0.25s ease, visibility 0s linear 0.25s;
+	}
+
+	.acemedia-glossary.is-app.is-sheet-open .glossary-rail {
+		transform: none;
+		visibility: visible;
+		transition: transform 0.25s ease, visibility 0s;
+	}
+
+	.acemedia-glossary.is-app.is-sheet-open .glossary-app::before {
+		position: fixed;
+		inset: 0;
+		z-index: 2147483600;
+		background: rgba(0, 0, 0, 0.45);
+		content: "";
+	}
+
+	.glossary-rail__sheet-head {
+		display: flex;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: space-between;
+		padding: 12px 16px 4px;
+
+		&::before {
+			position: absolute;
+			top: 6px;
+			left: 50%;
+			width: 36px;
+			height: 4px;
+			border-radius: 2px;
+			background: var(--gp-line);
+			content: "";
+			transform: translateX(-50%);
+		}
+	}
+
+	.acemedia-glossary.is-app .glossary-rail__sheet-title {
+		margin: 0;
+		color: var(--gp-ink);
+		font-size: 1rem;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.acemedia-glossary.is-app .glossary-rail__close {
+		display: grid;
+		width: 36px;
+		height: 36px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: var(--gp-soft);
+		color: var(--gp-ink);
+		cursor: pointer;
+		place-items: center;
+	}
+
+	.acemedia-glossary.is-app .glossary-azgrid {
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+	}
+
+	.acemedia-glossary.is-app .glossary-show {
+		display: inline-flex;
+	}
+
+	.acemedia-glossary.is-app .glossary-rail__foot .glossary-reset {
+		flex: 0 0 auto;
+	}
+
+	html.glossary-sheet-lock,
+	html.glossary-sheet-lock body {
+		overflow: hidden;
+	}
+
+	// Floating site buttons (an accessibility launcher, a bet slip dock) would
+	// sit over the sheet's buttons; tuck them away while it is open.
+	html.glossary-sheet-lock :is(.ace-accessibility__trigger, .abc-dock, [data-glossary-hide-on-sheet]) {
+		visibility: hidden !important;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.acemedia-glossary.is-app .glossary-rail {
+		transition: none !important;
+	}
+}

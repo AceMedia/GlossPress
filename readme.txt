@@ -4,7 +4,7 @@ Tags: glossary, definitions, tooltip, dictionary
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.2
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,11 @@ Developer documentation covers highlighting filters, related post types, saved b
 2. Edit a definition and connect related terms in the admin interface.
 
 == Changelog ==
+
+= 1.3.0 =
+* New app layout for the glossary block (layout "app"): a filter rail with search, an A to Z showing a count per letter, topic filters and sorting, kept in the address bar, with the rail as a sheet on phones.
+* New term header block for term pages: breadcrumb back to the letter, the term and its definition, topics, related terms and the terms either side.
+* Colours in the new layouts come from the theme's palette presets.
 
 = 1.2.2 =
 * Enforce per-post permissions for glossary editing, deletion and relationships.

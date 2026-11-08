@@ -1,0 +1,212 @@
+// GlossPress term page: the header block (where the term sits in the
+// glossary, the term and its definition, topics, related terms and the
+// terms either side). Colours come from the theme's palette presets.
+
+.glossary-entry {
+	--gp-ink: var(--wp--preset--color--foreground, #000);
+	--gp-bg: var(--wp--preset--color--background, #fff);
+	--gp-card: var(--pp-surface, var(--wp--preset--color--background, #fff));
+	--gp-line: var(--wp--preset--color--lightgrey, #bed1cb);
+	--gp-muted: var(--wp--preset--color--darkgrey, #2d2d2d);
+	--gp-accent: var(--wp--preset--color--tertiary, #004833);
+	--gp-fill: var(--pp-brand-deep, var(--wp--preset--color--tertiary, #004833));
+	--gp-on-fill: #fff;
+	--gp-soft: color-mix(in srgb, var(--gp-line) 34%, var(--gp-bg));
+
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	box-sizing: border-box;
+	margin: 0;
+	color: var(--gp-ink);
+
+	a:focus-visible {
+		outline: 2px solid var(--gp-accent);
+		outline-offset: 2px;
+	}
+}
+
+.glossary-entry__crumbs ol {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 0;
+	margin: 0;
+	padding: 0;
+	color: var(--gp-muted);
+	font-size: 0.85rem;
+	font-weight: 600;
+	list-style: none;
+
+	li {
+		display: inline-flex;
+		align-items: center;
+		margin: 0;
+	}
+
+	li + li::before {
+		margin: 0 8px;
+		color: var(--gp-line);
+		content: "/";
+	}
+
+	a {
+		color: var(--gp-accent);
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+
+	[aria-current] {
+		color: var(--gp-ink);
+	}
+}
+
+.glossary-entry__card {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: clamp(20px, 3vw, 32px);
+	border: 1px solid var(--gp-line);
+	border-radius: 16px;
+	background: var(--gp-card);
+}
+
+.glossary-entry__kicker {
+	display: inline-flex;
+	align-self: flex-start;
+	align-items: center;
+	min-height: 24px;
+	margin: 0;
+	padding: 0 10px;
+	border-radius: 999px;
+	background: var(--gp-fill);
+	color: var(--gp-on-fill);
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	line-height: 1;
+	text-transform: uppercase;
+}
+
+.glossary-entry .glossary-entry__title {
+	margin: 0;
+	padding: 0;
+	color: var(--gp-accent);
+	font-size: clamp(2rem, 1.4rem + 2.2vw, 3.25rem);
+	line-height: 1;
+}
+
+.glossary-entry__aka {
+	margin: 0;
+	color: var(--gp-muted);
+	font-size: 0.9rem;
+}
+
+.glossary-entry .glossary-term__label {
+	margin-right: 6px;
+	color: var(--gp-muted);
+	font-size: 0.68rem;
+	font-weight: 800;
+	letter-spacing: 0.1em;
+	opacity: 1;
+	text-transform: uppercase;
+}
+
+.glossary-entry__def {
+	max-width: 72ch;
+	font-size: clamp(1.05rem, 1rem + 0.25vw, 1.2rem);
+	line-height: 1.6;
+
+	> * {
+		margin-block: 0 0.75em;
+	}
+
+	> :last-child {
+		margin-bottom: 0;
+	}
+
+	a {
+		color: var(--gp-accent);
+	}
+}
+
+.glossary-entry__facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 14px 32px;
+	padding-top: 14px;
+	border-top: 1px solid var(--gp-line);
+}
+
+.glossary-entry__fact {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+}
+
+.glossary-entry__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		margin: 0;
+	}
+}
+
+.glossary-entry__pager {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+}
+
+.glossary-entry__step {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+	padding: 12px 14px;
+	border: 1px solid var(--gp-line);
+	border-radius: 12px;
+	background: var(--gp-card);
+	color: var(--gp-ink);
+	text-decoration: none;
+
+	&:hover {
+		border-color: var(--gp-accent);
+	}
+
+	&.is-index {
+		text-align: center;
+	}
+
+	&.is-next {
+		text-align: right;
+	}
+}
+
+.glossary-entry__step-title {
+	overflow: hidden;
+	color: var(--gp-accent);
+	font-weight: 800;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+	.glossary-entry__pager {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.glossary-entry__step.is-index {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+}
