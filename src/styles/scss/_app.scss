@@ -15,6 +15,7 @@ $gp-sheet: 781.98px;
 	--gp-accent: var(--wp--preset--color--tertiary, #004833);
 	--gp-fill: var(--pp-brand-deep, var(--wp--preset--color--tertiary, #004833));
 	--gp-on-fill: #fff;
+	--gp-here: var(--wp--preset--color--primary, #31953e);
 	--gp-soft: color-mix(in srgb, var(--gp-line) 34%, var(--gp-bg));
 	--gp-rail-w: 288px;
 	--gp-top: var(--glossary-sticky-top, var(--pp-header-offset, 60px));
@@ -225,6 +226,22 @@ $gp-sheet: 781.98px;
 
 		.glossary-az__n {
 			color: var(--gp-on-fill);
+		}
+	}
+
+	// Scrollspy: where the reader is, while all letters show. Distinct from
+	// the selected filter (a filled cell): a ring and an underline in the
+	// palette's primary green.
+	&.is-here:not([aria-current="true"]) {
+		border-color: var(--gp-here);
+		background: var(--gp-card);
+		box-shadow: inset 0 0 0 1px var(--gp-here);
+
+		.glossary-az__l {
+			text-decoration: underline;
+			text-decoration-color: var(--gp-here);
+			text-decoration-thickness: 2px;
+			text-underline-offset: 3px;
 		}
 	}
 

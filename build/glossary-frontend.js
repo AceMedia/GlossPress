@@ -300,6 +300,9 @@ function initApp(root) {
     }
     root.classList.toggle('is-filtered', active > 0);
     writeUrl();
+    // The loop above cleared every marker, so place the scrollspy afresh.
+    here = undefined; // eslint-disable-line no-use-before-define
+    spy(); // eslint-disable-line no-use-before-define
   }
 
   // Bring the top of the terms into view after a filter change, if the
@@ -512,6 +515,72 @@ function initApp(root) {
     }
   });
 
+  // Scrollspy: while all letters show (no letter filter, A to Z order), the
+  // letter whose section is at the top of the view, under the pinned
+  // header, is marked in the rail with aria-current="location". It is kept
+  // in view inside the rail when the rail is shorter than the A to Z.
+  const railScroll = rail.querySelector('.glossary-rail__scroll');
+  let here = null;
+  const keepInRail = cell => {
+    if (!railScroll || !cell) {
+      return;
+    }
+    const box = railScroll.getBoundingClientRect();
+    const r = cell.getBoundingClientRect();
+    const pad = 12;
+    let delta = 0;
+    if (r.top < box.top + pad) {
+      delta = r.top - box.top - pad;
+    } else if (r.bottom > box.bottom - pad) {
+      delta = r.bottom - box.bottom + pad;
+    }
+    if (delta) {
+      railScroll.scrollBy({
+        top: delta,
+        behavior: motion()
+      });
+    }
+  };
+  function spy() {
+    let current = null;
+    if (!state.letter && state.sort === 'az') {
+      const line = pinnedBottom(root) + 24;
+      for (const section of sections) {
+        if (section.hidden) {
+          continue;
+        }
+        if (section.getBoundingClientRect().top <= line) {
+          current = section.dataset.letter;
+        } else {
+          break;
+        }
+      }
+      // Above the first section, the first visible letter is "here".
+      if (!current) {
+        const first = sections.find(section => !section.hidden);
+        current = first ? first.dataset.letter : null;
+      }
+    }
+    if (current === here) {
+      return;
+    }
+    here = current;
+    let mark = null;
+    cells.forEach(cell => {
+      const on = !!current && cell.dataset.letter === current;
+      cell.classList.toggle('is-here', on);
+      if (on) {
+        cell.setAttribute('aria-current', 'location');
+        mark = cell;
+      } else if (cell.getAttribute('aria-current') === 'location') {
+        cell.removeAttribute('aria-current');
+      }
+    });
+    if (mark) {
+      keepInRail(mark);
+    }
+  }
+
   // The rail sits under whatever is pinned to the top of the page.
   let offset = -1;
   const setOffset = () => {
@@ -530,11 +599,16 @@ function initApp(root) {
     window.requestAnimationFrame(() => {
       ticking = false;
       setOffset();
+      spy();
     });
   }, {
     passive: true
   });
-  window.addEventListener('resize', setOffset);
+  window.addEventListener('resize', () => {
+    setOffset();
+    here = undefined;
+    spy();
+  });
   setOffset();
   apply();
   root.classList.add('is-ready');
