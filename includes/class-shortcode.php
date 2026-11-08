@@ -1401,3 +1401,24 @@ function acemedia_render_glossary_block($attributes) {
     $shortcode_instance = new AceMediaGlossary_Shortcode();
     return $shortcode_instance->renderShortcode($attributes);
 }
+
+/**
+ * Filtered views of the glossary index (search, letter, topic, sort) are the same page as the
+ * index: keep them out of the index and follow their links. Applies to the glossary archive and to
+ * any page that carries the glossary block or shortcode.
+ */
+add_filter('wp_robots', function (array $robots) {
+    $filtered = array_intersect(array_keys($_GET), array('q', 'letter', 'topic', 'sort')); // phpcs:ignore WordPress.Security.NonceVerification
+    if (!$filtered) {
+        return $robots;
+    }
+    $post = get_post();
+    $is_index = is_post_type_archive('acemedia_glossary')
+        || (is_singular() && $post && (has_block('acemedia/glossary', $post) || has_shortcode((string) $post->post_content, 'glossary')));
+    if ($is_index) {
+        $robots['noindex'] = true;
+        $robots['follow']  = true;
+        unset($robots['index']);
+    }
+    return $robots;
+});
