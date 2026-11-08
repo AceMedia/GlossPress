@@ -409,5 +409,11 @@ $rail-breakpoint: 64em;
 	}
 }
 
+// A site's own reduced motion option, set on <html> before first paint.
+html.ace-a11y-reduce-motion :is(.acemedia-glossary, .glossary-entry) * {
+	transition: none !important;
+	scroll-behavior: auto !important;
+}
+
 @import 'app';
 @import 'entry';

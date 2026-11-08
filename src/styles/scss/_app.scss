@@ -775,3 +775,7 @@ a.glossary-mini {
 		transition: none !important;
 	}
 }
+
+html.ace-a11y-reduce-motion .acemedia-glossary.is-app .glossary-rail {
+	transition: none !important;
+}

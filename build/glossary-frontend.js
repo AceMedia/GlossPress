@@ -13,7 +13,33 @@
 
 const SHEET_QUERY = '(max-width: 781.98px)';
 const normalise = text => text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-const motion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
+/**
+ * Whether to keep motion down: the system setting, or a site's own reduced
+ * motion option (window.aceReducedMotion, or html.ace-a11y-reduce-motion),
+ * read at the moment of use so a change applies straight away.
+ *
+ * @return {boolean} True to avoid smooth scrolling and transitions.
+ */
+const reducedMotion = () => !!window.aceReducedMotion || document.documentElement.classList.contains('ace-a11y-reduce-motion') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motion = () => reducedMotion() ? 'instant' : 'smooth';
+
+// When a reader turns reduced motion on, stop any smooth scroll in flight.
+let motionWatched = false;
+function watchMotion() {
+  if (motionWatched) {
+    return;
+  }
+  motionWatched = true;
+  document.addEventListener('ace-a11y:motion', () => {
+    if (reducedMotion()) {
+      window.scrollTo({
+        top: window.scrollY,
+        behavior: 'instant'
+      });
+    }
+  });
+}
 
 /**
  * Bottom edge of everything pinned to the top of the viewport (a fixed
@@ -52,6 +78,7 @@ function pinnedBottom(root) {
   return Math.round(bottom);
 }
 function initApp(root) {
+  watchMotion();
   const rail = root.querySelector('.glossary-rail');
   const sectionsWrap = root.querySelector('.glossary-sections');
   if (!rail || !sectionsWrap) {
@@ -704,7 +731,8 @@ function initGlossary(root) {
   // How far below the top a jump should land: under the site header, plus
   // the letter strip when it is pinned across the top on small screens.
   const landingLine = () => offset + (railQuery.matches || !list ? 0 : list.offsetHeight + 8) + 16;
-  const motion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  const motion = () => reducedMotion() ? 'instant' : 'smooth';
+  watchMotion();
   const setActive = letter => {
     if (letter === active) {
       return;

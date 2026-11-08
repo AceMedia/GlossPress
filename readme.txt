@@ -4,7 +4,7 @@ Tags: glossary, definitions, tooltip, dictionary
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.3
+Stable tag: 1.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,9 @@ Developer documentation covers highlighting filters, related post types, saved b
 2. Edit a definition and connect related terms in the admin interface.
 
 == Changelog ==
+
+= 1.3.4 =
+* Reduced motion: besides the system setting, honour a site's own option (window.aceReducedMotion or html.ace-a11y-reduce-motion) and its ace-a11y:motion event; jumps scroll instantly even when the theme sets smooth scrolling.
 
 = 1.3.3 =
 * Related articles: a trailing qualifier such as "(Horse Racing)" is dropped from the search, and both the hyphenated and spaced forms of a term are tried ("each way" and "each-way").

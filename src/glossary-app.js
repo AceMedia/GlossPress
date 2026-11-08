@@ -15,10 +15,33 @@ const normalise = ( text ) =>
 		.normalize( 'NFD' )
 		.replace( /[̀-ͯ]/g, '' );
 
-const motion = () =>
-	window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches
-		? 'auto'
-		: 'smooth';
+/**
+ * Whether to keep motion down: the system setting, or a site's own reduced
+ * motion option (window.aceReducedMotion, or html.ace-a11y-reduce-motion),
+ * read at the moment of use so a change applies straight away.
+ *
+ * @return {boolean} True to avoid smooth scrolling and transitions.
+ */
+export const reducedMotion = () =>
+	!! window.aceReducedMotion ||
+	document.documentElement.classList.contains( 'ace-a11y-reduce-motion' ) ||
+	window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+
+const motion = () => ( reducedMotion() ? 'instant' : 'smooth' );
+
+// When a reader turns reduced motion on, stop any smooth scroll in flight.
+let motionWatched = false;
+export function watchMotion() {
+	if ( motionWatched ) {
+		return;
+	}
+	motionWatched = true;
+	document.addEventListener( 'ace-a11y:motion', () => {
+		if ( reducedMotion() ) {
+			window.scrollTo( { top: window.scrollY, behavior: 'instant' } );
+		}
+	} );
+}
 
 /**
  * Bottom edge of everything pinned to the top of the viewport (a fixed
@@ -67,6 +90,7 @@ export function pinnedBottom( root ) {
 }
 
 export function initApp( root ) {
+	watchMotion();
 	const rail = root.querySelector( '.glossary-rail' );
 	const sectionsWrap = root.querySelector( '.glossary-sections' );
 	if ( ! rail || ! sectionsWrap ) {

@@ -7,7 +7,7 @@
  * No framework and no dependencies.
  */
 import './styles/scss/frontend.scss';
-import { initApp } from './glossary-app';
+import { initApp, reducedMotion, watchMotion } from './glossary-app';
 
 const normalise = ( text ) =>
 	text
@@ -93,10 +93,8 @@ function initGlossary( root ) {
 		offset +
 		( railQuery.matches || ! list ? 0 : list.offsetHeight + 8 ) +
 		16;
-	const motion = () =>
-		window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches
-			? 'auto'
-			: 'smooth';
+	const motion = () => ( reducedMotion() ? 'instant' : 'smooth' );
+	watchMotion();
 
 	const setActive = ( letter ) => {
 		if ( letter === active ) {
