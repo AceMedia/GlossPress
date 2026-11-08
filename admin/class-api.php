@@ -346,6 +346,7 @@ function get_glossary_terms($request) {
             'autoHighlight' => (bool) get_post_meta($term->ID, 'auto_highlight', true),
             'enablePostRelations' => (bool) get_post_meta($term->ID, 'enable_post_relations', true),
             'priority' => (bool) get_post_meta($term->ID, 'priority', true),
+            'thin' => class_exists('AceMedia_Glossary_Quality') && AceMedia_Glossary_Quality::is_thin($term->ID),
             'isOpen' => false,
             'isLoaded' => false, // Flag to track if full data is loaded
         ];

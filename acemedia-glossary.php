@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GlossPress
  * Description: A glossary system with React-based admin and frontend interfaces
- * Version: 1.3.4
+ * Version: 1.4.0
  * Author: AceMedia
  * Author URI: https://github.com/AceMedia
  * Requires at least: 6.6
@@ -46,7 +46,7 @@ class AceMediaGlossary {
     private function defineConstants() {
         define('ACEMEDIA_GLOSSARY_PATH', plugin_dir_path(__FILE__));
         define('ACEMEDIA_GLOSSARY_URL', plugin_dir_url(__FILE__));
-        define('ACEMEDIA_GLOSSARY_VERSION', '1.3.4');
+        define('ACEMEDIA_GLOSSARY_VERSION', '1.4.0');
     }
 
     /**
@@ -72,6 +72,7 @@ class AceMediaGlossary {
     require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-query-loop-integration.php';
     require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-block-templates.php';
     require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-term-page.php';
+    require_once ACEMEDIA_GLOSSARY_PATH . 'includes/class-quality.php';
         require_once ACEMEDIA_GLOSSARY_PATH . 'admin/class-admin.php';
         require_once ACEMEDIA_GLOSSARY_PATH . 'admin/class-api.php';
         require_once ACEMEDIA_GLOSSARY_PATH . 'includes/migration-auto-highlight.php';
@@ -194,7 +195,7 @@ class AceMediaGlossary {
             return $max_num_pages;
         }
 
-        $cache_key = 'glossary_sitemap_max_pages';
+        $cache_key = 'glossary_sitemap_max_pages_' . (class_exists('AceMedia_Glossary_Quality') ? AceMedia_Glossary_Quality::hash() : '');
         $cached = wp_cache_get($cache_key, 'glossary_sitemap');
         if ($cached !== false) {
             return $cached;
@@ -212,6 +213,10 @@ class AceMediaGlossary {
             'update_post_meta_cache' => false,
             'ignore_sticky_posts'    => true,
         );
+        // Thin terms are left out of the sitemap (see class-quality.php).
+        if (class_exists('AceMedia_Glossary_Quality') && AceMedia_Glossary_Quality::thin_ids()) {
+            $args['post__not_in'] = AceMedia_Glossary_Quality::thin_ids();
+        }
 
         $query = new WP_Query($args);
         $result = isset($query->max_num_pages) ? max(0, $query->max_num_pages) : 1;
@@ -242,7 +247,7 @@ class AceMediaGlossary {
             return $url_list;
         }
 
-        $cache_key = 'glossary_sitemap_urls_' . $page_num;
+        $cache_key = 'glossary_sitemap_urls_' . $page_num . '_' . (class_exists('AceMedia_Glossary_Quality') ? AceMedia_Glossary_Quality::hash() : '');
         $cached = wp_cache_get($cache_key, 'glossary_sitemap');
         if ($cached !== false) {
             return $cached;
@@ -255,7 +260,7 @@ class AceMediaGlossary {
             return $url_list;
         }
 
-        $cache_key = 'glossary_sitemap_urls_' . $page_num;
+        $cache_key = 'glossary_sitemap_urls_' . $page_num . '_' . (class_exists('AceMedia_Glossary_Quality') ? AceMedia_Glossary_Quality::hash() : '');
         wp_cache_set($cache_key, $url_list, 'glossary_sitemap', 3600); // Cache for 1 hour
         return $url_list;
     }

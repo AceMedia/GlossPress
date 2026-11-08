@@ -68,10 +68,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
-	padding: clamp(20px, 3vw, 32px);
-	border: 1px solid var(--gp-line);
-	border-radius: 16px;
-	background: var(--gp-card);
+	padding: 4px 0 24px;
+	border-bottom: 1px solid var(--gp-line);
 }
 
 .glossary-entry__kicker {
@@ -80,8 +78,8 @@
 	align-items: center;
 	min-height: 24px;
 	margin: 0;
-	padding: 0 10px;
-	border-radius: 999px;
+	padding: 0 8px;
+	border-radius: 4px;
 	background: var(--gp-fill);
 	color: var(--gp-on-fill);
 	font-size: 0.72rem;
@@ -174,7 +172,7 @@
 	min-width: 0;
 	padding: 12px 14px;
 	border: 1px solid var(--gp-line);
-	border-radius: 12px;
+	border-radius: 6px;
 	background: var(--gp-card);
 	color: var(--gp-ink);
 	text-decoration: none;
@@ -261,7 +259,7 @@
 	min-width: 0;
 	padding: 18px 20px;
 	border: 1px solid var(--gp-line);
-	border-radius: 16px;
+	border-radius: 6px;
 	background: var(--gp-card);
 
 	flex: 1 1 360px;
@@ -292,7 +290,7 @@
 	box-sizing: border-box;
 	padding: 12px 14px;
 	border: 1px solid var(--gp-line);
-	border-radius: 12px;
+	border-radius: 4px;
 	background: var(--gp-soft);
 	color: var(--gp-ink);
 	text-decoration: none;
@@ -329,4 +327,30 @@
 	font-weight: 700;
 	letter-spacing: 0;
 	text-transform: none;
+}
+
+// Other terms with the same name in other sports.
+.glossary-entry .glossary-entry__namesakes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 16px;
+	margin: 0;
+	padding: 0;
+	color: var(--gp-muted);
+	font-size: 0.9rem;
+	list-style: none;
+
+	li {
+		margin: 0;
+	}
+
+	a {
+		color: var(--gp-accent);
+		font-weight: 800;
+	}
+}
+
+// Term pages keep corners small and consistent with the site's post cards.
+.glossary-entry :is(.glossary-tag, .glossary-mini) {
+	border-radius: 4px;
 }

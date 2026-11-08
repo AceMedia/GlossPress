@@ -19474,6 +19474,19 @@ const CardsOptimized = ({
                     },
                     children: "RELATED"
                   })
+                }), term.thin && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Tooltip, {
+                  text: (0,external_wp_i18n_namespaceObject.__)('Thin: not indexed. The definition is short and the page has nothing else yet, so it is kept out of search and the sitemap until it is expanded.', 'acemedia-glossary'),
+                  children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("span", {
+                    style: {
+                      fontSize: '10px',
+                      background: '#ffff00',
+                      color: '#000',
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      fontWeight: 'bold'
+                    },
+                    children: (0,external_wp_i18n_namespaceObject.__)('THIN: NOT INDEXED', 'acemedia-glossary')
+                  })
                 }), term.priority && /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)(external_wp_components_namespaceObject.Tooltip, {
                   text: (0,external_wp_i18n_namespaceObject.__)('Priority term: listed in structured data', 'acemedia-glossary'),
                   children: /*#__PURE__*/(0,external_ReactJSXRuntime_namespaceObject.jsx)("span", {

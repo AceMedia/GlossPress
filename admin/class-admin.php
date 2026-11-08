@@ -92,6 +92,6 @@ class AceMediaGlossary_Admin {
 function render_acemedia_glossary_settings_page() {
     if (!current_user_can('manage_options')) { wp_die(esc_html__('You cannot manage glossary settings.', 'acemedia-glossary')); }
     ?>
-        <div class="wrap"><div id="ace-settings-root"></div></div>
+        <div class="wrap"><?php do_action('acemedia_glossary_settings_before'); ?><div id="ace-settings-root"></div></div>
     <?php
 }

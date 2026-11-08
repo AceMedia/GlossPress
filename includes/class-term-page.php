@@ -138,6 +138,40 @@ final class AceMedia_Glossary_Term_Page {
         return $text;
     }
 
+    /** A title's base name (before any trailing qualifier) and the qualifier itself. */
+    public static function split_title($title) {
+        $title = trim((string) $title);
+        if (preg_match('/^(.*?)\s*\(([^)]+)\)\s*$/u', $title, $m) && trim($m[1]) !== '') {
+            return array(trim($m[1]), trim($m[2]));
+        }
+        return array($title, '');
+    }
+
+    /** Other terms with the same base name: "Break (Snooker)" for "Break (Tennis)". */
+    public static function namesakes(WP_Post $post) {
+        list($base) = self::split_title(html_entity_decode(get_the_title($post), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $key = function_exists('mb_strtolower') ? mb_strtolower($base) : strtolower($base);
+        $out = array();
+        foreach (self::ordered_terms() as $row) {
+            if ((int) $row[0] === (int) $post->ID) {
+                continue;
+            }
+            list($b, $q) = self::split_title($row[1]);
+            if ((function_exists('mb_strtolower') ? mb_strtolower($b) : strtolower($b)) === $key) {
+                $out[] = array('id' => (int) $row[0], 'title' => $row[1], 'qualifier' => $q);
+            }
+        }
+        return apply_filters('acemedia_glossary_namesakes', $out, $post);
+    }
+
+    /** "In snooker" for a qualifier, keeping acronyms such as F1 or MMA as written. */
+    private static function in_phrase($qualifier) {
+        $words = array_map(function ($w) {
+            return preg_match('/^[A-Z0-9]{2,}$/', $w) ? $w : (function_exists('mb_strtolower') ? mb_strtolower($w) : strtolower($w));
+        }, preg_split('/\s+/', $qualifier));
+        return implode(' ', $words);
+    }
+
     /** A one-line summary of a term for cards: its first sentence, kept short. */
     public static function one_line($post) {
         $plain = self::plain($post->post_content);
@@ -169,7 +203,8 @@ final class AceMedia_Glossary_Term_Page {
         $set    = (string) apply_filters('acemedia_glossary_term_set_name', get_post_type_object('acemedia_glossary')->labels->name);
         $title  = html_entity_decode(get_the_title($post), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $letter = AceMediaGlossary_Shortcode::indexLetter($title);
-        $kicker = trim((string) ($attributes['kicker'] ?? '')) ?: __('Glossary term', 'acemedia-glossary');
+        // No label above the term by default: the breadcrumb already says where it sits.
+        $kicker = trim((string) ($attributes['kicker'] ?? ''));
         $def    = AceMediaGlossary_Shortcode::definitionHtml($post->post_content);
 
         // Lead with the first sentence; the rest reads as "In plain English". Only split when the
@@ -200,13 +235,27 @@ final class AceMedia_Glossary_Term_Page {
         $h .= '<li><a href="' . esc_url(self::letter_url($letter)) . '">' . esc_html(sprintf(__('Letter %s', 'acemedia-glossary'), $letter)) . '</a></li>';
         $h .= '<li aria-current="page">' . esc_html($title) . '</li></ol></nav>';
         $h .= '<header class="glossary-entry__card">';
-        $h .= '<p class="glossary-entry__kicker">' . esc_html($kicker) . '</p>';
+        if ($kicker !== '') {
+            $h .= '<p class="glossary-entry__kicker">' . esc_html($kicker) . '</p>';
+        }
         $h .= '<h1 class="glossary-entry__title">' . esc_html($title) . '</h1>';
 
         $synonyms = get_post_meta($post->ID, 'synonyms', true);
         $synonyms = is_array($synonyms) ? array_values(array_filter(array_map('strval', $synonyms))) : array();
         if ($synonyms) {
             $h .= '<p class="glossary-entry__aka"><span class="glossary-term__label">' . esc_html__('Also known as', 'acemedia-glossary') . '</span> ' . esc_html(implode(', ', $synonyms)) . '</p>';
+        }
+        $same = self::namesakes($post);
+        if ($same) {
+            $h .= '<ul class="glossary-entry__namesakes">';
+            foreach ($same as $n) {
+                $label = $n['qualifier'] !== ''
+                    /* translators: %s: a sport or field, such as "snooker". */
+                    ? sprintf(__('Also a term in %s:', 'acemedia-glossary'), self::in_phrase($n['qualifier']))
+                    : __('Also a general term:', 'acemedia-glossary');
+                $h .= '<li><span>' . esc_html($label) . '</span> <a href="' . esc_url(get_permalink($n['id'])) . '">' . esc_html($n['title']) . '</a></li>';
+            }
+            $h .= '</ul>';
         }
         if ($rest !== '') {
             $h .= '<p class="glossary-entry__lead">' . esc_html($lead) . '</p>';

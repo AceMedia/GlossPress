@@ -377,6 +377,24 @@ const CardsOptimized = ({
                                                     </span>
                                                 </Tooltip>
                                             )}
+                                            {term.thin && (
+                                                <Tooltip
+                                                    text={__('Thin: not indexed. The definition is short and the page has nothing else yet, so it is kept out of search and the sitemap until it is expanded.', 'acemedia-glossary')}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            fontSize: '10px',
+                                                            background: '#ffff00',
+                                                            color: '#000',
+                                                            padding: '2px 6px',
+                                                            borderRadius: '3px',
+                                                            fontWeight: 'bold',
+                                                        }}
+                                                    >
+                                                        {__('THIN: NOT INDEXED', 'acemedia-glossary')}
+                                                    </span>
+                                                </Tooltip>
+                                            )}
                                             {term.priority && (
                                                 <Tooltip
                                                     text={__('Priority term: listed in structured data', 'acemedia-glossary')}

@@ -4,7 +4,7 @@ Tags: glossary, definitions, tooltip, dictionary
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.4
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,12 @@ Developer documentation covers highlighting filters, related post types, saved b
 2. Edit a definition and connect related terms in the admin interface.
 
 == Changelog ==
+
+= 1.4.0 =
+* Thin-term rule: a term with a short definition (under 160 characters by default, filterable with acemedia_glossary_thin_chars) and nothing else on its page (no panels from acemedia_glossary_term_panels and no articles that use it) gets noindex, follow and no canonical, and is left out of the glossary sitemap. It stays in the A to Z and comes back on its own once expanded. Honoured through core (wp_robots, core sitemaps), Ace SEO (ace_seo_force_noindex, ace_seo_canonical, its sitemap tools) and Yoast. The A to Z page is never touched.
+* Admin: a Search column and a "Thin: not indexed" view in the term list, a badge on the glossary app's cards, and a count on the settings page.
+* Term pages link terms that share a name across sports ("Also a term in snooker: Break (Snooker)").
+* Term pages: an editorial header with the term as the heading and the lead beneath, no label above the term by default, and small, consistent corners.
 
 = 1.3.4 =
 * Reduced motion: besides the system setting, honour a site's own option (window.aceReducedMotion or html.ace-a11y-reduce-motion) and its ace-a11y:motion event; jumps scroll instantly even when the theme sets smooth scrolling.
