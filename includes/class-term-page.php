@@ -14,6 +14,7 @@ final class AceMedia_Glossary_Term_Page {
         add_action('wp_head', array(__CLASS__, 'schema'), 20);
         add_filter('document_title_parts', array(__CLASS__, 'title'), 20);
         add_action('init', array(__CLASS__, 'register_block'));
+        add_filter('wpseo_breadcrumb_links', array(__CLASS__, 'breadcrumbs'));
     }
 
     /** The page the A to Z lives on: the page carrying the glossary's slug, else the archive. */
@@ -79,6 +80,14 @@ final class AceMedia_Glossary_Term_Page {
                 'kicker' => array('type' => 'string', 'default' => ''),
             ),
         ));
+        register_block_type('acemedia/glossary-term-articles-title', array(
+            'api_version'     => 3,
+            'render_callback' => array(__CLASS__, 'render_articles_title'),
+            'supports'        => array('html' => false),
+            'attributes'      => array(
+                'label' => array('type' => 'string', 'default' => ''),
+            ),
+        ));
         register_block_type('acemedia/glossary-term-nav', array(
             'api_version'     => 3,
             'render_callback' => array(__CLASS__, 'render_nav'),
@@ -116,10 +125,34 @@ final class AceMedia_Glossary_Term_Page {
         return add_query_arg('letter', $slug, $base) . '#' . AceMediaGlossary_Shortcode::letterId($letter);
     }
 
+    /** The first sentence of a plain-text definition, or '' when it cannot be told apart. */
+    public static function first_sentence($text) {
+        $text = trim((string) $text);
+        if ($text === '') {
+            return '';
+        }
+        if (preg_match('/^(.+?[.!?])(?=\s+[A-Z0-9"“‘(])/u', $text, $m)) {
+            return trim($m[1]);
+        }
+        return $text;
+    }
+
+    /** A one-line summary of a term for cards: its first sentence, kept short. */
+    public static function one_line($post) {
+        $plain = self::plain($post->post_content);
+        $line  = self::first_sentence($plain);
+        if (function_exists('mb_strlen') && mb_strlen($line) > 140) {
+            $line = rtrim(mb_substr($line, 0, 137), " ,;:") . '…';
+        }
+        return $line;
+    }
+
     /**
-     * The term page's header: where it sits in the glossary, the term and its definition, its
-     * topics and related terms, and the terms either side of it in the A to Z. The definition is
-     * rendered without the_content filters, so nothing is injected into it.
+     * The term page's header: where it sits in the glossary, the term with its definition led by
+     * its first sentence and the rest under "In plain English", its topics, then panels (related
+     * terms as cards, and anything a site adds through the acemedia_glossary_term_panels filter),
+     * and the terms either side of it in the A to Z. The definition is rendered without
+     * the_content filters, so nothing is injected into it.
      */
     public static function render_header($attributes = array()) {
         if (!is_singular('acemedia_glossary')) {
@@ -138,12 +171,34 @@ final class AceMedia_Glossary_Term_Page {
         $kicker = trim((string) ($attributes['kicker'] ?? '')) ?: __('Glossary term', 'acemedia-glossary');
         $def    = AceMediaGlossary_Shortcode::definitionHtml($post->post_content);
 
-        $h  = '<header class="glossary-entry">';
+        // Lead with the first sentence; the rest reads as "In plain English". Only split when the
+        // first sentence can be lifted cleanly out of the HTML, so nothing is lost or repeated.
+        $plain = self::plain($post->post_content);
+        $lead  = self::first_sentence($plain);
+        $rest  = '';
+        if ($def !== '' && $lead !== '' && mb_strlen($plain) - mb_strlen($lead) >= 40) {
+            $needle = esc_html($lead);
+            $pos    = strpos($def, wptexturize($needle));
+            $len    = strlen(wptexturize($needle));
+            if (false === $pos) {
+                $pos = strpos($def, $needle);
+                $len = strlen($needle);
+            }
+            if (false !== $pos) {
+                $rest = substr($def, 0, $pos) . substr($def, $pos + $len);
+                $rest = preg_replace('#<p>\s*</p>#', '', $rest);
+                if (trim(wp_strip_all_tags($rest)) === '') {
+                    $rest = '';
+                }
+            }
+        }
+
+        $h  = '<div class="glossary-entry">';
         $h .= '<nav class="glossary-entry__crumbs" aria-label="' . esc_attr__('Breadcrumb', 'acemedia-glossary') . '"><ol>';
         $h .= '<li><a href="' . esc_url(self::glossary_url()) . '">' . esc_html($set) . '</a></li>';
         $h .= '<li><a href="' . esc_url(self::letter_url($letter)) . '">' . esc_html(sprintf(__('Letter %s', 'acemedia-glossary'), $letter)) . '</a></li>';
         $h .= '<li aria-current="page">' . esc_html($title) . '</li></ol></nav>';
-        $h .= '<div class="glossary-entry__card">';
+        $h .= '<header class="glossary-entry__card">';
         $h .= '<p class="glossary-entry__kicker">' . esc_html($kicker) . '</p>';
         $h .= '<h1 class="glossary-entry__title">' . esc_html($title) . '</h1>';
 
@@ -152,12 +207,29 @@ final class AceMedia_Glossary_Term_Page {
         if ($synonyms) {
             $h .= '<p class="glossary-entry__aka"><span class="glossary-term__label">' . esc_html__('Also known as', 'acemedia-glossary') . '</span> ' . esc_html(implode(', ', $synonyms)) . '</p>';
         }
-        $h .= '<div class="glossary-entry__def">' . ($def !== '' ? $def : '<p>' . esc_html__('No definition yet.', 'acemedia-glossary') . '</p>') . '</div>';
+        if ($rest !== '') {
+            $h .= '<p class="glossary-entry__lead">' . esc_html($lead) . '</p>';
+            $h .= '<section class="glossary-entry__more" aria-labelledby="glossary-entry-more"><h2 class="glossary-entry__h2" id="glossary-entry-more">' . esc_html__('In plain English', 'acemedia-glossary') . '</h2><div class="glossary-entry__def">' . $rest . '</div></section>';
+        } else {
+            $h .= '<div class="glossary-entry__def is-lead">' . ($def !== '' ? $def : '<p>' . esc_html__('No definition yet.', 'acemedia-glossary') . '</p>') . '</div>';
+        }
 
         $cats = get_the_terms($post->ID, 'category');
         $cats = is_array($cats) ? array_filter($cats, function ($c) {
             return $c->slug !== 'uncategorized';
         }) : array();
+        if ($cats) {
+            $h .= '<div class="glossary-entry__facts"><div class="glossary-entry__fact"><span class="glossary-term__label">' . esc_html__('Topics', 'acemedia-glossary') . '</span><ul class="glossary-entry__chips">';
+            foreach ($cats as $c) {
+                $link = get_term_link($c);
+                $h   .= '<li>' . (is_wp_error($link) ? '<span class="glossary-tag">' . esc_html($c->name) . '</span>' : '<a class="glossary-tag" href="' . esc_url($link) . '">' . esc_html($c->name) . '</a>') . '</li>';
+            }
+            $h .= '</ul></div></div>';
+        }
+        $h .= '</header>';
+
+        // Panels: related terms as cards, plus whatever the site adds.
+        $panels  = array();
         $related = array();
         $ids     = get_post_meta($post->ID, 'related_terms', true);
         foreach (is_array($ids) ? $ids : array() as $id) {
@@ -165,27 +237,46 @@ final class AceMedia_Glossary_Term_Page {
             if ($r instanceof WP_Post && 'acemedia_glossary' === $r->post_type && 'publish' === $r->post_status && $r->ID !== $post->ID) {
                 $related[] = $r;
             }
-        }
-        if ($cats || $related) {
-            $h .= '<div class="glossary-entry__facts">';
-            if ($cats) {
-                $h .= '<div class="glossary-entry__fact"><span class="glossary-term__label">' . esc_html__('Topics', 'acemedia-glossary') . '</span><ul class="glossary-entry__chips">';
-                foreach ($cats as $c) {
-                    $link = get_term_link($c);
-                    $h   .= '<li>' . (is_wp_error($link) ? '<span class="glossary-tag">' . esc_html($c->name) . '</span>' : '<a class="glossary-tag" href="' . esc_url($link) . '">' . esc_html($c->name) . '</a>') . '</li>';
-                }
-                $h .= '</ul></div>';
+            if (count($related) >= 8) {
+                break;
             }
-            if ($related) {
-                $h .= '<div class="glossary-entry__fact"><span class="glossary-term__label">' . esc_html__('Related terms', 'acemedia-glossary') . '</span><ul class="glossary-entry__chips">';
-                foreach ($related as $r) {
-                    $h .= '<li><a class="glossary-mini" href="' . esc_url(get_permalink($r)) . '">' . esc_html(get_the_title($r)) . '</a></li>';
+        }
+        if ($related) {
+            $cards = '';
+            foreach ($related as $r) {
+                $cards .= '<li><a class="glossary-relcard" href="' . esc_url(get_permalink($r)) . '"><span class="glossary-relcard__title">' . esc_html(get_the_title($r)) . '</span><span class="glossary-relcard__line">' . esc_html(self::one_line($r)) . '</span></a></li>';
+            }
+            $panels[] = array(
+                'id'    => 'related',
+                'title' => __('Related terms', 'acemedia-glossary'),
+                'html'  => '<ul class="glossary-relcards">' . $cards . '</ul>',
+                'wide'  => true,
+                'order' => 50,
+            );
+        }
+        /**
+         * Panels on a term page. Each is array( id, title, html, wide (bool), order (int) ); the
+         * html is the site's own and is printed as given.
+         */
+        $panels = apply_filters('acemedia_glossary_term_panels', $panels, $post);
+        if (is_array($panels) && $panels) {
+            usort($panels, function ($a, $b) {
+                return ((int) ($a['order'] ?? 10)) <=> ((int) ($b['order'] ?? 10));
+            });
+            $h .= '<div class="glossary-entry__panels">';
+            foreach ($panels as $panel) {
+                if (empty($panel['html'])) {
+                    continue;
                 }
-                $h .= '</ul></div>';
+                $pid = 'glossary-panel-' . sanitize_html_class((string) ($panel['id'] ?? 'panel'));
+                $h  .= '<section class="glossary-panel' . (!empty($panel['wide']) ? ' is-wide' : '') . '" aria-labelledby="' . esc_attr($pid) . '">';
+                $h  .= '<h2 class="glossary-panel__title" id="' . esc_attr($pid) . '">' . esc_html((string) ($panel['title'] ?? '')) . '</h2>';
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Panel HTML comes from code hooked to the filter, not from users.
+                $h  .= $panel['html'];
+                $h  .= '</section>';
             }
             $h .= '</div>';
         }
-        $h .= '</div>';
 
         // The terms either side in the A to Z.
         $list = self::ordered_terms();
@@ -206,7 +297,52 @@ final class AceMedia_Glossary_Term_Page {
             $h   .= '</nav>';
         }
 
-        return $h . '</header>';
+        return $h . '</div>';
+    }
+
+    /**
+     * "Seen in our articles", with how many when the count is exact. Uses the same lookup as the
+     * term page's article grid, cached until the term set changes.
+     */
+    public static function render_articles_title($attributes = array()) {
+        if (!is_singular('acemedia_glossary') || !class_exists('AceMediaGlossary_Related_Posts')) {
+            return '';
+        }
+        $post  = get_queried_object();
+        $label = trim((string) ($attributes['label'] ?? '')) ?: __('Seen in our articles', 'acemedia-glossary');
+        $count = 0;
+        if ($post instanceof WP_Post) {
+            $key   = 'acemedia_glossary_seen_' . $post->ID . '_' . (function_exists('acemedia_glossary_terms_version') ? acemedia_glossary_terms_version() : '0');
+            $count = get_transient($key);
+            if (false === $count) {
+                $res   = AceMediaGlossary_Related_Posts::fetch(array(
+                    'term_id'      => $post->ID,
+                    'category_ids' => wp_get_post_terms($post->ID, 'category', array('fields' => 'ids')),
+                    'tag_ids'      => wp_get_post_terms($post->ID, 'post_tag', array('fields' => 'ids')),
+                    'per_page'     => 6,
+                ));
+                $count = empty($res['used_fallback']) ? (int) ($res['found_posts'] ?? 0) : -1;
+                set_transient($key, $count, 6 * HOUR_IN_SECONDS);
+            }
+        }
+        $n = (int) $count > 0 ? '<span class="glossary-articles-title__n">' . esc_html(sprintf(_n('%s article', '%s articles', (int) $count, 'acemedia-glossary'), number_format_i18n((int) $count))) . '</span>' : '';
+        return '<h2 class="glossary-articles-title">' . esc_html($label) . $n . '</h2>';
+    }
+
+    /** Yoast breadcrumbs (and their schema): Home, the glossary, then the term. */
+    public static function breadcrumbs($links) {
+        if (!is_singular('acemedia_glossary') || !is_array($links) || count($links) < 2) {
+            return $links;
+        }
+        $url = self::glossary_url();
+        foreach ($links as $l) {
+            if (!empty($l['url']) && untrailingslashit($l['url']) === untrailingslashit($url)) {
+                return $links;
+            }
+        }
+        $set = (string) apply_filters('acemedia_glossary_term_set_name', get_post_type_object('acemedia_glossary')->labels->name);
+        array_splice($links, count($links) - 1, 0, array(array('url' => $url, 'text' => $set)));
+        return $links;
     }
 
     /** "Part of the Glossary" with the A to Z link, then the term's related terms as pills. */

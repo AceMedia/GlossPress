@@ -4,7 +4,7 @@ Tags: glossary, definitions, tooltip, dictionary
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,13 @@ Developer documentation covers highlighting filters, related post types, saved b
 2. Edit a definition and connect related terms in the admin interface.
 
 == Changelog ==
+
+= 1.3.1 =
+* Term pages lead with the first sentence of the definition and put the rest under "In plain English".
+* Related terms show as cards with a one-line definition each.
+* A panels filter (acemedia_glossary_term_panels) lets a site add its own sections to term pages.
+* New block for the articles heading, with how many articles use the term.
+* Yoast breadcrumbs (and their schema) include the glossary between Home and the term.
 
 = 1.3.0 =
 * New app layout for the glossary block (layout "app"): a filter rail with search, an A to Z showing a count per letter, topic filters and sorting, kept in the address bar, with the rail as a sheet on phones.

@@ -210,3 +210,123 @@
 		grid-row: 2;
 	}
 }
+
+// Lead sentence, "In plain English", panels and related-term cards ------------
+
+.glossary-entry .glossary-entry__lead {
+	max-width: 60ch;
+	margin: 0;
+	color: var(--gp-ink);
+	font-size: clamp(1.15rem, 1.05rem + 0.5vw, 1.45rem);
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.glossary-entry__def.is-lead {
+	font-size: clamp(1.1rem, 1rem + 0.4vw, 1.35rem);
+	font-weight: 500;
+}
+
+.glossary-entry__more {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding-top: 14px;
+	border-top: 1px solid var(--gp-line);
+}
+
+.glossary-entry .glossary-entry__h2,
+.glossary-entry .glossary-panel__title {
+	margin: 0;
+	padding: 0;
+	color: var(--gp-muted);
+	font-family: inherit;
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.1em;
+	line-height: 1.2;
+	text-transform: uppercase;
+}
+
+.glossary-entry__panels {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+
+.glossary-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-width: 0;
+	padding: 18px 20px;
+	border: 1px solid var(--gp-line);
+	border-radius: 16px;
+	background: var(--gp-card);
+
+	flex: 1 1 360px;
+
+	&.is-wide {
+		flex-basis: 100%;
+	}
+}
+
+.glossary-entry .glossary-relcards {
+	display: grid;
+	gap: 10px;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		margin: 0;
+	}
+}
+
+.glossary-relcard {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	height: 100%;
+	box-sizing: border-box;
+	padding: 12px 14px;
+	border: 1px solid var(--gp-line);
+	border-radius: 12px;
+	background: var(--gp-soft);
+	color: var(--gp-ink);
+	text-decoration: none;
+	transition: border-color 0.15s ease;
+
+	&:hover {
+		border-color: var(--gp-accent);
+	}
+}
+
+.glossary-relcard__title {
+	color: var(--gp-accent);
+	font-weight: 800;
+	line-height: 1.2;
+}
+
+.glossary-relcard__line {
+	font-size: 0.85rem;
+	line-height: 1.45;
+}
+
+.glossary-articles-title {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 6px 12px;
+	margin: 0;
+}
+
+.glossary-articles-title__n {
+	color: var(--wp--preset--color--darkgrey, #2d2d2d);
+	font-family: inherit;
+	font-size: 0.85rem;
+	font-weight: 700;
+	letter-spacing: 0;
+	text-transform: none;
+}
