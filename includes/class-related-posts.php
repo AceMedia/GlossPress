@@ -30,7 +30,8 @@ class AceMediaGlossary_Related_Posts {
 
         // Check if post relations are enabled for this term
         if ($term_id > 0) {
-            $enable_post_relations = (bool) get_post_meta($term_id, 'enable_post_relations', true);
+            // Per-term switch in the editor; a site can turn relations on for every term.
+            $enable_post_relations = (bool) apply_filters('acemedia_glossary_post_relations_enabled', (bool) get_post_meta($term_id, 'enable_post_relations', true), $term_id);
             if (!$enable_post_relations) {
                 // Return empty result if post relations are disabled
                 return array(

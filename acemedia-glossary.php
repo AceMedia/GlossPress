@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GlossPress
  * Description: A glossary system with React-based admin and frontend interfaces
- * Version: 1.3.1
+ * Version: 1.3.2
  * Author: AceMedia
  * Author URI: https://github.com/AceMedia
  * Requires at least: 6.6
@@ -46,7 +46,7 @@ class AceMediaGlossary {
     private function defineConstants() {
         define('ACEMEDIA_GLOSSARY_PATH', plugin_dir_path(__FILE__));
         define('ACEMEDIA_GLOSSARY_URL', plugin_dir_url(__FILE__));
-        define('ACEMEDIA_GLOSSARY_VERSION', '1.3.1');
+        define('ACEMEDIA_GLOSSARY_VERSION', '1.3.2');
     }
 
     /**

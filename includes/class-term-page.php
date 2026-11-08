@@ -15,6 +15,7 @@ final class AceMedia_Glossary_Term_Page {
         add_filter('document_title_parts', array(__CLASS__, 'title'), 20);
         add_action('init', array(__CLASS__, 'register_block'));
         add_filter('wpseo_breadcrumb_links', array(__CLASS__, 'breadcrumbs'));
+        add_filter('ace_seo_breadcrumb_items', array(__CLASS__, 'ace_seo_breadcrumbs'));
     }
 
     /** The page the A to Z lives on: the page carrying the glossary's slug, else the archive. */
@@ -312,21 +313,46 @@ final class AceMedia_Glossary_Term_Page {
         $label = trim((string) ($attributes['label'] ?? '')) ?: __('Seen in our articles', 'acemedia-glossary');
         $count = 0;
         if ($post instanceof WP_Post) {
-            $key   = 'acemedia_glossary_seen_' . $post->ID . '_' . (function_exists('acemedia_glossary_terms_version') ? acemedia_glossary_terms_version() : '0');
+            $key   = 'acemedia_glossary_seen_' . $post->ID . '_' . (function_exists('acemedia_glossary_terms_version') ? acemedia_glossary_terms_version() : '0') . '_' . (defined('ACEMEDIA_GLOSSARY_VERSION') ? ACEMEDIA_GLOSSARY_VERSION : '');
             $count = get_transient($key);
             if (false === $count) {
                 $res   = AceMediaGlossary_Related_Posts::fetch(array(
                     'term_id'      => $post->ID,
                     'category_ids' => wp_get_post_terms($post->ID, 'category', array('fields' => 'ids')),
                     'tag_ids'      => wp_get_post_terms($post->ID, 'post_tag', array('fields' => 'ids')),
-                    'per_page'     => 6,
+                    'per_page'     => -1,
                 ));
+                // The primary search reads up to 25 matches; a fallback by topic is not a count of uses.
                 $count = empty($res['used_fallback']) ? (int) ($res['found_posts'] ?? 0) : -1;
                 set_transient($key, $count, 6 * HOUR_IN_SECONDS);
             }
         }
-        $n = (int) $count > 0 ? '<span class="glossary-articles-title__n">' . esc_html(sprintf(_n('%s article', '%s articles', (int) $count, 'acemedia-glossary'), number_format_i18n((int) $count))) . '</span>' : '';
+        if (-1 === (int) $count) {
+            $label = __('More from the same topics', 'acemedia-glossary');
+        }
+        $n = '';
+        if ((int) $count >= 25) {
+            $n = '<span class="glossary-articles-title__n">' . esc_html__('25+ articles', 'acemedia-glossary') . '</span>';
+        } elseif ((int) $count > 0) {
+            $n = '<span class="glossary-articles-title__n">' . esc_html(sprintf(_n('%s article', '%s articles', (int) $count, 'acemedia-glossary'), number_format_i18n((int) $count))) . '</span>';
+        }
         return '<h2 class="glossary-articles-title">' . esc_html($label) . $n . '</h2>';
+    }
+
+    /** Ace SEO breadcrumbs (and their BreadcrumbList): Home, the glossary, then the term. */
+    public static function ace_seo_breadcrumbs($items) {
+        if (!is_singular('acemedia_glossary') || !is_array($items) || count($items) < 2) {
+            return $items;
+        }
+        $url = self::glossary_url();
+        foreach ($items as $item) {
+            if (!empty($item['url']) && untrailingslashit((string) $item['url']) === untrailingslashit($url)) {
+                return $items;
+            }
+        }
+        $set = (string) apply_filters('acemedia_glossary_term_set_name', get_post_type_object('acemedia_glossary')->labels->name);
+        array_splice($items, count($items) - 1, 0, array(array('label' => $set, 'url' => $url, 'is_current' => false)));
+        return $items;
     }
 
     /** Yoast breadcrumbs (and their schema): Home, the glossary, then the term. */

@@ -4,7 +4,7 @@ Tags: glossary, definitions, tooltip, dictionary
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,12 @@ Developer documentation covers highlighting filters, related post types, saved b
 2. Edit a definition and connect related terms in the admin interface.
 
 == Changelog ==
+
+= 1.3.2 =
+* Fix: the term page's article loop is recognised by a marker in its query settings (acemediaGlossaryRelated), because core hands the post template block to query_loop_block_query_vars, so the loop now lists articles that use the term instead of the latest posts.
+* New filter acemedia_glossary_post_relations_enabled to turn article relations on for every term.
+* Ace SEO breadcrumbs (and their BreadcrumbList) include the glossary between Home and the term, as Yoast's already do.
+* The articles heading counts real uses (25+ at the search cap) and says "More from the same topics" when it falls back to topics.
 
 = 1.3.1 =
 * Term pages lead with the first sentence of the definition and put the rest under "In plain English".

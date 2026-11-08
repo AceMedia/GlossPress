@@ -19,8 +19,12 @@ class AceMediaGlossary_Query_Loop_Integration {
             return $query_vars;
         }
 
+        // Core passes the post template block here, not the query block, so the query is
+        // recognised by a marker in its query settings (which reach the post template as
+        // context); the class name still works where a block hands over the query block itself.
         $class_name = isset($block->parsed_block['attrs']['className']) ? (string) $block->parsed_block['attrs']['className'] : '';
-        if ('' === $class_name || false === strpos(' ' . $class_name . ' ', ' acemedia-glossary-related-query ')) {
+        $marked     = !empty($block->context['query']['acemediaGlossaryRelated']);
+        if (!$marked && ('' === $class_name || false === strpos(' ' . $class_name . ' ', ' acemedia-glossary-related-query '))) {
             return $query_vars;
         }
 
