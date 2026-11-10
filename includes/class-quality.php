@@ -29,14 +29,13 @@ final class AceMedia_Glossary_Quality {
 
     public static function init() {
         add_filter('wp_robots', array(__CLASS__, 'wp_robots'), 20);
-        add_filter('ace_seo_force_noindex', array(__CLASS__, 'force_noindex'));
         add_filter('wpseo_robots_array', array(__CLASS__, 'yoast_robots'));
-        add_filter('ace_seo_canonical', array(__CLASS__, 'drop_canonical'));
         add_filter('wpseo_canonical', array(__CLASS__, 'drop_canonical'));
         add_action('template_redirect', array(__CLASS__, 'drop_core_canonical'));
         add_filter('wp_sitemaps_posts_query_args', array(__CLASS__, 'sitemap_args'), 20, 2);
         add_filter('wpseo_exclude_from_sitemap_by_post_ids', array(__CLASS__, 'yoast_sitemap_exclude'));
-        add_filter('ace_sitemap_powertools_excluded_post_ids', array(__CLASS__, 'ace_sitemap_exclude'), 10, 2);
+        // Ace Crawl Enhancer: its 1.0.98 acecrawl_ hook names, or the ace_seo_ ones of earlier versions.
+        add_action('plugins_loaded', array(__CLASS__, 'crawl_hooks'));
         add_action('save_post_acemedia_glossary', array(__CLASS__, 'flush'));
         add_action('deleted_post', array(__CLASS__, 'flush'));
         // Admin: a column in the list, a view of thin terms, and a line on the settings page.
@@ -140,17 +139,33 @@ final class AceMedia_Glossary_Quality {
             return;
         }
         update_option('acemedia_glossary_thin_hash', $hash, false);
-        if (function_exists('ace_sitemap_powertools_bump_cache_version')) {
-            ace_sitemap_powertools_bump_cache_version();
+        $p = self::crawl_prefix();
+        if (function_exists($p['sitemap'] . 'bump_cache_version')) {
+            call_user_func($p['sitemap'] . 'bump_cache_version');
         }
         // Ace SEO keeps generated sitemap files per scope: mark the glossary's for a rebuild.
-        if (function_exists('ace_sitemap_gen_mark_dirty')) {
-            $scopes = function_exists('ace_sitemap_gen_scopes_for') ? (array) ace_sitemap_gen_scopes_for('posts', 'glossary') : array('all');
+        if (function_exists($p['gen'] . 'mark_dirty')) {
+            $scopes = function_exists($p['gen'] . 'scopes_for') ? (array) call_user_func($p['gen'] . 'scopes_for', 'posts', 'glossary') : array('all');
             foreach ($scopes ?: array('all') as $scope) {
-                ace_sitemap_gen_mark_dirty($scope, true);
+                call_user_func($p['gen'] . 'mark_dirty', $scope, true);
             }
         }
         do_action('acemedia_glossary_thin_changed', self::$ids);
+    }
+
+    /** Ace Crawl Enhancer 1.0.98 renamed its hooks and functions to acecrawl_; earlier versions used ace_seo_. */
+    public static function crawl_prefix() {
+        return defined('ACECRAWL_PATH')
+            ? array('seo' => 'acecrawl_', 'sitemap' => 'acecrawl_sitemap_', 'gen' => 'acecrawl_sitemap_gen_', 'excluded' => 'acecrawl_sitemap_excluded_post_ids')
+            : array('seo' => 'ace_seo_', 'sitemap' => 'ace_sitemap_powertools_', 'gen' => 'ace_sitemap_gen_', 'excluded' => 'ace_sitemap_powertools_excluded_post_ids');
+    }
+
+    /** One set of names only: Crawl's compatibility layer would otherwise run these callbacks twice. */
+    public static function crawl_hooks() {
+        $p = self::crawl_prefix();
+        add_filter($p['seo'] . 'force_noindex', array(__CLASS__, 'force_noindex'));
+        add_filter($p['seo'] . 'canonical', array(__CLASS__, 'drop_canonical'));
+        add_filter($p['excluded'], array(__CLASS__, 'ace_sitemap_exclude'), 10, 2);
     }
 
     public static function flush() {

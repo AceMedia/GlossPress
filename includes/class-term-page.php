@@ -15,7 +15,9 @@ final class AceMedia_Glossary_Term_Page {
         add_filter('document_title_parts', array(__CLASS__, 'title'), 20);
         add_action('init', array(__CLASS__, 'register_block'));
         add_filter('wpseo_breadcrumb_links', array(__CLASS__, 'breadcrumbs'));
-        add_filter('ace_seo_breadcrumb_items', array(__CLASS__, 'ace_seo_breadcrumbs'));
+        add_action('plugins_loaded', static function () {
+            add_filter(AceMedia_Glossary_Quality::crawl_prefix()['seo'] . 'breadcrumb_items', array(__CLASS__, 'ace_seo_breadcrumbs'));
+        });
     }
 
     /** The page the A to Z lives on: the page carrying the glossary's slug, else the archive. */
